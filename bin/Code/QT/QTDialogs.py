@@ -1,0 +1,1259 @@
+import os
+
+from PySide6 import QtCore, QtGui, QtSvg, QtWidgets
+
+import Code
+from Code.Z import Util
+from Code.Base.Constantes import BLACK, RESULT_DRAW, RESULT_WIN_BLACK, RESULT_WIN_WHITE
+from Code.QT import Colocacion, Controles, FormLayout, Iconos, QTMessages, QTUtils
+
+
+class BlancasNegras(QtWidgets.QDialog):
+    def __init__(self, parent, both):
+        QtWidgets.QDialog.__init__(self, parent)
+        self.setWindowFlags(
+            QtCore.Qt.WindowType.WindowCloseButtonHint
+            | QtCore.Qt.WindowType.Dialog
+            | QtCore.Qt.WindowType.WindowTitleHint
+        )
+
+        ico_pw = Code.all_pieces.default_icon("K", 64)
+        ico_pb = Code.all_pieces.default_icon("k", 64)
+        self.setWindowTitle(_("Choose a color"))
+        self.setWindowIcon(ico_pw)
+
+        self.both = both
+        self.resultado = False, False
+
+        bt_blancas = Controles.PB(self, "", rutina=self.blancas, plano=False).set_icono(ico_pw, icon_size=64)
+        bt_negras = Controles.PB(self, "", rutina=self.negras, plano=False).set_icono(ico_pb, icon_size=64)
+
+        ly = Colocacion.H().control(bt_blancas).control(bt_negras)
+        if both:
+            lb_white_both = Controles.LB(self, "").put_image(Code.all_pieces.default_pixmap("K", 64))
+            lb_black_both = Controles.LB(self, "").put_image(Code.all_pieces.default_pixmap("k", 64))
+            lb_mas = Controles.LB(self, "+")
+            lyb = (
+                Colocacion.H()
+                .control(lb_white_both)
+                .espacio(-8)
+                .control(lb_mas)
+                .espacio(-8)
+                .control(lb_black_both)
+                .margen(0)
+            )
+            w_both = Controles.GB(self, "", lyb)
+            w_both.setStyleSheet("QGroupBox { border: 1px solid grey ;}")
+            ly.control(w_both)
+            for lb in (lb_mas, lb_white_both, lb_black_both, w_both):
+                lb.mousePressEvent = self.white_and_black
+
+        ly.margen(10)
+        self.setLayout(ly)
+
+    def blancas(self):
+        self.resultado = True, False
+        self.accept()
+
+    def negras(self):
+        self.resultado = False, True
+        self.accept()
+
+    def white_and_black(self, _x):
+        self.resultado = True, True
+        self.accept()
+
+
+def white_or_black(owner, both):
+    w = BlancasNegras(owner, both)
+    if w.exec():
+        result = w.resultado
+        if both:
+            return result
+        else:
+            return result[0]
+    return None
+
+
+class BlancasNegrasTiempo(QtWidgets.QDialog):
+    def __init__(self, parent):
+        QtWidgets.QDialog.__init__(self, parent)
+        self.setWindowFlags(
+            QtCore.Qt.WindowType.WindowCloseButtonHint
+            | QtCore.Qt.WindowType.Dialog
+            | QtCore.Qt.WindowType.WindowTitleHint
+        )
+
+        ico_pw = Code.all_pieces.default_icon("K")
+        ico_pb = Code.all_pieces.default_icon("k")
+        self.setWindowTitle(_("Choose a color"))
+        self.setWindowIcon(ico_pw)
+        self.key_saved = "BLANCASNEGRASTIEMPO"
+
+        bt_blancas = Controles.PB(self, "", rutina=self.blancas, plano=False).set_icono(ico_pw, icon_size=64)
+        bt_negras = Controles.PB(self, "", rutina=self.negras, plano=False).set_icono(ico_pb, icon_size=64)
+
+        # Tiempo
+        self.ed_minutos, self.lb_minutos = QTMessages.spinbox_lb(
+            self, 10, 0, 999, max_width=50, etiqueta=_("Total minutes")
+        )
+        self.ed_segundos, self.lb_segundos = QTMessages.spinbox_lb(
+            self, 0, 0, 999, max_width=50, etiqueta=_("Seconds added per move")
+        )
+        ly = Colocacion.G()
+        ly.controld(self.lb_minutos, 0, 0).control(self.ed_minutos, 0, 1)
+        ly.controld(self.lb_segundos, 1, 0).control(self.ed_segundos, 1, 1)
+        self.gb_t = Controles.GB(self, _("Time"), ly).to_connect(self.change_time)
+
+        self.chb_fastmoves = Controles.CHB(self, _("Fast moves"), False)
+
+        self.color = None
+
+        ly = Colocacion.H().control(bt_blancas).control(bt_negras)
+        ly.margen(10)
+        layout = Colocacion.V().otro(ly).espacio(10).control(self.gb_t).control(self.chb_fastmoves).margen(5)
+        self.setLayout(layout)
+
+        self.read_saved()
+
+    def read_saved(self):
+        dic = Code.configuration.read_variables(self.key_saved)
+        with_time = dic.get("WITH_TIME", False)
+        minutes = dic.get("MINUTES", 10)
+        seconds = dic.get("SECONDS", 0)
+        fast_moves = dic.get("FAST_MOVES", False)
+        self.gb_t.setChecked(with_time)
+        if with_time:
+            self.ed_minutos.set_value(minutes)
+            self.ed_segundos.set_value(seconds)
+        self.chb_fastmoves.set_value(fast_moves)
+        self.muestra_tiempo(with_time)
+
+    def save(self):
+        dic = {
+            "WITH_TIME": self.gb_t.isChecked(),
+            "MINUTES": self.ed_minutos.valor(),
+            "SECONDS": self.ed_segundos.valor(),
+            "FAST_MOVES": self.chb_fastmoves.valor(),
+        }
+        Code.configuration.write_variables(self.key_saved, dic)
+
+    def resultado(self):
+        return (
+            self.color,
+            self.gb_t.isChecked(),
+            self.ed_minutos.valor(),
+            self.ed_segundos.valor(),
+            self.chb_fastmoves.valor(),
+        )
+
+    def change_time(self):
+        self.muestra_tiempo(self.gb_t.isChecked())
+
+    def muestra_tiempo(self, si):
+        for control in (
+            self.ed_minutos,
+            self.lb_minutos,
+            self.ed_segundos,
+            self.lb_segundos,
+        ):
+            control.setVisible(si)
+
+    def blancas(self):
+        self.color = True
+        self.save()
+        self.accept()
+
+    def negras(self):
+        self.color = False
+        self.save()
+        self.accept()
+
+
+def white_black_time(owner):
+    w = BlancasNegrasTiempo(owner)
+    if w.exec():
+        return w.resultado()
+    return None
+
+
+class Tiempo(QtWidgets.QDialog):
+    def __init__(
+        self,
+        parent,
+        min_minutes,
+        min_seconds,
+        max_minutes,
+        max_seconds,
+        default_minutes=10,
+        default_seconds=0,
+    ):
+        super(Tiempo, self).__init__(parent)
+        self.setWindowFlags(
+            QtCore.Qt.WindowType.WindowCloseButtonHint
+            | QtCore.Qt.WindowType.Dialog
+            | QtCore.Qt.WindowType.WindowTitleHint
+        )
+
+        self.setWindowTitle(_("Time"))
+        self.setWindowIcon(Iconos.MoverTiempo())
+
+        tb = tb_accept_cancel(self)
+
+        f = Controles.FontType(puntos=11)
+
+        # Tiempo
+        self.ed_minutos, self.lb_minutos = QTMessages.spinbox_lb(
+            self,
+            default_minutes,
+            min_minutes,
+            max_minutes,
+            max_width=50,
+            etiqueta=_("Total minutes"),
+            fuente=f,
+        )
+        self.ed_segundos, self.lb_segundos = QTMessages.spinbox_lb(
+            self,
+            default_seconds,
+            min_seconds,
+            max_seconds,
+            max_width=50,
+            etiqueta=_("Seconds added per move"),
+            fuente=f,
+        )
+
+        # # Tiempo
+        ly_t = Colocacion.G()
+        ly_t.controld(self.lb_minutos, 0, 0).control(self.ed_minutos, 0, 1)
+        ly_t.controld(self.lb_segundos, 1, 0).control(self.ed_segundos, 1, 1).margen(20)
+
+        ly = Colocacion.V().control(tb).espacio(20).otro(ly_t)
+        self.setLayout(ly)
+
+    def aceptar(self):
+        self.accept()
+
+    def cancelar(self):
+        self.reject()
+
+    def resultado(self):
+        minutos = self.ed_minutos.value()
+        seconds = self.ed_segundos.value()
+
+        return minutos, seconds
+
+
+def vtime(
+    owner,
+    min_minutes=1,
+    min_seconds=0,
+    max_minutes=999,
+    max_seconds=999,
+    default_minutes=10,
+    default_seconds=0,
+):
+    w = Tiempo(
+        owner,
+        min_minutes,
+        min_seconds,
+        max_minutes,
+        max_seconds,
+        default_minutes=default_minutes,
+        default_seconds=default_seconds,
+    )
+    if w.exec():
+        return w.resultado()
+    return None
+
+
+def ly_mini_buttons(
+    owner,
+    key,
+    if_more=False,
+    with_timed=True,
+    must_save=False,
+    if_save_all=False,
+    if_play=False,
+    rutina=None,
+    icon_size=16,
+    list_more_actions=None,
+):
+    li_acciones = []
+
+    def x(xtit, xtr, xicono):
+        li_acciones.append((xtr, xicono, key + xtit))
+
+    li_acciones.append(None)
+    x("move_to_beginning", _("Start position"), Iconos.MoverInicio())
+    li_acciones.append(None)
+    x("move_back", _("Previous move"), Iconos.MoverAtras())
+    li_acciones.append(None)
+    x("move_forward", _("Next move"), Iconos.MoverAdelante())
+    li_acciones.append(None)
+    x("move_to_end", _("Last move"), Iconos.MoverFinal())
+    li_acciones.append(None)
+    if if_play:
+        x("move_play", _("Play"), Iconos.MoverJugar())
+        li_acciones.append(None)
+    if with_timed:
+        x(
+            "move_timed",
+            f"{_('Timed movement')}\n{_('Right click to change the interval')}",
+            Iconos.Pelicula16(),
+        )
+    li_acciones.append(None)
+    if must_save:
+        x("move_save", _("Save"), Iconos.MoverGrabar())
+        li_acciones.append(None)
+    if if_save_all:
+        li_acciones.append((f"{_('Save')}++", Iconos.MoverGrabarTodos(), f"{key}move_save_all"))
+        li_acciones.append(None)
+    if if_more:
+        x("move_mas", _("New analysis"), Iconos.MoverMas())
+        li_acciones.append(None)
+
+    if list_more_actions:
+        for trad, tit, icono in list_more_actions:
+            li_acciones.append((trad, icono, key + tit))
+            li_acciones.append(None)
+
+    tb = Controles.TB(owner, li_acciones, False, icon_size=icon_size, rutina=rutina)
+
+    if with_timed:
+
+        def mouse_check_right(event):
+            if event.button() == QtCore.Qt.MouseButton.RightButton:
+                if hasattr(tb.parent, "stop_clock"):
+                    tb.parent.stop_clock()
+                change_interval(owner, Code.configuration)
+            QtWidgets.QToolBar.mousePressEvent(tb, event)
+
+        tb.mousePressEvent = mouse_check_right
+
+    tb.setMinimumHeight(icon_size + 4)
+    ly = Colocacion.H().relleno().control(tb).relleno()
+    return ly, tb
+
+
+class LCNumero(QtWidgets.QWidget):
+    def __init__(self, maxdigits):
+        QtWidgets.QWidget.__init__(self)
+
+        f = Controles.FontType("", 11, 80, False, False, False, None)
+
+        ly = Colocacion.H()
+        self.liLB = []
+        for x in range(maxdigits):
+            lb = QtWidgets.QLabel(self)
+            lb.setStyleSheet("* { border: 2px solid black; padding: 2px; margin: 0px;}")
+            lb.setFont(f)
+            ly.control(lb)
+            self.liLB.append(lb)
+            lb.hide()
+            lb.setFixedWidth(32)
+            lb.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.setLayout(ly)
+
+    def pon(self, number):
+        c = str(number)
+        n = len(c)
+        for x in range(n):
+            lb = self.liLB[x]
+            lb.setText(c[x])
+            lb.show()
+        for x in range(n, len(self.liLB)):
+            self.liLB[x].hide()
+
+
+class TwoImages(QtWidgets.QLabel):
+    _valor: bool
+
+    def __init__(self, pm_true, pm_false):
+        self.pm = {True: pm_true, False: pm_false}
+        self.pm_false = pm_false
+        QtWidgets.QLabel.__init__(self)
+        self.valor(False)
+
+    def valor(self, ok=None):
+        if ok is None:
+            return self._valor
+        else:
+            self._valor = ok
+            self.setPixmap(self.pm[ok])
+            return None
+
+    def mousePressEvent(self, event):
+        self.valor(not self._valor)
+
+
+def svg2ico(svg, tam):
+    pm = QtGui.QPixmap(tam, tam)
+    pm.fill(QtCore.Qt.GlobalColor.transparent)
+    qb = QtCore.QByteArray(svg)
+    render = QtSvg.QSvgRenderer(qb)
+    painter = QtGui.QPainter()
+    painter.begin(pm)
+    render.render(painter)
+    painter.end()
+    ico = QtGui.QIcon(pm)
+    return ico
+
+
+def fsvg2ico(fsvg, tam):
+    with open(fsvg, "rb") as f:
+        svg = f.read()
+        return svg2ico(svg, tam)
+
+
+def svg2pm(svg, tam):
+    pm = QtGui.QPixmap(tam, tam)
+    pm.fill(QtCore.Qt.GlobalColor.transparent)
+    qb = QtCore.QByteArray(svg)
+    render = QtSvg.QSvgRenderer(qb)
+    painter = QtGui.QPainter()
+    painter.begin(pm)
+    render.render(painter)
+    painter.end()
+    return pm
+
+
+def fsvg2pm(fsvg, tam):
+    with open(fsvg, "rb") as f:
+        svg = f.read()
+        return svg2pm(svg, tam)
+
+
+class LBPieza(Controles.LB):
+    def __init__(self, owner, pieza, board, tam):
+        self.pieza = pieza
+        self.owner = owner
+        self.tam = tam
+        self.board = board
+        pixmap = board.pieces.pixmap(pieza, tam=tam)
+        self.dragpixmap = pixmap
+        Controles.LB.__init__(self, owner)
+        self.put_image(pixmap).relative_width(tam).fixed_height(tam)
+
+    def mousePressEvent(self, event):
+        if event.button() == QtCore.Qt.MouseButton.LeftButton:
+            self.owner.start_drag(self)
+
+    def change_side(self):
+        self.pieza = self.pieza.upper() if self.pieza.islower() else self.pieza.lower()
+        pixmap = self.board.pieces.pixmap(self.pieza, tam=self.tam)
+        self.dragpixmap = pixmap
+        self.put_image(pixmap).relative_width(self.tam).fixed_height(self.tam)
+
+
+class ListaPiezas(QtWidgets.QWidget):
+    def __init__(self, owner, side, board, tam=None, margen=None):
+        QtWidgets.QWidget.__init__(self)
+
+        self.owner = owner
+
+        if tam is None:
+            tam = board.width_piece
+
+        li_lb = []
+        layout = Colocacion.H()
+        for pieza in ("K", "Q", "R", "B", "N", "P"):
+            if side == BLACK:
+                pieza = pieza.lower()
+            lb = LBPieza(self, pieza, board, tam)
+            li_lb.append(lb)
+            layout.control(lb)
+
+        if margen is not None:
+            layout.margen(margen)
+
+        self.li_lb = li_lb
+
+        self.setLayout(layout)
+
+    def start_drag(self, lb):
+        pixmap = lb.dragpixmap
+        pieza = lb.pieza
+        item_data = QtCore.QByteArray(pieza.encode("utf-8"))
+
+        self.owner.ultimaPieza = pieza
+        self.owner.show_cursor()
+
+        mime_data = QtCore.QMimeData()
+        mime_data.setData("image/x-lc-dato", item_data)
+
+        drag = QtGui.QDrag(self)
+        drag.setMimeData(mime_data)
+        drag.setHotSpot(QtCore.QPoint(pixmap.width() // 2, pixmap.height() // 2))
+        drag.setPixmap(pixmap)
+
+        drag.exec(QtCore.Qt.DropAction.MoveAction)
+
+    def change_side(self):
+        for lb in self.li_lb:
+            lb.change_side()
+
+
+def rondo_puntos(shuffle=True):
+    nico = Util.Rondo(
+        Iconos.PuntoAmarillo(),
+        Iconos.PuntoNaranja(),
+        Iconos.PuntoVerde(),
+        Iconos.PuntoAzul(),
+        Iconos.PuntoMagenta(),
+        Iconos.PuntoRojo(),
+    )
+    if shuffle:
+        nico.shuffle()
+    return nico
+
+
+def rondo_colores(shuffle=True):
+    nico = Util.Rondo(
+        Iconos.Amarillo(),
+        Iconos.Naranja(),
+        Iconos.Verde(),
+        Iconos.Azul(),
+        Iconos.Magenta(),
+        Iconos.Rojo(),
+    )
+    if shuffle:
+        nico.shuffle()
+    return nico
+
+
+def rondo_folders(shuffle=True):
+    nico = Util.Rondo(
+        Iconos.FolderAnil(),
+        Iconos.FolderBlack(),
+        Iconos.FolderBlue(),
+        Iconos.FolderGreen(),
+        Iconos.FolderMagenta(),
+        Iconos.FolderRed(),
+    )
+    if shuffle:
+        nico.shuffle()
+    return nico
+
+
+class LCMenu(Controles.Menu):
+    def __init__(self, parent, titulo=None, icono=None, is_disabled=False, puntos=None):
+
+        if puntos is None:
+            puntos = Code.configuration.x_menu_points
+        bold = Code.configuration.x_menu_bold
+        Controles.Menu.__init__(
+            self,
+            parent,
+            titulo=titulo,
+            icono=icono,
+            is_disabled=is_disabled,
+            puntos=puntos,
+            bold=bold,
+        )
+
+    def opcion(
+        self,
+        key,
+        label,
+        icono=None,
+        is_disabled=False,
+        font_type=None,
+        is_checked=None,
+        tooltip=None,
+        shortcut=None,
+    ):
+        if icono is None:
+            icono = Iconos.Empty()
+
+        if is_checked is not None:
+            icono = Iconos.Checked() if is_checked else Iconos.Unchecked()
+
+        Controles.Menu.opcion(self, key, label, icono, is_disabled, font_type, None, tooltip, shortcut)
+
+    def separador_blank(self):
+        self.opcion(None, "")
+
+    def submenu(self, label, icono=None, is_disabled=False):
+        menu = LCMenu(self, label, icono, is_disabled)
+        menu.setFont(self.font())
+        self.addMenu(menu)
+        return menu
+
+
+class LCMenuRondo(LCMenu):
+    def __init__(self, parent, puntos=None):
+        LCMenu.__init__(self, parent, puntos)
+        self.rondo = rondo_puntos()
+
+    def opcion(
+        self,
+        key,
+        label,
+        icono=None,
+        is_disabled=False,
+        font_type=None,
+        is_checked=None,
+        tooltip="",
+        shortcut="",
+    ):
+        if icono is None:
+            icono = self.rondo.otro()
+        LCMenu.opcion(
+            self,
+            key,
+            label,
+            icono,
+            is_disabled,
+            font_type,
+            is_checked,
+            tooltip,
+            shortcut,
+        )
+
+
+class LCMenuPiezas(Controles.Menu):
+    def __init__(self, parent, titulo=None, icono=None, is_disabled=False, puntos=None, bold=True):
+        Controles.Menu.__init__(self, parent, titulo, icono, is_disabled, puntos, bold)
+        self.set_font_type("Chess Merida", 16)
+
+    def opcion(
+        self,
+        key,
+        label,
+        icono=None,
+        is_disabled=False,
+        tipo_letra=None,
+        is_checked=False,
+        tooltip="",
+        shortcut="",
+    ):
+        Controles.Menu.opcion(
+            self,
+            key,
+            label,
+            icono=icono,
+            is_disabled=is_disabled,
+            is_checked=is_checked,
+        )
+
+    def submenu(self, label, icono=None, is_disabled=False):
+        menu = LCMenuPiezas(self, label, icono, is_disabled)
+        self.addMenu(menu)
+        return menu
+
+
+class ImportarFichero(QtWidgets.QDialog):
+    def __init__(self, parent, titulo, si_erroneous, si_work_done, icono):
+        QtWidgets.QDialog.__init__(self, parent)
+        self.setWindowFlags(
+            QtCore.Qt.WindowType.WindowCloseButtonHint
+            | QtCore.Qt.WindowType.Dialog
+            | QtCore.Qt.WindowType.WindowTitleHint
+        )
+
+        self.setWindowTitle(titulo)
+        self.setWindowIcon(icono)
+        self.fontB = f = Controles.FontType(puntos=10, peso=75)
+
+        self.siErroneos = si_erroneous
+        self.siWorkDone = si_work_done
+
+        self._is_canceled = False
+
+        lb_rot_leidos = Controles.LB(self, f"{_('Games read')}:").set_font(f)
+        self.lbLeidos = Controles.LB(self, "0").set_font(f)
+
+        if si_erroneous:
+            lb_rot_erroneos = Controles.LB(self, f"{_('Erroneous')}:").set_font(f)
+            self.lbErroneos = Controles.LB(self, "0").set_font(f)
+        else:
+            lb_rot_erroneos = None
+
+        self.lbRotDuplicados = lbRotDuplicados = Controles.LB(self, f"{_('Duplicated')}:").set_font(f)
+        self.lbDuplicados = Controles.LB(self, "0").set_font(f)
+
+        self.lbRotImportados = lbRotImportados = Controles.LB(self, f"{_('Imported')}:").set_font(f)
+        self.lbImportados = Controles.LB(self, "0").set_font(f)
+
+        if self.siWorkDone:
+            lb_rot_work_done = Controles.LB(self, f"{_('Work done')}:").set_font(f)
+            self.lbWorkDone = Controles.LB(self, "0.00%").set_font(f)
+        else:
+            lb_rot_work_done = None
+
+        self.btCancelarSeguir = Controles.PB(self, _("Cancel"), self.cancelar, plano=False).set_icono(Iconos.Delete())
+
+        ly = Colocacion.G().margen(20)
+        ly.controld(lb_rot_leidos, 0, 0).controld(self.lbLeidos, 0, 1)
+        if si_erroneous:
+            ly.controld(lb_rot_erroneos, 1, 0).controld(self.lbErroneos, 1, 1)
+        ly.controld(lbRotDuplicados, 2, 0).controld(self.lbDuplicados, 2, 1)
+        ly.controld(lbRotImportados, 3, 0).controld(self.lbImportados, 3, 1)
+        if self.siWorkDone:
+            ly.controld(lb_rot_work_done, 4, 0).controld(self.lbWorkDone, 4, 1)
+
+        ly_bt = Colocacion.H().relleno().control(self.btCancelarSeguir)
+
+        layout = Colocacion.V()
+        layout.otro(ly)
+        layout.espacio(20)
+        layout.otro(ly_bt)
+
+        self.setLayout(layout)
+
+    @staticmethod
+    def refresh_gui():
+        QTUtils.refresh_gui()
+
+    def pon_titulo(self, titulo):
+        self.setWindowTitle(titulo)
+        self.refresh_gui()
+
+    def hide_duplicates(self):
+        self.lbRotDuplicados.hide()
+        self.lbDuplicados.hide()
+        self.refresh_gui()
+
+    def cancelar(self):
+        self._is_canceled = True
+        self.put_continue()
+
+    def is_canceled(self):
+        return self._is_canceled
+
+    def put_exported(self):
+        self.lbRotImportados.set_text(f"{_('Exported')}:")
+        self.refresh_gui()
+
+    def put_saving(self):
+        self.btCancelarSeguir.setDisabled(True)
+        self.btCancelarSeguir.set_text(_("Saving..."))
+        self.btCancelarSeguir.set_font(self.fontB)
+        self.btCancelarSeguir.set_icono(Iconos.Grabar())
+        self.refresh_gui()
+
+    def put_continue(self):
+        self.btCancelarSeguir.set_text(_("Continue"))
+        self.btCancelarSeguir.to_connect(self.continuar)
+        self.btCancelarSeguir.set_font(self.fontB)
+        self.btCancelarSeguir.setDisabled(False)
+        self.refresh_gui()
+
+    def continuar(self):
+        self.accept()
+
+    def actualiza(self, leidos, erroneos, duplicados, importados, workdone=0):
+        def pts(x):
+            return f"{x:,}".replace(",", ".")
+
+        self.lbLeidos.set_text(pts(leidos))
+        if self.siErroneos:
+            self.lbErroneos.set_text(pts(erroneos))
+        self.lbDuplicados.set_text(pts(duplicados))
+        self.lbImportados.set_text(pts(importados))
+        if self.siWorkDone:
+            self.lbWorkDone.set_text(f"{int(workdone)}%")
+        self.refresh_gui()
+        return not self._is_canceled
+
+
+class ImportarFicheroPGN(ImportarFichero):
+    def __init__(self, parent):
+        ImportarFichero.__init__(self, parent, _("A PGN file"), True, True, Iconos.PGN())
+
+
+class ImportarFicheroFNS(ImportarFichero):
+    def __init__(self, parent):
+        ImportarFichero.__init__(self, parent, _("FNS file"), True, False, Iconos.Fichero())
+
+
+class ImportarFicheroDB(ImportarFichero):
+    def __init__(self, parent):
+        ImportarFichero.__init__(self, parent, _("Database file"), False, True, Iconos.Databases())
+
+    def actualiza(self, leidos, erroneos, duplicados, importados, workdone=0):
+        return ImportarFichero.actualiza(self, leidos, 0, duplicados, importados, workdone)
+
+
+class MensajeFics(QtWidgets.QDialog):
+    def __init__(self, parent, mens):
+        QtWidgets.QDialog.__init__(self, parent)
+
+        self.setWindowTitle(_("Fics-Elo"))
+        self.setWindowFlags(
+            QtCore.Qt.WindowType.WindowCloseButtonHint
+            | QtCore.Qt.WindowType.Dialog
+            | QtCore.Qt.WindowType.WindowTitleHint
+        )
+        self.setWindowIcon(Iconos.Fics())
+        self.setStyleSheet("QDialog, QLabel { background: #E3F1F9 }")
+
+        lbm = Controles.LB(self, f"<big><b>{mens}</b></big>")
+        self.bt = Controles.PB(self, _("One moment please..."), rutina=self.final, plano=True)
+        self.bt.setDisabled(True)
+        self.siFinalizado = False
+
+        ly = Colocacion.G().control(lbm, 0, 0).controlc(self.bt, 1, 0)
+
+        ly.margen(20)
+
+        self.setLayout(ly)
+
+    def continua(self):
+        self.bt.set_text(_("Continue"))
+        self.bt.set_flat(False)
+        self.bt.setDisabled(False)
+        self.mostrar()
+
+    # def colocaCentrado(self, owner):
+    #     self.move(
+    #         owner.x() + owner.width() // 2 - self.width() // 2,
+    #         owner.y() + owner.height() // 2 - self.height() // 2,
+    #     )
+    #     QTUtils.refresh_gui()
+    #     self.show()
+    #     QTUtils.refresh_gui()
+    #     return self
+
+    def mostrar(self):
+        QTUtils.refresh_gui()
+        self.exec()
+        QTUtils.refresh_gui()
+
+    def final(self):
+        if not self.siFinalizado:
+            self.accept()
+        self.siFinalizado = True
+        QTUtils.refresh_gui()
+
+
+class MensajeFide(QtWidgets.QDialog):
+    def __init__(self, parent, mens):
+        QtWidgets.QDialog.__init__(self, parent)
+
+        self.setWindowTitle(_("Fide-Elo"))
+        self.setWindowFlags(
+            QtCore.Qt.WindowType.WindowCloseButtonHint
+            | QtCore.Qt.WindowType.Dialog
+            | QtCore.Qt.WindowType.WindowTitleHint
+        )
+        self.setWindowIcon(Iconos.Fide())
+        self.setStyleSheet("QDialog, QLabel { background: #E9E9E9 }")
+
+        lbm = Controles.LB(self, f"<big><b>{mens}</b></big>")
+        self.bt = Controles.PB(self, _("One moment please..."), rutina=self.final, plano=True)
+        self.bt.setDisabled(True)
+        self.siFinalizado = False
+
+        ly = Colocacion.G().control(lbm, 0, 0).controlc(self.bt, 1, 0)
+
+        ly.margen(20)
+
+        self.setLayout(ly)
+
+    def continua(self):
+        self.bt.set_text(_("Continue"))
+        self.bt.set_flat(False)
+        self.bt.setDisabled(False)
+        self.mostrar()
+
+    # def colocaCentrado(self, owner):
+    #     self.move(
+    #         owner.x() + owner.width() / 2 - self.width() / 2,
+    #         owner.y() + owner.height() / 2 - self.height() / 2,
+    #     )
+    #     QTUtils.refresh_gui()
+    #     self.show()
+    #     QTUtils.refresh_gui()
+    #     return self
+
+    def mostrar(self):
+        QTUtils.refresh_gui()
+        self.exec()
+        QTUtils.refresh_gui()
+
+    def final(self):
+        if not self.siFinalizado:
+            self.accept()
+        self.siFinalizado = True
+        QTUtils.refresh_gui()
+
+
+def list_irina():
+    return (
+        ("Monkey", _("Monkey"), Iconos.Monkey(), 100),
+        ("Donkey", _("Donkey"), Iconos.Donkey(), 169),
+        ("Bull", _("Bull"), Iconos.Bull(), 171),
+        ("Wolf", _("Wolf"), Iconos.Wolf(), 221),
+        ("Lion", _("Lion"), Iconos.Lion(), 383),
+        ("Rat", _("Rat"), Iconos.Rat(), 488),
+        ("Deer", _("Deer"), Iconos.Deer(), 489),
+        ("Snake", _("Snake"), Iconos.Snake(), 503),
+        ("Bear", _("Bear"), Iconos.Bear(), 556),
+        ("Crocodile", _("Crocodile"), Iconos.Crocodile(), 691),
+        ("Hippo", _("Hippo"), Iconos.Hippo(), 854),
+        ("Horse", _("Horse"), Iconos.Horse(), 914),
+        ("Panda", _("Panda"), Iconos.Panda(), 950),
+        ("Rhino", _("Rhino"), Iconos.Rhino(), 959),
+        ("Shark", _("Shark"), Iconos.Shark(), 1063),
+        ("Bulldog", _("Bulldog"), Iconos.Bulldog(), 1131),
+        ("Knight", _("Knight || Medieval knight"), Iconos.KnightMan(), 1200),
+        ("Eagle", _("Eagle"), Iconos.Eagle(), 1298),
+        ("Steven", _("Steven"), Iconos.Steven(), 1400),
+        ("Tiger", _("Tiger"), Iconos.Tiger(), 1480),
+        ("Elephant", _("Elephant"), Iconos.Elephant(), 1490),
+    )
+
+
+class ElemDB:
+    def __init__(self, path, is_folder):
+        self.is_folder = is_folder
+        self.path = path
+
+        self.is_autosave = Util.same_path(Code.configuration.paths.file_autosave(), self.path)
+
+        self.name = os.path.basename(path)
+        if self.is_autosave:
+            self.name = f"{_('Autosave')}: {self.name}"
+        if is_folder:
+            self.li_elems = self.read(path)
+        else:
+            self.name = self.name[: self.name.rindex(".")]
+
+    @staticmethod
+    def read(folder):
+        li = []
+        try:
+            for f in os.listdir(folder):
+                path = Util.opj(folder, f)
+                if os.path.isdir(path):
+                    li.append(ElemDB(path, True))
+                elif f.endswith(".lcdb") or f.endswith(".lcdblink"):
+                    li.append(ElemDB(path, False))
+        except PermissionError:
+            pass
+        return li
+
+    def remove(self, path):
+        for n, elem in enumerate(self.li_elems):
+            if elem.is_folder:
+                elem.remove(path)
+            elif Util.same_path(path, elem.path):
+                del self.li_elems[n]
+                return
+
+    def is_empty(self):
+        for n, elem in enumerate(self.li_elems):
+            if elem.is_folder:
+                if not elem.is_empty():
+                    return False
+            else:
+                return False
+        return True
+
+    def remove_empties(self):
+        li = []
+        for n, elem in enumerate(self.li_elems):
+            if elem.is_folder:
+                elem.remove_empties()
+                if elem.is_empty():
+                    li.append(n)
+        if len(li) > 0:
+            li.sort(reverse=True)
+            for n in li:
+                del self.li_elems[n]
+
+    def add_submenu(self, submenu, indicador_previo=None):
+        self.li_elems.sort(key=lambda x: ("Z" if x.is_autosave else "A") + x.name.lower())
+        previo = "" if indicador_previo is None else indicador_previo
+        for elem in self.li_elems:
+            if elem.is_folder:
+                subsubmenu = submenu.submenu(elem.name, Iconos.Carpeta())
+                elem.add_submenu(subsubmenu, indicador_previo)
+        for elem in self.li_elems:
+            if not elem.is_folder:
+                submenu.opcion(previo + elem.path, elem.name, Iconos.Database())
+
+
+def lista_db(configuration, all_elements, remove_autosave=False):
+    lista = ElemDB(configuration.paths.folder_databases(), True)
+    if not all_elements:
+        lista.remove(configuration.get_last_database())
+    if remove_autosave:
+        lista.remove(configuration.paths.file_autosave())
+    lista.remove_empties()
+    return lista
+
+
+def select_db(owner, configuration, all_elements, is_new, remove_autosave=False):
+    lista = lista_db(configuration, all_elements, remove_autosave=remove_autosave)
+    if lista.is_empty() and not is_new:
+        return None
+
+    menu = LCMenu(owner)
+    if lista:
+        lista.add_submenu(menu)
+    if is_new:
+        menu.separador()
+        menu.opcion(":n", _("Create new"), Iconos.DatabaseMas())
+    return menu.lanza()
+
+
+def menu_db(
+    submenu,
+    configuration,
+    all_elements,
+    indicador_previo=None,
+    remove_autosave=False,
+    is_new=False,
+):
+    lista = lista_db(configuration, all_elements, remove_autosave=remove_autosave)
+    if lista.is_empty() and not is_new:
+        return
+
+    lista.add_submenu(submenu, indicador_previo=indicador_previo)
+    if is_new:
+        submenu.separador()
+        indicador = ":n"
+        if indicador_previo:
+            indicador = indicador_previo + indicador
+        submenu.opcion(indicador, _("Create new"), Iconos.DatabaseMas())
+
+
+class ReadAnnotation(QtWidgets.QDialog):
+    def __init__(self, parent, objetivo):
+        QtWidgets.QDialog.__init__(self, parent)
+        self.setWindowFlags(
+            QtCore.Qt.WindowType.WindowCloseButtonHint
+            | QtCore.Qt.WindowType.Dialog
+            | QtCore.Qt.WindowType.FramelessWindowHint
+        )
+        self.setModal(True)
+
+        self.edAnotacion = (
+            Controles.ED(self, "").set_font_type(puntos=Code.configuration.x_menu_points).relative_width(70)
+        )
+        bt_aceptar = Controles.PB(self, "", rutina=self.aceptar).set_icono(Iconos.Aceptar(), 32)
+        bt_cancelar = Controles.PB(self, "", rutina=self.cancelar).set_icono(Iconos.MainMenu(), 32)
+        bt_ayuda = Controles.PB(self, "", rutina=self.get_help).set_icono(Iconos.AyudaGR(), 32)
+
+        self.objetivo = objetivo
+        self.conAyuda = False
+        self.errores = 0
+        self.resultado = None
+
+        layout = (
+            Colocacion.H()
+            .relleno(1)
+            .control(bt_ayuda)
+            .control(self.edAnotacion)
+            .control(bt_aceptar)
+            .control(bt_cancelar)
+            .margen(3)
+        )
+        self.setLayout(layout)
+        self.show()
+        self.move(
+            parent.x() + parent.board.width() - self.edAnotacion.width() - bt_aceptar.width() * 3 - 20,
+            parent.y() + parent.board.y() - self.edAnotacion.height() + 8,
+        )
+
+    def aceptar(self):
+        txt = self.edAnotacion.texto()
+        txt = txt.strip().replace(" ", "").upper()
+
+        if txt:
+            if txt == self.objetivo.upper():
+                self.resultado = self.conAyuda, self.errores
+                self.accept()
+            else:
+                self.errores += 1
+                self.edAnotacion.setStyleSheet("QWidget { color: red }")
+
+    def cancelar(self):
+        self.reject()
+
+    def get_help(self):
+        self.conAyuda = True
+        self.edAnotacion.set_text(self.objetivo)
+        self.edAnotacion.setFocus()
+
+
+class LCTB(Controles.TBrutina):
+    def __init__(
+        self,
+        parent,
+        li_acciones=None,
+        with_text=True,
+        icon_size=None,
+        puntos=None,
+        background=None,
+        style=None,
+    ):
+        configuration = Code.configuration
+        if style is None:
+            if with_text:
+                style = configuration.type_icons()
+            else:
+                style = QtCore.Qt.ToolButtonStyle.ToolButtonIconOnly
+        Controles.TBrutina.__init__(
+            self,
+            parent,
+            li_acciones=li_acciones,
+            with_text=with_text,
+            icon_size=icon_size,
+            puntos=configuration.x_tb_fontpoints if puntos is None else puntos,
+            background=background,
+            style=style,
+        )
+
+
+def change_interval(owner, configuration):
+    form = FormLayout.FormLayout(owner, _("Replay game"), Iconos.Pelicula_Repetir(), minimum_width=250)
+    form.separador()
+    form.seconds(
+        _("Number of seconds between moves"),
+        init_value=configuration.x_interval_replay / 1000,
+    )
+    form.separador()
+    form.checkbox(_("Beep after each move"), configuration.x_beep_replay)
+    form.separador()
+    resultado = form.run()
+    if resultado is None:
+        return
+    accion, li_resp = resultado
+    v_time, beep = li_resp
+    if v_time > 0.01:
+        configuration.x_interval_replay = int(v_time * 1000)
+        configuration.x_beep_replay = beep
+        configuration.graba()
+
+
+def accept_cancel_with_shortcut():
+    accept = _("Accept")
+    letter = accept[0].upper()
+    accept = f"&{accept}"
+    cancel = _("Cancel")
+    if cancel[0] != letter:
+        cancel = f"&{cancel}"
+    else:
+        cancel = f"{cancel[0]}&{cancel[1:]}"
+    return accept, cancel
+
+
+def tb_accept_cancel(parent, if_default=False, with_cancel=True):
+    accept, cancel = accept_cancel_with_shortcut()
+    li_acciones = [
+        (accept, Iconos.Aceptar(), parent.aceptar),
+        None,
+        (cancel, Iconos.Cancelar(), parent.reject if with_cancel else parent.cancelar),
+    ]
+    if if_default:
+        li_acciones.append(None)
+        li_acciones.append((_("By default"), Iconos.Defecto(), parent.defecto))
+    li_acciones.append(None)
+
+    return LCTB(parent, li_acciones)
+
+
+class WInfo(QtWidgets.QDialog):
+    def __init__(self, wparent, titulo, head, txt, min_tam, pm_icon):
+        super(WInfo, self).__init__(wparent)
+
+        self.setWindowTitle(titulo)
+        self.setWindowIcon(Iconos.Aplicacion64())
+        self.setWindowFlags(
+            QtCore.Qt.WindowType.WindowCloseButtonHint
+            | QtCore.Qt.WindowType.Dialog
+            | QtCore.Qt.WindowType.WindowTitleHint
+        )
+
+        f = Controles.FontType(puntos=20)
+
+        lb_ico = Controles.LB(self).put_image(pm_icon)
+        lb_titulo = Controles.LB(self, head).align_center().set_font(f)
+        lb_texto = Controles.LB(self, txt)
+        lb_texto.setMinimumWidth(min_tam - 84)
+        lb_texto.setWordWrap(True)
+        lb_texto.setTextFormat(QtCore.Qt.TextFormat.RichText)
+        bt_seguir = Controles.PB(self, _("Continue"), self.seguir).set_flat(False)
+
+        ly_v1 = Colocacion.V().control(lb_ico).relleno()
+        ly_v2 = Colocacion.V().control(lb_titulo).control(lb_texto).espacio(10).control(bt_seguir)
+        ly_h = Colocacion.H().otro(ly_v1).otro(ly_v2).margen(10)
+
+        self.setLayout(ly_h)
+
+    def seguir(self):
+        self.close()
+
+
+def info(
+    parent: QtWidgets.QWidget,
+    titulo: str,
+    head: str,
+    txt: str,
+    min_tam: int,
+    pm_icon: QtGui.QPixmap,
+):
+    w = WInfo(parent, titulo, head, txt, min_tam, pm_icon)
+    w.exec()
+
+
+def combine_pixmaps(pixmap1, pixmap2):
+    # Crear un QPixmap del tamaño total de los dos QPixmap
+    result = QtGui.QPixmap(pixmap1.width() + pixmap2.width(), max(pixmap1.height(), pixmap2.height()))
+
+    # Crear un QPainter asociado con el QPixmap resultante
+    painter = QtGui.QPainter(result)
+
+    # Dibujar los dos QPixmap en el QPixmap resultante
+    painter.drawPixmap(0, 0, pixmap1)
+    painter.drawPixmap(pixmap1.width(), 0, pixmap2)
+
+    # Asegurarse de que todas las operaciones de dibujo estén completas antes de deshacerse del QPainter
+    painter.end()
+
+    return result
+
+
+def get_result_game(owner):
+    menu = LCMenu(owner)
+    menu.opcion(RESULT_DRAW, RESULT_DRAW, Iconos.Tablas())
+    menu.separador()
+    menu.opcion(RESULT_WIN_WHITE, RESULT_WIN_WHITE, Iconos.Blancas())
+    menu.separador()
+    menu.opcion(RESULT_WIN_BLACK, RESULT_WIN_BLACK, Iconos.Negras())
+    return menu.lanza()
+
+
+def launch_workers(wowner):
+    cores = Util.cpu_count()
+    if cores < 2:
+        resp = 1
+
+    else:
+        rondo = rondo_puntos()
+
+        menu = LCMenu(wowner)
+        for x in range(1, cores + 1):
+            menu.opcion(x, str(x), rondo.otro())
+
+        resp = menu.lanza()
+
+    return resp
+
+
+def fen_is_in_clipboard(window):
+    QTMessages.temporary_message(window, _("FEN is in clipboard"), 1.2)
+
+
+def select_color(qcolor_ini):
+    dialog = QtWidgets.QColorDialog(qcolor_ini)
+    dialog.setWindowTitle(_("Choose a color"))
+    dialog.setWindowIcon(Iconos.Colores())
+    dialog.setOption(QtWidgets.QColorDialog.ColorDialogOption.ShowAlphaChannel, False)
+    dialog.setOption(QtWidgets.QColorDialog.ColorDialogOption.DontUseNativeDialog, True)
+    if dialog.exec():
+        return dialog.selectedColor()
+    return None

@@ -1,0 +1,83 @@
+from Code.Tournaments import Tournament
+
+
+class TournamentWork:
+    def __init__(self, file_tournament):
+        self.file_tournament = file_tournament
+        with self.tournament() as torneo:
+            self.run_name = torneo.name()
+            self.run_drawRange = torneo.draw_range()
+            self.run_drawMinPly = torneo.draw_min_ply()
+            self.run_resign = torneo.resign()
+            self.run_bookDepth = torneo.book_depth()
+
+    def name(self):
+        return self.run_name
+
+    def draw_range(self):
+        return self.run_drawRange
+
+    def draw_min_ply(self):
+        return self.run_drawMinPly
+
+    def resign(self):
+        return self.run_resign
+
+    def book_depth(self):
+        return self.run_bookDepth
+
+    def tournament(self):
+        return Tournament.Tournament(self.file_tournament)
+
+    def fen_norman(self):
+        with self.tournament() as torneo:
+            return torneo.fen_norman()
+
+    def slow_pieces(self):
+        with self.tournament() as torneo:
+            return torneo.slow_pieces()
+
+    def adjudicator_active(self):
+        with self.tournament() as torneo:
+            return torneo.adjudicator_active()
+
+    def move_evaluator(self):
+        with self.tournament() as torneo:
+            return torneo.move_evaluator()
+
+    def adjudicator_time(self):
+        with self.tournament() as torneo:
+            return torneo.adjudicator_time()
+
+    def search_hengine(self, h):
+        with self.tournament() as torneo:
+            return torneo.search_hengine(h)
+
+    def book(self):
+        with self.tournament() as torneo:
+            return torneo.book()
+
+    def game_done(self, game):
+        with self.tournament() as torneo:
+            return torneo.game_done(game)
+
+    def close(self):
+        pass
+
+    def get_engines(self, tgame: Tournament.GameTournament):
+        with self.tournament() as torneo:
+            engine_white = torneo.search_hengine(tgame.hwhite)
+            engine_white.name = engine_white.key
+            engine_white.max_depth = engine_white.depth
+            engine_white.max_time = engine_white.time
+            engine_white.max_nodes = engine_white.nodes
+            engine_black = torneo.search_hengine(tgame.hblack)
+            engine_black.name = engine_black.key
+            engine_black.max_depth = engine_black.depth
+            engine_black.max_time = engine_black.time
+            engine_black.max_nodes = engine_black.nodes
+            return engine_white, engine_black
+
+    def get_dic_queues(self):
+        with self.tournament() as torneo:
+            return torneo.get_dic_games_queued()

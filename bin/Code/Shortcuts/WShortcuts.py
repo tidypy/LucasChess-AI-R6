@@ -1,0 +1,168 @@
+from PySide6 import QtWidgets
+from Code.QT import Colocacion, Columnas, Controles, Delegados, Grid, Iconos, LCDialog, QTDialogs, QTMessages
+
+
+class WShortcuts(LCDialog.LCDialog):
+    def __init__(self, shortcuts):
+
+        LCDialog.LCDialog.__init__(self, shortcuts.wparent, _("Shortcuts"), Iconos.Atajos(), "shortcuts2")
+
+        self.shortcuts = shortcuts
+
+        tb = QTDialogs.LCTB(self)
+        tb.new(_("Close"), Iconos.MainMenu(), self.finalize)
+        tb.new(_("Play"), Iconos.Libre(), self.play_menu, sep=False)
+        tb.new(_("Train"), Iconos.Entrenamiento(), self.train_menu, sep=False)
+        tb.new(_("Compete"), Iconos.NuevaPartida(), self.compete_menu, sep=False)
+        tb.new(_("Tools"), Iconos.Tools(), self.tools_menu, sep=False)
+        tb.new(_("Engines"), Iconos.Engines(), self.engines_menu, sep=False)
+        tb.new(_("Options"), Iconos.Options(), self.options_menu, sep=False)
+        tb.new(_("Information"), Iconos.Informacion(), self.information_menu)
+        tb.new(_("Remove"), Iconos.Borrar(), self.remove)
+        tb.new(_("Up"), Iconos.Arriba(), self.go_up, sep=False)
+        tb.new(_("Down"), Iconos.Abajo(), self.go_down)
+
+        # Lista
+        o_columnas = Columnas.ListaColumnas()
+        o_columnas.nueva("KEY", _("Key"), 70, align_center=True)
+        o_columnas.nueva("MENU", _("Menu"), 90, align_center=True)
+        o_columnas.nueva("OPTION", _("Option"), 300)
+        o_columnas.nueva(
+            "LABEL",
+            _("Label"),
+            300,
+            edicion=Delegados.LineaTextoUTF8(is_password=False),
+            is_editable=True,
+        )
+
+        self.grid = Grid.GridDragDrop(self, o_columnas, complete_row_select=True, is_editable=True)
+        self.grid.fix_min_width()
+        f = Controles.FontType(puntos=10, peso=75)
+        self.grid.set_font(f)
+
+        # Status bar
+        self.status = QtWidgets.QStatusBar(self)
+        self.status.setFixedHeight(Controles.calc_fixed_width(22))
+        self.status.showMessage(_("Right-click on the LABEL field to edit it"))
+
+        layout = Colocacion.V().control(tb).control(self.grid).control(self.status).margen(3)
+        self.setLayout(layout)
+
+        self.restore_video(with_tam=True)
+
+        self.grid.gotop()
+
+    def finalize(self):
+        self.save_video()
+        self.accept()
+
+    def select_option(self, key_menu):
+        menu_gen = self.shortcuts.get_txtmenu(key_menu)
+        resp = menu_gen.launch()
+        if resp is not None:
+            label = menu_gen.locate_key(resp).label
+            self.shortcuts.add_shortcut(key_menu, resp, label)
+            self.save()
+            self.grid.refresh()
+
+    def play_menu(self):
+        self.select_option("play")
+
+    def train_menu(self):
+        self.select_option("train")
+
+    def compete_menu(self):
+        self.select_option("compete")
+
+    def tools_menu(self):
+        self.select_option("tools")
+
+    def engines_menu(self):
+        self.select_option("engines")
+
+    def options_menu(self):
+        self.select_option("options")
+
+    def information_menu(self):
+        self.select_option("information")
+
+    def grid_num_datos(self, _grid):
+        return len(self.shortcuts.li_shortcuts)
+
+    def grid_dato(self, _grid, row, obj_column):
+        column = obj_column.key
+        if column == "KEY":
+            return "%s %d" % (_("ALT"), row + 1) if row < 9 else ""
+        return self.shortcuts.get_grid_column(row, column)
+
+    def grid_setvalue(self, _grid, row, _obj_column, valor):
+        valor = valor.strip()
+        if valor:
+            shortcut = self.shortcuts.li_shortcuts[row]
+            shortcut.set_label(valor)
+            self.save()
+
+    def grid_doble_click(self, _grid, row, _obj_column):
+        if row >= 0:
+            shortcut = self.shortcuts.li_shortcuts[row]
+            self.finalize()
+            self.shortcuts.launch_shortcut(shortcut)
+
+    def grid_right_button(self, _grid, row, _obj_column, _modif):
+        if row >= 0:
+            shortcut = self.shortcuts.li_shortcuts[row]
+            option = shortcut.get_label()
+            option = QTMessages.read_simple(self, _("Shortcuts"), _("Option"), option)
+            if option:
+                shortcut.set_label(option)
+                self.grid.refresh()
+
+    def save(self):
+        self.shortcuts.save()
+        self.grid.refresh()
+
+    def remove(self):
+        row = self.grid.recno()
+        if row >= 0:
+            self.shortcuts.remove(row)
+            self.save()
+
+    def _update_move(self, target):
+        self.grid.goto(target, 0)
+        self.save()
+
+    def go_up(self):
+        row = self.grid.recno()
+        if row >= 1:
+            li_shortcuts = self.shortcuts.li_shortcuts
+            li_shortcuts[row], li_shortcuts[row - 1] = li_shortcuts[row - 1], li_shortcuts[row]
+            self._update_move(row - 1)
+
+    def go_down(self):
+        row = self.grid.recno()
+        if row < len(self.shortcuts.li_shortcuts) - 1:
+            li_shortcuts = self.shortcuts.li_shortcuts
+            li_shortcuts[row], li_shortcuts[row + 1] = li_shortcuts[row + 1], li_shortcuts[row]
+            self._update_move(row + 1)
+
+    def grid_mover_filas(self, _grid, li_rows, target_row):
+        lic = self.shortcuts.li_shortcuts
+
+        # 1. Obtener los objetos/datos que se van a mover
+        items_a_mover = [lic[i] for i in li_rows]
+
+        # 2. Borrar las filas originales (en orden inverso para no alterar los índices)
+        for i in sorted(li_rows, reverse=True):
+            del lic[i]
+
+        # 3. Ajustar el índice de destino si se han borrado elementos antes de él
+        borrados_antes = sum(1 for i in li_rows if i < target_row)
+        target_row -= borrados_antes
+
+        # 4. Insertar los elementos en la nueva posición
+        for item in reversed(items_a_mover):
+            lic.insert(target_row, item)
+
+        self._update_move(target_row)
+
+        return True

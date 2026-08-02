@@ -1,0 +1,2750 @@
+Version R 6.0.4
+2026-07-30 11:37:14.128425
+Traceback (most recent call last):
+  File "LucasR.py", line 18, in <module>
+    Code.Main.Init.init()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "Code\Main\Init.py", line 23, in init
+    resp = LucasChessGui.run_gui(main_procesador)
+  File "Code\Main\LucasChessGui.py", line 101, in run_gui
+    procesador.iniciar_gui()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "Code\Procesador.py", line 188, in iniciar_gui
+    self.main_window = MainWindow.MainWindow(self)
+                       ~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "Code\Main\MainWindow.py", line 29, in __init__
+    self.base = WBase.WBase(self, manager)
+                ~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "Code\Main\WBase.py", line 104, in __init__
+    self.create_toolbar()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "Code\Main\WBase.py", line 151, in create_toolbar
+    dic_opciones = self.dic_opciones_tb()
+  File "Code\Main\WBase.py", line 248, in dic_opciones_tb
+    TB_TUTOR_STOP: (_("Stop"), Iconos.StopTraining()),
+    ^^^^^^^^^^^^^
+NameError: name 'TB_TUTOR_STOP' is not defined
+2026-07-30 11:37:30.408638
+Traceback (most recent call last):
+  File "LucasR.py", line 18, in <module>
+    Code.Main.Init.init()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "Code\Main\Init.py", line 23, in init
+    resp = LucasChessGui.run_gui(main_procesador)
+  File "Code\Main\LucasChessGui.py", line 101, in run_gui
+    procesador.iniciar_gui()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "Code\Procesador.py", line 188, in iniciar_gui
+    self.main_window = MainWindow.MainWindow(self)
+                       ~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "Code\Main\MainWindow.py", line 29, in __init__
+    self.base = WBase.WBase(self, manager)
+                ~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "Code\Main\WBase.py", line 104, in __init__
+    self.create_toolbar()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "Code\Main\WBase.py", line 151, in create_toolbar
+    dic_opciones = self.dic_opciones_tb()
+  File "Code\Main\WBase.py", line 248, in dic_opciones_tb
+    TB_TUTOR_STOP: (_("Stop"), Iconos.StopTraining()),
+    ^^^^^^^^^^^^^
+NameError: name 'TB_TUTOR_STOP' is not defined
+2026-07-30 11:51:14.662555
+Traceback (most recent call last):
+  File "Code\Main\WBase.py", line 457, in run_action
+    self.manager.run_action(self.sender().key)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "Code\Procesador.py", line 473, in run_action
+    self.launch_ai_assistant()
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "Code\Procesador.py", line 483, in launch_ai_assistant
+    w = WindowAISetup.WindowAISetup(self.main_window)
+  File "Code\AI\WindowAISetup.py", line 34, in __init__
+    self.init_ui()
+    ~~~~~~~~~~~~^^
+  File "Code\AI\WindowAISetup.py", line 46, in init_ui
+    gb_lm = Controles.GB(self, _("Tile 1: Local LLM (LM Studio)"))
+TypeError: GB.__init__() missing 1 required positional argument: 'layout'
+2026-07-30 12:01:50.046388
+Traceback (most recent call last):
+  File "Code\Main\WBase.py", line 457, in run_action
+    self.manager.run_action(self.sender().key)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "Code\PlayAgainstEngine\ManagerPlayAgainstEngine.py", line 679, in run_action
+    resp = self.utilities(li_mas_opciones)
+  File "Code\ManagerBase\Manager.py", line 1191, in utilities
+    return self.manager_menu_utilities.launch(li_extra_options, with_tree)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "Code\ManagerBase\ManagerMenuUtilities.py", line 185, in launch
+    self.manager.analizar()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "Code\ManagerBase\Manager.py", line 917, in analizar
+    self.manager_analysis.analizar()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "Code\ManagerBase\ManagerAnalysis.py", line 141, in analizar
+    AnalysisGameLaunch.analysis_game(self.manager)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "Code\Analysis\AnalysisGame\AnalysisGameLaunch.py", line 83, in analysis_game
+    not_canceled = not manager_main_window_base.is_canceled()
+                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "Code\Main\WBase.py", line 916, in is_canceled
+    return self.wmessage.is_canceled()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "Code\Main\WBase.py", line 956, in is_canceled
+    QTUtils.refresh_gui()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "Code\QT\QTUtils.py", line 12, in refresh_gui
+    QtWidgets.QApplication.processEvents()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+  File "Code\QT\Grid.py", line 125, in data
+    return self.w_parent.grid_dato(self.grid, index.row(), column)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "Code\Main\WBase.py", line 619, in grid_dato
+    rm = mrm.li_rm[pos]
+         ~~~~~~~~~^^^^^
+IndexError: Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): list index out of range
+2026-07-30 12:01:50.212350
+Traceback (most recent call last):
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+  File "Code\QT\Grid.py", line 125, in data
+    return self.w_parent.grid_dato(self.grid, index.row(), column)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "Code\Main\WBase.py", line 619, in grid_dato
+    rm = mrm.li_rm[pos]
+         ~~~~~~~~~^^^^^
+IndexError: list index out of range
+2026-07-30 12:01:56.722462
+Traceback (most recent call last):
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+  File "Code\QT\Grid.py", line 125, in data
+    return self.w_parent.grid_dato(self.grid, index.row(), column)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "Code\Main\WBase.py", line 619, in grid_dato
+    rm = mrm.li_rm[pos]
+         ~~~~~~~~~^^^^^
+IndexError: list index out of range
+2026-07-30 12:03:32.374545
+Traceback (most recent call last):
+  File "Code\Main\MainWindow.py", line 111, in closeEvent
+    self.manager.run_action(elem_tb)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "Code\PlayAgainstEngine\ManagerPlayAgainstEngine.py", line 694, in run_action
+    self.routine_default(key)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "Code\ManagerBase\Manager.py", line 961, in routine_default
+    self.close()
+    ~~~~~~~~~~^^
+  File "Code\ManagerBase\Manager.py", line 171, in close
+    self.procesador.reset()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "Code\Procesador.py", line 249, in reset
+    self.main_window.active_information_pgn(False)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "Code\Main\MainWindow.py", line 409, in active_information_pgn
+    self._adjust_tamh()
+    ~~~~~~~~~~~~~~~~~^^
+  File "Code\Main\MainWindow.py", line 300, in _adjust_tamh
+    self.refresh()
+    ~~~~~~~~~~~~^^
+  File "Code\Main\MainWindow.py", line 380, in refresh
+    QTUtils.refresh_gui()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "Code\QT\QTUtils.py", line 12, in refresh_gui
+    QtWidgets.QApplication.processEvents()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 96, in data
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  [Previous line repeated 4 more times]
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+           ~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Grid.py", line 141, in flags
+    if not index.isValid():
+           ~~~~~~~~~~~~~^^
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+  File "Code\QT\Grid.py", line 125, in data
+    return self.w_parent.grid_dato(self.grid, index.row(), column)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "Code\Main\WBase.py", line 619, in grid_dato
+    rm = mrm.li_rm[pos]
+         ~~~~~~~~~^^^^^
+IndexError: Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::data(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QAbstractTableModel::flags(): Error calling Python override of QStyledItemDelegate::paint(): list index out of range
+2026-07-30 12:03:33.978948
+Traceback (most recent call last):
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+  File "Code\QT\Grid.py", line 125, in data
+    return self.w_parent.grid_dato(self.grid, index.row(), column)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "Code\Main\WBase.py", line 619, in grid_dato
+    rm = mrm.li_rm[pos]
+         ~~~~~~~~~^^^^^
+IndexError: list index out of range
+2026-07-30 12:03:35.269295
+Traceback (most recent call last):
+  File "Code\QT\Delegados.py", line 135, in paint
+    data = index.model().data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+  File "Code\QT\Grid.py", line 125, in data
+    return self.w_parent.grid_dato(self.grid, index.row(), column)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "Code\Main\WBase.py", line 619, in grid_dato
+    rm = mrm.li_rm[pos]
+         ~~~~~~~~~^^^^^
+IndexError: list index out of range
+2026-07-30 12:50:30.495438
+Traceback (most recent call last):
+  File "Code\AI\WindowAISetup.py", line 192, in run_self_test
+    QTMessages.message_info(
+    ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'Code.QT.QTMessages' has no attribute 'message_info'. Did you mean: 'message_bold'?
+2026-07-30 12:57:09.296176
+Traceback (most recent call last):
+  File "Code\AI\WindowAISetup.py", line 177, in open_archive_folder
+    if os.path.exists(path):
+       ~~~~~~~~~~~~~~^^^^^^
+TypeError: _path_exists: path should be string, bytes, os.PathLike or integer, not NoneType
+2026-07-30 13:02:23.134006
+Traceback (most recent call last):
+  File "Code\QT\QTMessages.py", line 216, in test
+    self.final()
+    ~~~~~~~~~~^^
+  File "Code\QT\QTMessages.py", line 198, in final
+    self.close()
+    ~~~~~~~~~~^^
+RuntimeError: libshiboken: Internal C++ object (WaitingMessage) already deleted.

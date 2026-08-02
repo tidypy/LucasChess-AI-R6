@@ -1,0 +1,836 @@
+import collections
+import string
+
+import FasterCode
+
+import Code
+import contextlib
+import itertools
+from Code.Base.Constantes import (
+    BLACK,
+    FEN_INITIAL,
+    INFINITE,
+    PZ_VALUES,
+    WHITE,
+    OPENING,
+    MIDDLEGAME,
+    ENDGAME,
+    NOTATION_LONGALGEBRAIC,
+    NOTATION_ALGEBRAIC,
+)
+from Code.Translations import TrListas
+
+
+class Position:
+    """
+    Represent a chess position including board pieces, side to move,
+    castling rights, en passant square and move counters.
+    """
+
+    __slots__ = (
+        "li_extras",
+        "squares",
+        "castles",
+        "en_passant",
+        "is_white",
+        "num_moves",
+        "mov_pawn_capt",
+    )
+
+    def __init__(self):
+        self.li_extras = []
+        self.squares = {}
+        self.castles = ""
+        self.en_passant = ""
+        self.is_white = True
+        self.num_moves = 0
+        self.mov_pawn_capt = 0
+
+    def set_pos_initial(self):
+        """
+        Initialize the position to the standard starting position.
+        """
+        return self.read_fen(FEN_INITIAL)
+
+    def is_initial(self) -> bool:
+        """
+        Return True if the position is the standard starting position.
+        """
+        return self.fen() == FEN_INITIAL
+
+    def logo(self):
+        """
+        Set the position to a fixed demo layout used for logos or testing.
+        """
+        self.read_fen("8/4Q1K1/1r2BPN1/1n2N1B1/1b2R1R1/1q6/1pknbr2/8 w - - 0 1")
+        return self
+
+    def copia(self):
+        """
+        Return a shallow copy of this position (board and state).
+        """
+        position_copy = Position()
+        position_copy.squares = self.squares.copy()
+        position_copy.castles = self.castles
+        position_copy.en_passant = self.en_passant
+        position_copy.is_white = self.is_white
+        position_copy.num_moves = self.num_moves
+        position_copy.mov_pawn_capt = self.mov_pawn_capt
+        return position_copy
+
+    def __eq__(self, other: "Position"):
+        return self.fen() == other.fen() if other else False
+
+    def legal(self) -> None:
+        """
+        Normalize castling rights and en passant square according to FEN rules.
+
+        - Castling flags are removed if king/rook are no longer on their original squares.
+        - The en passant target square is validated against the existence of a pawn
+          that could have moved two squares in the last move; otherwise it is set to '-'.
+        """
+        if self.castles != "-":
+            castle_rules = {
+                "K": ("K", "R", "e1", "h1"),
+                "k": ("k", "r", "e8", "h8"),
+                "Q": ("K", "R", "e1", "a1"),
+                "q": ("k", "r", "e8", "a8"),
+            }
+            valid_castles = ""
+            for castle_flag in self.castles:
+                with contextlib.suppress(KeyError):
+                    king, rook, pos_king, pos_rook = castle_rules[castle_flag]
+                    if self.squares.get(pos_king) == king and self.squares.get(pos_rook) == rook:
+                        valid_castles += castle_flag
+            self.castles = valid_castles or "-"
+
+        # See: https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
+        # En passant target square in algebraic notation.
+        # If a pawn has just made a two-square move, this is the square "behind" the pawn.
+        ok = len(self.en_passant) == 2
+        if ok:
+            file_letter, rank_digit = self.en_passant[0], self.en_passant[1]
+            ok = False
+            if rank_digit in "36":
+                pawn_symbol = "P" if rank_digit == "6" else "p"
+                base_rank = "4" if rank_digit == "3" else "5"
+                if file_letter > "a":
+                    piece = self.squares.get(chr(ord(file_letter) - 1) + base_rank)
+                    ok = piece == pawn_symbol
+                if not ok and file_letter < "h":
+                    piece = self.squares.get(chr(ord(file_letter) + 1) + base_rank)
+                    ok = piece == pawn_symbol
+        if not ok:
+            self.en_passant = "-"
+
+    def is_valid_fen(self, fen: str) -> bool:
+        """
+        Return True if the given FEN string can be parsed into a valid position.
+        """
+        fen = fen.strip()
+        if fen.count("/") != 7:
+            return False
+        try:
+            self.read_fen(fen)
+            return True
+        except Exception:
+            return False
+
+    def read_fen(self, fen: str):
+        """
+        Read a FEN string and update the internal position.
+
+        If the FEN is structurally invalid, the position is reset to the initial setup.
+        """
+        fen = fen.strip()
+        if fen.count("/") != 7:
+            return self.set_pos_initial()
+
+        fields = fen.split(" ")
+        num_fields = len(fields)
+        if num_fields < 6:
+            defaults = ["w", "-", "-", "0", "1"]
+            fields.extend(defaults[num_fields - 1 :])
+        board_str, color, self.castles, self.en_passant, halfmove_clock, move_number = fields[:6]
+
+        self.is_white = color == "w"
+        self.num_moves = int(move_number)
+        self.num_moves = max(self.num_moves, 1)
+        self.mov_pawn_capt = int(halfmove_clock)
+
+        new_squares = {}
+        for row_index, rank_str in enumerate(board_str.split("/")):
+            rank_char = chr(48 + 8 - row_index)
+            file_index = 0
+            for char in rank_str:
+                if char.isdigit():
+                    file_index += int(char)
+                elif char in "KQRBNPkqrbnp":
+                    file_char = chr(file_index + 97)
+                    new_squares[file_char + rank_char] = char
+                    file_index += 1
+                else:
+                    return self.set_pos_initial()
+        self.squares = new_squares
+        self.legal()
+        return self
+
+    def set_lce(self):
+        return FasterCode.set_fen(self.fen())
+
+    def get_exmoves(self):
+        self.set_lce()
+        return FasterCode.get_exmoves()
+
+    def fen_base(self) -> str:
+        """
+        Return the FEN board part and side to move (without castling, en passant, counters).
+        """
+        empty_count = 0
+        position = ""
+        for rank in range(8, 0, -1):
+            rank_char = chr(rank + 48)
+            row = ""
+            for file_index in range(8):
+                file_char = chr(file_index + 97)
+                key = file_char + rank_char
+                piece = self.squares.get(key)
+                if piece is None:
+                    empty_count += 1
+                else:
+                    if empty_count:
+                        row += "%d" % empty_count
+                        empty_count = 0
+                    row += piece
+            if empty_count:
+                row += "%d" % empty_count
+                empty_count = 0
+
+            position += row
+            if rank > 1:
+                position += "/"
+        color = "w" if self.is_white else "b"
+        return f"{position} {color}"
+
+    def fen_dgt(self) -> str:
+        """
+        Return a compact board-only FEN-like string used by DGT boards.
+        """
+        empty_count = 0
+        result = ""
+        for rank in range(8, 0, -1):
+            rank_char = chr(rank + 48)
+            for file_index in range(8):
+                file_char = chr(file_index + 97)
+                key = file_char + rank_char
+                piece = self.squares.get(key)
+                if piece is None:
+                    empty_count += 1
+                else:
+                    if empty_count:
+                        result += "%d" % empty_count
+                        empty_count = 0
+                    result += piece
+        return result
+
+    def fen(self) -> str:
+        """
+        Return the full FEN string (board, side to move, castling, en passant, counters).
+        """
+        position = self.fen_base()
+        self.legal()
+        return "%s %s %s %d %d" % (
+            position,
+            self.castles,
+            self.en_passant,
+            self.mov_pawn_capt,
+            self.num_moves,
+        )
+
+    def fenm2(self) -> str:
+        """
+        Return a reduced FEN key (without move counters) used to detect repetitions.
+        """
+        position = self.fen_base()
+        self.legal()
+        return f"{position} {self.castles} {self.en_passant}"
+
+    # def siExistePieza(self, pieza, a1h8=None):
+    #     if a1h8:
+    #         return self.squares.get(a1h8) == pieza
+    #     else:
+    #         n = 0
+    #         for k, v in self.squares.items():
+    #             if v == pieza:
+    #                 n += 1
+    #         return n
+
+    def get_pz(self, a1h8):
+        return self.squares.get(a1h8)
+
+    def get_pos_king(self, is_white):
+        king = "K" if is_white else "k"
+        return next((pos for pos, pz in self.squares.items() if pz == king), None)
+
+    def pzs_key(self):
+        td = "KQRBNPkqrbnp"
+        key = ""
+        for pz in td:
+            for k, c in self.squares.items():
+                if c == pz:
+                    key += c
+        return key
+
+    def capturas(self):
+        """
+        Return a dictionary with remaining capturable pieces for each side.
+        """
+        remaining = {}
+        for piece, max_count in (("P", 8), ("R", 2), ("N", 2), ("B", 2), ("Q", 1), ("K", 1)):
+            remaining[piece] = max_count
+            remaining[piece.lower()] = max_count
+
+        for piece in self.squares.values():
+            if piece and remaining[piece] > 0:
+                remaining[piece] -= 1
+        return {(piece.upper() if piece.islower() else piece.lower()): value for piece, value in remaining.items()}
+
+    def capturas_diferencia(self):
+        """
+        Return a dictionary with piece capture differences between both sides.
+        Keys are piece symbols and values are the material advantage count.
+        """
+        pieces = "PRNBQK"
+        counts = {pz: 0 for pz in (pieces + pieces.lower())}
+        for piece in self.squares.values():
+            if piece:
+                counts[piece] += 1
+        diff = {}
+        for piece in "PRNBQK":
+            delta = counts[piece] - counts[piece.lower()]
+            if delta < 0:
+                diff[piece.lower()] = -delta
+            elif delta > 0:
+                diff[piece] = delta
+        return diff
+
+    def play_pv(self, pv):
+        """
+        Play a move given as a 'from-to-promotion' string (e.g. e2e4, e7e8q).
+        """
+        return self.play(pv[:2], pv[2:4], pv[4:])
+
+    def play(self, from_a1h8, to_a1h8, promotion=""):
+        self.set_lce()
+        if promotion is None:
+            promotion = ""
+        mv = FasterCode.move_expv(from_a1h8, to_a1h8, promotion)
+        if not mv:
+            return False, "Error"
+
+        self.li_extras = []
+
+        enr_k = mv.iscastle_k()
+        enr_q = mv.iscastle_q()
+        en_pa = mv.is_enpassant()
+
+        if promotion:
+            promotion = promotion.upper() if self.is_white else promotion.lower()
+            self.li_extras.append(("c", to_a1h8, promotion))
+
+        elif enr_k:
+            if self.is_white:
+                self.li_extras.append(("m", "h1", "f1"))
+            else:
+                self.li_extras.append(("m", "h8", "f8"))
+
+        elif enr_q:
+            if self.is_white:
+                self.li_extras.append(("m", "a1", "d1"))
+            else:
+                self.li_extras.append(("m", "a8", "d8"))
+
+        elif en_pa:
+            capt = self.en_passant.replace("6", "5").replace("3", "4")
+            self.li_extras.append(("b", capt))
+
+        self.read_fen(FasterCode.get_fen())  # despues de li_extras, por si enpassant
+
+        return True, self.li_extras
+
+    def pr_board(self):
+        """
+        Return an ASCII representation of the current board.
+        """
+        resp = f"   {'+---' * 8}+\n"
+        for row in "87654321":
+            resp += f" {row} |"
+            for column in "abcdefgh":
+                pieza = self.squares.get(column + row)
+                resp += "   |" if pieza is None else f" {pieza} |"
+            resp += f" {row}\n"
+            resp += f"   {'+---' * 8}+\n"
+        resp += "    "
+        for column in "abcdefgh":
+            resp += f" {column}  "
+
+        return resp
+
+    def pgn(self, from_sq, to_sq, promotion=""):
+        self.set_lce()
+        promotion = promotion or ""
+        if Code.configuration.x_notation_style == NOTATION_ALGEBRAIC:
+            return FasterCode.get_pgn(from_sq, to_sq, promotion)
+
+        if Code.configuration.x_notation_style == NOTATION_LONGALGEBRAIC:
+            return FasterCode.get_pgn_longalgebraic(from_sq, to_sq, promotion)
+
+        return FasterCode.get_pgn_descriptive(self.is_white, from_sq, to_sq, promotion)
+
+    def get_fenm2(self):
+        self.set_lce()
+        fen = FasterCode.get_fen()
+        return FasterCode.fen_fenm2(fen)
+
+    def html(self, mv: str):
+        pgn = self.pgn(mv[:2], mv[2:4], mv[4:])
+        li = []
+        tp = "w" if self.is_white else "b"
+        for c in pgn:
+            if c in "NBRQK":
+                li.append(
+                    f'<img src="{Code.configuration.paths.folder_pieces_png()}/{tp}{c.lower()}.png" '
+                    'width="20" height="20" style="vertical-align:bottom">'
+                )
+            else:
+                li.append(c)
+        return "".join(li)
+
+    def pv2dgt(self, from_sq, to_sq, promotion=""):
+        p_ori = self.squares.get(from_sq)
+
+        # Enroque
+        if p_ori in "Kk":
+            n = ord(from_sq[0]) - ord(to_sq[0])
+            if abs(n) == 2:
+                orden = "ke8kc8ra8rd8" if n == 2 else "ke8kg8rh8rf8"
+                return orden if p_ori == "k" else orden.replace("k", "K").replace("8", "1")
+        # Promotion
+        if promotion:
+            promotion = promotion.upper() if self.is_white else promotion.lower()
+            return p_ori + from_sq + promotion + to_sq
+
+        # Al paso
+        if p_ori in "Pp" and to_sq == self.en_passant:
+            if self.is_white:
+                otro = "p"
+                dif = -1
+            else:
+                otro = "P"
+                dif = +1
+            square = "%s%d" % (to_sq[0], int(to_sq[1]) + dif)
+            return f"{p_ori}{from_sq}{p_ori}{to_sq}{otro}{square}.{square}"
+
+        return p_ori + from_sq + p_ori + to_sq
+
+    def pgn_translated(self, from_sq, to_sq, promotion=""):
+        d_conv = TrListas.dic_conv()
+        li = []
+        cpgn = self.pgn(from_sq, to_sq, promotion)
+        if not cpgn:
+            return ""
+        for c in cpgn:
+            if c in d_conv:
+                c = d_conv[c]
+            li.append(c)
+        return "".join(li)
+
+    def is_check(self):
+        self.set_lce()
+        return bool(FasterCode.ischeck())
+
+    def is_finished(self):
+        return self.set_lce() == 0
+
+    def is_mate(self):
+        n = self.set_lce()
+        return n == 0 if FasterCode.ischeck() else False
+
+    def valor_material(self):
+        return sum(PZ_VALUES[v.upper()] for v in self.squares.values() if v)
+
+    def valor_material_side(self, is_white):
+        if is_white:
+            d = PZ_VALUES
+        else:
+            d = {key.lower(): value for key, value in PZ_VALUES.items()}
+        return sum(d[v] for v in self.squares.values() if v and v in d)
+
+    def not_enough_material(self):
+        """
+        Check FIDE insufficient-material (dead) positions for a draw.
+
+        Covered cases:
+        - King vs King
+        - King + Knight vs King
+        - King + Bishop vs King
+        - King + Bishop vs King + Bishop on same color squares
+        """
+
+        li_white = []
+        li_black = []
+        for v, piece in self.squares.items():
+            if not piece:
+                continue
+            p_upper = piece.upper()
+            if p_upper in "PQR":
+                return False
+            if p_upper == "K":
+                continue
+            if piece.isupper():
+                li_white.append((v, p_upper))
+            else:
+                li_black.append((v, p_upper))
+
+        nw = len(li_white)
+        nb = len(li_black)
+
+        if nw == 0 and nb == 0:
+            return True
+
+        if nw + nb == 1:
+            return True  # K+N vs K or K+B vs K
+
+        if nw == 1 and nb == 1:
+            v_w, p_w = li_white[0]
+            v_b, p_b = li_black[0]
+            if p_w == "B" and p_b == "B":
+                # K+B vs K+B same color?
+                # (ord(col)-97 + int(row)-1) % 2
+                color_w = (ord(v_w[0]) - 97 + int(v_w[1]) - 1) % 2
+                color_b = (ord(v_b[0]) - 97 + int(v_b[1]) - 1) % 2
+                return color_w == color_b
+
+        return False
+
+    def not_enough_material_side(self, is_white):
+        pieces = ""
+        nb = "nb"
+        prq = "prq"
+        if is_white:
+            nb = nb.upper()
+            prq = prq.upper()
+        for v in self.squares.values():
+            if v:
+                if v in prq:
+                    return False
+                if v in nb:
+                    if pieces:
+                        return False
+                    else:
+                        pieces = v
+        return False
+
+    def num_pieces(self, pieza):
+        """
+        Count how many pieces of the given type are on the board.
+        """
+        num = 0
+        for file_index, rank_index in itertools.product(range(8), range(8)):
+            file_char = chr(file_index + 97)
+            rank_char = chr(rank_index + 49)
+            if self.squares.get(file_char + rank_char) == pieza:
+                num += 1
+        return num
+
+    def __len__(self):
+        return sum(bool(self.squares[pos]) for pos in self.squares)
+
+    def num_piezas_wb(self):
+        """
+        Count white and black non-pawn pieces.
+        """
+        n_white = n_black = 0
+        for file_index, rank_index in itertools.product(range(8), range(8)):
+            file_char = chr(file_index + 97)
+            rank_char = chr(rank_index + 49)
+            piece = self.squares.get(file_char + rank_char)
+            if piece and piece not in "pkPK":
+                if piece.islower():
+                    n_black += 1
+                else:
+                    n_white += 1
+        return n_white, n_black
+
+    def num_allpiezas_wb(self):
+        n_white = n_black = 0
+        for col in string.ascii_lowercase[:8]:
+            for row in "12345678":
+                if piece := self.squares.get(f"{col}{row}"):
+                    if piece.islower():
+                        n_black += 1
+                    else:
+                        n_white += 1
+        return n_white, n_black
+
+    def dic_pieces(self):
+        """
+        Return a dictionary mapping piece symbols to their counts.
+        """
+        counts = collections.defaultdict(int)
+        for file_index, rank_index in itertools.product(range(8), range(8)):
+            file_char = chr(file_index + 97)
+            rank_char = chr(rank_index + 49)
+            piece = self.squares.get(file_char + rank_char)
+            counts[piece] += 1
+        return counts
+
+    def label(self):
+        d = {x: [] for x in "KQRBNPkqrbnp"}
+        for pos, pz in self.squares.items():
+            d[pz].append(pos)
+
+        li = []
+        for pz in "KQRBNPkqrbnp":
+            li.extend(f"{pz}{pos}" for pos in d[pz])
+        return " ".join(li)
+
+    def proximity_final(self, side: bool) -> float:
+        """
+        Compute an endgame proximity score for the given side.
+        Higher values mean pieces are further from ideal endgame positions.
+        """
+        dic_weights = {"K": 110, "Q": 100, "N": 30, "B": 32, "R": 50, "P": 40}
+        result = 0
+        val_pieces = 0
+        for a1h8, piece in self.squares.items():
+            if side == BLACK and piece in "kqrbnp":
+                if piece == "p":
+                    result += int(a1h8[1]) * dic_weights[piece.upper()]
+                else:
+                    result += self.distance_king(a1h8, WHITE) * dic_weights[piece.upper()]
+                val_pieces += dic_weights[piece.upper()]
+            elif side == WHITE and piece in "KQRBNP":
+                if piece == "P":
+                    result += (9 - int(a1h8[1])) * dic_weights[piece]
+                else:
+                    result += self.distance_king(a1h8, BLACK) * dic_weights[piece]
+                val_pieces += dic_weights[piece.upper()]
+        return result / val_pieces
+
+    def proximity_middle(self, side: bool) -> float:
+        """
+        Compute a middlegame proximity score for the given side.
+        """
+        dic_weights = {"Q": 100, "N": 30, "B": 32, "R": 50, "P": 10}
+        result = 0
+        val_pieces = 0
+        for a1h8, piece in self.squares.items():
+            if side == BLACK and piece in "qrbnp":
+                result += int(a1h8[1]) * dic_weights[piece.upper()]
+                val_pieces += dic_weights[piece.upper()]
+            elif side and piece in "QRBNP":
+                result += (9 - int(a1h8[1])) * dic_weights[piece]
+                val_pieces += dic_weights[piece]
+        return result / val_pieces if val_pieces else INFINITE
+
+    def distance_king(self, a1, side_king_rival):
+        """
+        Euclidean distance from square a1 to the rival king of the given side.
+        """
+        k = "K" if side_king_rival == WHITE else "k"
+        return next(
+            (
+                ((i - (ord(a1[0]) - 97)) ** 2 + (j - (int(a1[1]) - 1)) ** 2) ** 0.5
+                for i, j in itertools.product(range(8), range(8))
+                if self.squares.get(chr(i + 97) + chr(j + 49)) == k
+            ),
+            0,
+        )
+
+    def pawn_can_promote(self, from_a1h8, to_a1h8):
+        pieza = self.squares.get(from_a1h8)
+        if (not pieza) or (pieza.upper() != "P"):  # or self.squares[to_a1h8] is not None:
+            return False
+        if pieza == "P":
+            ori = 7
+            dest = 8
+        else:
+            ori = 2
+            dest = 1
+
+        return int(from_a1h8[1]) == ori and int(to_a1h8[1]) == dest
+
+    def aura(self) -> list:
+        """
+        Compute the list of squares controlled by the side to move (piece "aura").
+        """
+        lista = []
+
+        def add(lipos):
+            for pos in lipos:
+                lista.append(FasterCode.pos_a1(pos))
+
+        def list_pos_bishop_rook(n_pos, fi, ci):
+            """Collect reachable squares for sliding pieces in a given direction.
+            This helper walks from a start square until the board edge or a blocking piece is found.
+
+            The function is used to model rook, bishop, and queen movement rays for aura calculations.
+            It records each traversed square and stops when another piece is encountered.
+
+            Args:
+                n_pos: Starting square index in the internal numeric representation.
+                fi: Rank (row) increment per step along the ray.
+                ci: File (column) increment per step along the ray.
+            """
+            fil, col = FasterCode.pos_rc(n_pos)
+            li_m = []
+            ft = fil + fi
+            ct = col + ci
+            while 0 <= ft <= 7 and 0 <= ct <= 7:
+                t = FasterCode.rc_pos(ft, ct)
+                li_m.append(t)
+
+                if self.squares.get(FasterCode.pos_a1(t)):
+                    break
+                ft += fi
+                ct += ci
+            add(li_m)
+
+        pzs = "KQRBNP" if self.is_white else "kqrbnp"
+
+        for i in range(8):
+            for j in range(8):
+                a1 = chr(i + 97) + chr(j + 49)
+                pz = self.squares.get(a1)
+                if pz and pz in pzs:
+                    pz = pz.upper()
+                    npos = FasterCode.a1_pos(a1)
+                    if pz == "K":
+                        add(FasterCode.li_k(npos))
+                    elif pz == "Q":
+                        for f_i, c_i in (
+                            (1, 1),
+                            (1, -1),
+                            (-1, 1),
+                            (-1, -1),
+                            (1, 0),
+                            (-1, 0),
+                            (0, 1),
+                            (0, -1),
+                        ):
+                            list_pos_bishop_rook(npos, f_i, c_i)
+                    elif pz == "R":
+                        for f_i, c_i in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                            list_pos_bishop_rook(npos, f_i, c_i)
+                    elif pz == "B":
+                        for f_i, c_i in ((1, 1), (1, -1), (-1, 1), (-1, -1)):
+                            list_pos_bishop_rook(npos, f_i, c_i)
+                    elif pz == "N":
+                        add(FasterCode.li_n(npos))
+                    elif pz == "P":
+                        lim, lix = FasterCode.li_p(npos, self.is_white)
+                        add(lix)
+        return lista
+
+    def cohesion(self):
+        """
+        Sum of pairwise distances between all occupied squares (board cohesion).
+        """
+        lipos = [k for k, v in self.squares.items() if v]
+        d = 0
+        for n, a in enumerate(lipos[:-1]):
+            for b in lipos[n + 1 :]:
+                d += distancia(a, b)
+        return d
+
+    def mirror(self):
+        """
+        Return the mirrored position (swap colors and flip ranks).
+        """
+
+        def cp(a1):
+            if a1.islower():
+                c, f = a1[0], a1[1]
+                f = str(9 - int(f))
+                return c + f
+            return a1
+
+        def mp(xpz):
+            return xpz.upper() if xpz.islower() else xpz.lower()
+
+        p = Position()
+        p.squares = {}
+        for square, pz in self.squares.items():
+            p.squares[cp(square)] = mp(pz)
+        p.castles = "".join([mp(pz) for pz in self.castles])
+        p.en_passant = cp(self.en_passant)
+        p.is_white = not self.is_white
+        p.num_moves = self.num_moves
+        p.mov_pawn_capt = self.mov_pawn_capt
+
+        return p
+
+    def phase(self):
+        """
+        Estimate the game phase (opening, middlegame, endgame) from remaining pieces.
+        24 - 20  Opening      Most minor and major pieces are still on the board.
+        19 - 10  Middlegame   Several exchanges have occurred.
+        9 - 1    Endgame      Few pieces remain; kings become active.
+        0        Pure ending  Only pawns and kings (or insufficient material).
+        """
+
+        piece_values = {'N': 1, 'B': 1, 'R': 2, 'Q': 4, 'n': 1, 'b': 1, 'r': 2, 'q': 4}
+        squares = self.squares
+
+        npm = sum(piece_values.get(piece, 0) for piece in squares.values())
+
+        if npm < 10:
+            return ENDGAME
+
+        white_developed = 0
+        for sq in ['b1', 'c1', 'f1', 'g1']:
+            if squares.get(sq, "x") not in "NB":
+                white_developed += 1
+
+        black_developed = 0
+        for sq in ['b8', 'c8', 'f8', 'g8']:
+            if squares.get(sq, "x") not in "nb":
+                black_developed += 1
+        if white_developed >= 3 and black_developed >= 3:
+            return MIDDLEGAME
+
+        # ¿Están las torres conectadas? (No hay piezas entre ellas en la fila 1 u 8)
+        white_rooks_connected = "K" not in self.castles and "Q" not in self.castles and white_developed == 4
+        if white_rooks_connected:
+            return MIDDLEGAME
+        black_rooks_connected = "k" not in self.castles and "q" not in self.castles and black_developed == 4
+        if black_rooks_connected:
+            return MIDDLEGAME
+
+        if npm >= 20:
+            return OPENING
+
+        return MIDDLEGAME
+
+
+def distancia(from_sq, to_sq):
+    """
+    Euclidean distance between two squares in algebraic notation.
+    """
+    return ((ord(from_sq[0]) - ord(to_sq[0])) ** 2 + (ord(from_sq[1]) - ord(to_sq[1])) ** 2) ** 0.5
+
+
+def legal_fenm2(fen):
+    """
+    Normalize a FEN-like string and return its fenm2 representation.
+    """
+    p = Position()
+    p.read_fen(fen)
+    return p.fenm2()
+
+
+def fen_in_opening(fen: str) -> bool:
+    p = Position()
+    p.read_fen(fen)
+    return p.phase() == OPENING
