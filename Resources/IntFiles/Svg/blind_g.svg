@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="64px" height="64px" version="1.1" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<filter id="filter3829" x="-.15271" y="-.20988" width="1.3054" height="1.4198" color-interpolation-filters="sRGB">
+<feGaussianBlur in="SourceAlpha" result="blur" stdDeviation="3"/>
+<feColorMatrix result="result4" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 10 -1 "/>
+<feFlood flood-color="rgb(204,204,204)" in="blur" result="result1"/>
+<feComposite in="result1" in2="result4" operator="atop" result="result2"/>
+<feComposite in="SourceGraphic" in2="result2" operator="atop" result="result3"/>
+</filter>
+</defs>
+<path transform="matrix(.70404 0 0 1.0027 10.575 3.0851)" d="m57.091 29.182a26.273 19 0 1 1-52.545 0 26.273 19 0 1 1 52.545 0z" fill="#ccc" filter="url(#filter3829)" stroke="#000" stroke-width="1.6491"/>
+<text transform="scale(1.4957 .66859)" x="11.256325" y="68.849457" fill="#cccccc" font-family="Sans" font-size="34.388px" font-weight="bold" letter-spacing="0px" stroke="#000000" stroke-width=".051685" word-spacing="0px" line-height="125%" xml:space="preserve"><tspan x="11.256325" y="68.849457" fill="#cccccc" stroke="#000000" stroke-width=".051685"/></text>
+</svg>

@@ -1,0 +1,171 @@
+2026-07-30 22:05:35.605924
+Traceback (most recent call last):
+  File "Code\Main\WBase.py", line 459, in run_action
+  File "Code\Procesador.py", line 469, in run_action
+  File "Code\Procesador.py", line 426, in menu_tools
+  File "Code\Menus\BaseMenu.py", line 139, in run
+  File "Code\Menus\ToolsMenu.py", line 66, in run_select
+  File "Code\Menus\ToolsMenuRun.py", line 38, in run
+  File "Code\Menus\ToolsMenuRun.py", line 87, in database
+  File "Code\Databases\WDatabase.py", line 46, in __init__
+  File "Code\Databases\WDB_Players.py", line 181, in __init__
+AttributeError: 'WPlayer' object has no attribute 'tw_changeplayer'. Did you mean: 'change_player'?
+2026-07-30 22:19:26.226611
+Traceback (most recent call last):
+  File "Code\Main\WBase.py", line 459, in run_action
+  File "Code\Procesador.py", line 469, in run_action
+  File "Code\Procesador.py", line 426, in menu_tools
+  File "Code\Menus\BaseMenu.py", line 139, in run
+  File "Code\Menus\ToolsMenu.py", line 66, in run_select
+  File "Code\Menus\ToolsMenuRun.py", line 38, in run
+  File "Code\Menus\ToolsMenuRun.py", line 87, in database
+  File "Code\Databases\WDatabase.py", line 46, in __init__
+  File "Code\Databases\WDB_Players.py", line 182, in __init__
+AttributeError: module 'Code.QT.Iconos' has no attribute 'EditList'
+2026-07-30 22:26:15.270585
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Players.py", line 465, in tw_select_player
+UnboundLocalError: cannot access local variable '_' where it is not associated with a value
+2026-07-30 22:26:53.496022
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Players.py", line 465, in tw_select_player
+UnboundLocalError: cannot access local variable '_' where it is not associated with a value
+2026-07-30 22:39:02.378166
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Players.py", line 465, in tw_select_player
+UnboundLocalError: cannot access local variable '_' where it is not associated with a value
+2026-07-30 22:39:52.326850
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Players.py", line 465, in tw_select_player
+UnboundLocalError: cannot access local variable '_' where it is not associated with a value
+2026-07-30 22:40:11.159038
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Players.py", line 496, in tw_rebuild
+  File "Code\Databases\WDB_Players.py", line 465, in tw_select_player
+UnboundLocalError: cannot access local variable '_' where it is not associated with a value
+2026-07-30 22:45:45.444966
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Players.py", line 496, in tw_rebuild
+  File "Code\Databases\WDB_Players.py", line 465, in tw_select_player
+UnboundLocalError: cannot access local variable '_' where it is not associated with a value
+2026-07-30 23:22:12.068093
+Traceback (most recent call last):
+  File "Code\Databases\WDatabase.py", line 172, in tab_changed
+  File "Code\Databases\WDB_Perfomance.py", line 428, in actualiza
+AttributeError: module 'Code.QT.FormLayout' has no attribute 'Checkbox'
+2026-07-30 23:40:50.808207
+Traceback (most recent call last):
+  File "Code\Databases\WDatabase.py", line 172, in tab_changed
+  File "Code\Databases\WDB_Perfomance.py", line 428, in actualiza
+AttributeError: module 'Code.QT.FormLayout' has no attribute 'Checkbox'
+2026-07-30 23:43:13.547565
+Traceback (most recent call last):
+  File "Code\Databases\WDatabase.py", line 172, in tab_changed
+  File "Code\Databases\WDB_Perfomance.py", line 428, in actualiza
+AttributeError: module 'Code.QT.FormLayout' has no attribute 'Checkbox'
+2026-07-30 23:43:35.149967
+Traceback (most recent call last):
+  File "Code\Databases\WDatabase.py", line 172, in tab_changed
+  File "Code\Databases\WDB_Perfomance.py", line 428, in actualiza
+AttributeError: module 'Code.QT.FormLayout' has no attribute 'Checkbox'
+2026-07-30 23:51:58.971222
+Traceback (most recent call last):
+  File "Code\Databases\WDatabase.py", line 172, in tab_changed
+  File "Code\Databases\WDB_Perfomance.py", line 428, in actualiza
+AttributeError: module 'Code.QT.FormLayout' has no attribute 'Checkbox'
+2026-07-31 00:11:50.840459
+Traceback (most recent call last):
+  File "Code\Databases\WDatabase.py", line 172, in tab_changed
+  File "Code\Databases\WDB_Perfomance.py", line 428, in actualiza
+AttributeError: module 'Code.QT.FormLayout' has no attribute 'Checkbox'
+2026-07-31 00:11:58.376212
+Traceback (most recent call last):
+  File "Code\Databases\WDatabase.py", line 172, in tab_changed
+  File "Code\Databases\WDB_Perfomance.py", line 428, in actualiza
+AttributeError: module 'Code.QT.FormLayout' has no attribute 'Checkbox'
+2026-07-31 00:18:28.009583
+Traceback (most recent call last):
+  File "Code\Databases\WDatabase.py", line 172, in tab_changed
+  File "Code\Databases\WDB_Perfomance.py", line 428, in actualiza
+AttributeError: module 'Code.QT.FormLayout' has no attribute 'Checkbox'
+2026-07-31 00:20:54.730116
+Traceback (most recent call last):
+  File "Code\Databases\WDatabase.py", line 172, in tab_changed
+  File "Code\Databases\WDB_Perfomance.py", line 428, in actualiza
+AttributeError: module 'Code.QT.FormLayout' has no attribute 'Checkbox'
+2026-07-31 00:21:22.361698
+Traceback (most recent call last):
+  File "Code\Databases\WDatabase.py", line 172, in tab_changed
+  File "Code\Databases\WDB_Perfomance.py", line 428, in actualiza
+AttributeError: module 'Code.QT.FormLayout' has no attribute 'Checkbox'
+2026-07-31 00:21:59.817997
+Traceback (most recent call last):
+  File "Code\Databases\WDatabase.py", line 172, in tab_changed
+  File "Code\Databases\WDB_Perfomance.py", line 428, in actualiza
+AttributeError: module 'Code.QT.FormLayout' has no attribute 'Checkbox'
+2026-07-31 00:24:52.535573
+Traceback (most recent call last):
+  File "Code\Databases\WDatabase.py", line 172, in tab_changed
+  File "Code\Databases\WDB_Perfomance.py", line 428, in actualiza
+UnboundLocalError: cannot access local variable '_' where it is not associated with a value
+2026-07-31 00:25:08.036463
+Traceback (most recent call last):
+  File "Code\Databases\WDatabase.py", line 172, in tab_changed
+  File "Code\Databases\WDB_Perfomance.py", line 428, in actualiza
+UnboundLocalError: cannot access local variable '_' where it is not associated with a value
+2026-07-31 00:25:23.116832
+Traceback (most recent call last):
+  File "Code\Databases\WDatabase.py", line 172, in tab_changed
+  File "Code\Databases\WDB_Perfomance.py", line 428, in actualiza
+UnboundLocalError: cannot access local variable '_' where it is not associated with a value
+2026-07-31 00:25:42.773279
+Traceback (most recent call last):
+  File "Code\Databases\WDatabase.py", line 172, in tab_changed
+  File "Code\Databases\WDB_Perfomance.py", line 428, in actualiza
+UnboundLocalError: cannot access local variable '_' where it is not associated with a value
+2026-08-01 01:10:24.275021
+Traceback (most recent call last):
+  File "Code\Main\WBase.py", line 459, in run_action
+  File "Code\Procesador.py", line 469, in run_action
+  File "Code\Procesador.py", line 426, in menu_tools
+  File "Code\Menus\BaseMenu.py", line 139, in run
+  File "Code\Menus\ToolsMenu.py", line 66, in run_select
+  File "Code\Menus\ToolsMenuRun.py", line 38, in run
+  File "Code\Menus\ToolsMenuRun.py", line 87, in database
+  File "Code\Databases\WDatabase.py", line 58, in __init__
+  File "Code\Databases\WDB_Perfomance.py", line 408, in __init__
+AttributeError: 'LB' object has no attribute 'set_font_italic'. Did you mean: 'set_font_type'?
+2026-08-01 01:16:36.138334
+Traceback (most recent call last):
+  File "Code\Main\WBase.py", line 459, in run_action
+  File "Code\Procesador.py", line 469, in run_action
+  File "Code\Procesador.py", line 426, in menu_tools
+  File "Code\Menus\BaseMenu.py", line 139, in run
+  File "Code\Menus\ToolsMenu.py", line 66, in run_select
+  File "Code\Menus\ToolsMenuRun.py", line 38, in run
+  File "Code\Menus\ToolsMenuRun.py", line 87, in database
+  File "Code\Databases\WDatabase.py", line 58, in __init__
+  File "Code\Databases\WDB_Perfomance.py", line 408, in __init__
+TypeError: LB.set_font_type() got an unexpected keyword argument 'cursiva'
+2026-08-01 02:42:28.845999
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Perfomance.py", line 486, in actualiza
+_duckdb.ConversionException: Conversion Error: Could not convert string '' to INT32 when casting from source column WHITEELO
+
+LINE 4:                         CAST(WHITEELO AS INTEGER) as w_elo, 
+                                ^
+2026-08-01 22:43:10.558047
+Traceback (most recent call last):
+  File "Code\Databases\WDatabase.py", line 172, in tab_changed
+  File "Code\Databases\WDB_Perfomance.py", line 470, in actualiza
+ModuleNotFoundError: No module named 'pandas'
+2026-08-01 22:45:48.024325
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Perfomance.py", line 367, in <lambda>
+  File "Code\Databases\WDB_Perfomance.py", line 470, in actualiza
+ModuleNotFoundError: No module named 'pandas'
+2026-08-01 22:45:55.848327
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Perfomance.py", line 702, in tw_select_player
+  File "Code\Databases\WDB_Perfomance.py", line 470, in actualiza
+ModuleNotFoundError: No module named 'pandas'

@@ -1,0 +1,49 @@
+[2026-07-30 18:17:13.474] [ERROR] Failed to initialize AIMemory paths
+Stacktrace:
+Traceback (most recent call last):
+  File "Code\AI\AIMemory.py", line 30, in _ensure_initialized
+    Util.create_folder(self.folder_memory)
+                      ^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigPaths' object has no attribute 'folder_intfiles'
+
+[2026-07-30 18:17:13.475] [INFO] Submitting AI explanation prompt for 'Tutor Suggestion AI Explanation':
+FEN: r2q1rk1/ppp2ppp/2n1pn2/3p1b2/P2P4/2P2NP1/1P1NPPP1/R2QKB1R w KQ - 1 9
+Eval: +0.10 pawns
+Main Line: a4a5 d8e7 d1a4 e6e5 d4e5 c6e5 f3e5 e7e5 a4f4 f8e8 f4e5 e8e5 d2f3 e5e8 e2e3
+[2026-07-30 18:17:13.487] [INFO] Sending chat completion to http://localhost:1234/v1/chat/completions
+[2026-07-30 18:17:16.195] [INFO] Chat completion received successfully.
+[2026-07-30 18:17:16.197] [ERROR] Failed to initialize AIMemory paths
+Stacktrace:
+Traceback (most recent call last):
+  File "Code\AI\AIMemory.py", line 30, in _ensure_initialized
+    Util.create_folder(self.folder_memory)
+                      ^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigPaths' object has no attribute 'folder_intfiles'
+
+[2026-07-30 18:19:06.835] [ERROR] Failed to initialize AIMemory paths
+Stacktrace:
+Traceback (most recent call last):
+  File "Code\AI\AIMemory.py", line 30, in _ensure_initialized
+    Util.create_folder(self.folder_memory)
+                      ^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigPaths' object has no attribute 'folder_intfiles'
+
+[2026-07-30 18:19:06.835] [INFO] Submitting AI explanation prompt for 'Tutor Suggestion AI Explanation':
+FEN: r4rk1/1ppq1ppp/p1n5/P2pp3/Q2P4/2P1PBP1/1P3PP1/R3K2R w KQ - 0 15
+Eval: +1.27 pawns
+Main Line: d4e5 d7e6 e1c1 a8d8 a4a2 c6e5 f3d5 e6f6 a2b1 h7h6 h1h5 c7c6 h5f5 f6e7 d5b3
+[2026-07-30 18:19:06.847] [INFO] Sending chat completion to http://localhost:1234/v1/chat/completions
+[2026-07-30 18:19:09.602] [INFO] Chat completion received successfully.
+[2026-07-30 18:19:09.603] [ERROR] Failed to initialize AIMemory paths
+Stacktrace:
+Traceback (most recent call last):
+  File "Code\AI\AIMemory.py", line 30, in _ensure_initialized
+    Util.create_folder(self.folder_memory)
+                      ^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigPaths' object has no attribute 'folder_intfiles'
+
+[2026-07-31 11:23:57.439] [INFO] Test log entry
+[2026-07-31 11:26:33.704] [INFO] Testing connection to endpoint: http://localhost:1234/v1/models
+[2026-07-31 11:26:35.776] [INFO] Endpoint test successful. Found models: llama-3.2-1b-instruct, cohere-transcribe-03-2026, ornith-1.0-9b
+[2026-07-31 11:26:35.777] [INFO] Sending chat completion to http://localhost:1234/v1/chat/completions
+[2026-07-31 11:26:37.922] [INFO] Chat completion received successfully.
