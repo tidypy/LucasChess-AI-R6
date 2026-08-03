@@ -103,7 +103,7 @@ class WPlayer(QtWidgets.QWidget):
 
         self.ap = OpeningsStd.ap
 
-        self.gridOpeningWhite = self.gridOpeningBlack = self.gridMovesWhite = self.gridMovesBlack = 0
+        self.gridOpeningWhite = self.gridOpeningBlack = self.gridMovesWhite = self.gridMovesBlack = self.gridPlayerList = None
 
         # GridOpening
         ancho = 54
@@ -167,7 +167,15 @@ class WPlayer(QtWidgets.QWidget):
         ly = Colocacion.V().control(tbmovesb).control(self.gridMovesBlack).margen(3)
         wblack.setLayout(ly)
 
+        # Player List grid
+        o_columns_players = Columnas.ListaColumnas()
+        o_columns_players.nueva("name", _("Player"), 200, align_center=True)
+        o_columns_players.nueva("games", _("Games"), 100, align_right=True)
+        self.gridPlayerList = Grid.Grid(self, o_columns_players, complete_row_select=True, xid="PlayerList")
+        self.li_players_list = []
+
         tabs = Controles.Tab(self)
+        tabs.new_tab(self.gridPlayerList, _("Player List"))
         tabs.new_tab(self.gridOpeningWhite, _("White openings"))
         tabs.new_tab(self.gridOpeningBlack, _("Black openings"))
         tabs.new_tab(w_white, _("White moves"))
@@ -199,38 +207,49 @@ class WPlayer(QtWidgets.QWidget):
 
         self.set_db_games(db_games)
         self.set_player(self.read_variable("PLAYER", ""))
-        if not self.player:
-            QtCore.QTimer.singleShot(200, self.tw_select_player)
+        self.refresh_player_list()
 
     def tab_changed(self, ntab):
         QtWidgets.QApplication.processEvents()
 
-        if ntab == 0:  # in (0, 2):
-            grid = self.gridOpeningWhite
+        if ntab == 0:
+            grid = self.gridPlayerList
+            if not self.li_players_list:
+                self.refresh_player_list()
         elif ntab == 1:
-            grid = self.gridOpeningBlack
+            grid = self.gridOpeningWhite
         elif ntab == 2:
+            grid = self.gridOpeningBlack
+        elif ntab == 3:
             grid = self.gridMovesWhite
         else:
             grid = self.gridMovesBlack
-        recno = grid.recno()
-        reccount = grid.reccount()
-        if reccount:
-            self.grid_cambiado_registro(grid, recno, None)
+        
+        if ntab != 0:
+            recno = grid.recno()
+            reccount = grid.reccount()
+            if reccount:
+                self.grid_cambiado_registro(grid, recno, None)
 
     def actualiza(self):
         if not self.player:
-            self.tw_select_player()
+            self.tabs.setCurrentIndex(0)
             return
         
-        has_data = any(len(d) > 0 for d in self.data)
-        if not has_data:
-            msg = f"{_('No statistics have been generated for')} {self.player} {_('yet.')}\n\n{_('Would you like to generate statistics now?')}"
-            if QTMessages.pregunta(self, msg):
-                self.tw_rebuild()
-                return
-
         self.tab_changed(self.tabs.current_position())
+
+    def refresh_player_list(self):
+        self.li_players_list = self.db_games.players_with_counts()
+        self.gridPlayerList.refresh()
+
+    def grid_doble_click(self, grid, nfil, ncol):
+        if grid == self.gridPlayerList:
+            if 0 <= nfil < len(self.li_players_list):
+                name = self.li_players_list[nfil][0]
+                self.write_variable("PLAYER", name)
+                self.set_player(name)
+                self.tw_rebuild()
+                self.tabs.setCurrentIndex(1)
 
     def dispatch_moves(self, side, opcion):
         data_side = self.data[MOVES_WHITE if side == "white" else MOVES_BLACK]
@@ -294,19 +313,23 @@ class WPlayer(QtWidgets.QWidget):
             self.tw_rebuild()
 
     def on_search_player_changed(self, text):
-        query = text.strip()
-        lp = self.list_of_players()
-        if query and lp:
-            for p in lp:
-                if p.upper() == query.upper():
-                    self.write_variable("PLAYER", p)
-                    self.set_player(p)
-                    self.tw_rebuild()
-                    break
+        query = text.strip().upper()
+        if hasattr(self, "gridPlayerList") and self.gridPlayerList:
+            all_players = self.db_games.players_with_counts()
+            if query:
+                self.li_players_list = [p for p in all_players if query in p[0].upper()]
+            else:
+                self.li_players_list = all_players
+            self.gridPlayerList.refresh()
 
     def set_player(self, player):
         self.player = player
-        self.data = [[], [], [], []]
+        cached_data = self.read_variable(f"PLAYER_STATS_{player}")
+        if cached_data:
+            self.data = cached_data
+        else:
+            self.data = [[], [], [], []]
+            
         accion = self.tbWork.li_acciones[1]
         accion.setIconText(self.player if self.player else _("Player"))
 
@@ -314,6 +337,8 @@ class WPlayer(QtWidgets.QWidget):
         self.gridOpeningBlack.refresh()
         self.gridMovesWhite.refresh()
         self.gridMovesBlack.refresh()
+        if hasattr(self, "gridPlayerList") and self.gridPlayerList:
+            self.gridPlayerList.refresh()
         self.gridOpeningWhite.setFocus()
 
     def set_info_move(self, info_move):
@@ -333,7 +358,9 @@ class WPlayer(QtWidgets.QWidget):
     def grid_num_datos(self, grid):
         if self.rebuilding:
             return 0
-        if grid == self.gridOpeningWhite:
+        if grid == self.gridPlayerList:
+            return len(self.li_players_list)
+        elif grid == self.gridOpeningWhite:
             return len(self.data[OPENINGS_WHITE])
         elif grid == self.gridOpeningBlack:
             return len(self.data[OPENINGS_BLACK])
@@ -348,6 +375,15 @@ class WPlayer(QtWidgets.QWidget):
         if self.rebuilding:
             return ""
         key = ocol.key
+        if grid == self.gridPlayerList:
+            if nfila < 0 or nfila >= len(self.li_players_list):
+                return ""
+            if key == "name":
+                return self.li_players_list[nfila][0]
+            elif key == "games":
+                return str(self.li_players_list[nfila][1])
+            return ""
+
         dt = self.data_grid(grid)
         if not dt:
             return ""
@@ -499,7 +535,10 @@ class WPlayer(QtWidgets.QWidget):
         self.tw_rebuild()
 
     def test_players_in_db(self):
+        # We also check if there are actual players, in case the field names differ slightly
         if self.db_games.has_field("WHITE") and self.db_games.has_field("BLACK"):
+            return True
+        if len(self.db_games.players()) > 0:
             return True
         QTMessages.message(self, _("This database has no players"))
         return False
@@ -826,6 +865,7 @@ class WPlayer(QtWidgets.QWidget):
 
         self.rebuilding = False
         self.data = data
+        self.write_variable(f"PLAYER_STATS_{self.player}", self.data)
         self.gridOpeningWhite.refresh()
         self.gridOpeningBlack.refresh()
         self.gridMovesWhite.refresh()

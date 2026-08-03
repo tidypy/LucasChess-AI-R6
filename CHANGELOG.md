@@ -13,6 +13,7 @@
 - **Data Fitness Adjudication Wizard (`gui_integration.py`, `result_repair.py`, & `WDB_Games.py`):** Created a missing results (`*`) wizard dialog offering 4 distinct metadata/logic-based adjudication policies (Termination, Last Move, Accuracy/ACPL matchup) with custom engine eval fallbacks. Integrated into the Generate Statistics workflow and added a dedicated toolbar button. (GitHub Issue #10)
 
 ### 🐛 Bug Fixes & Executable Packaging
+- **Database Load `AttributeError` Crash (`WDB_Players.py`):** Fixed `AttributeError: 'WPlayer' object has no attribute 'gridPlayerList'` crash that occurred when opening the Databases view by properly initializing grid attributes before Qt triggers rowCount checks. (GitHub Issue #11)
 - **Spar Against Engine `KeyError: 'ISWHITE'` (`WindowWelcome.py`):** Fixed `KeyError` by resolving side color (`dic['ISWHITE'] = side == "B"`) before starting `ManagerPlayAgainstEngine`. (GitHub Issue #3)
 - **PyInstaller `numpy` & `duckdb` Bundling (`elo_calculator.py` & `build_exe.py`):** Installed `duckdb` and `numpy` into `.venv`, added pure-Python `_NumPyFallback` in `elo_calculator.py`, and updated `build_exe.py` to `--collect-all` for all dependencies in `requirements.txt`. (GitHub Issue #4)
 - **All Venv Dependencies Self-Contained (`build_exe.py`):** Configured `--collect-all` for all `requirements.txt` modules (`PySide6`, `numpy`, `duckdb`, `chess`, `requests`, `urllib3`, `certifi`, `idna`, `bs4`, `cpuinfo`, `psutil`, `PIL`, `polib`, `deep_translator`, `sortedcontainers`, `charset-normalizer`) into `_internal/` bundle.
