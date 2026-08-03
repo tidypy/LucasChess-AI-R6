@@ -69,8 +69,12 @@
 - **Qt-Rich-Text HTML Renderer (`format_readiness_html`):** Formats database readiness summaries into HTML table fragments suitable for `QLabel` and `QMessageBox`.
 - **Truthful AI Coach Payload (`build_ai_coach_payload`):** Bundles player stats, explicit exclusion counters (`elo_games_excluded`, `accuracy_games_excluded`), tier distributions, system guardrail directives, and SHA-256 integrity hash for `Code/AI/StatsSummary.py` (LM Studio & OpenAI BYOK).
 
-#### 2. Automated UI Bridge Unit Tests (`test_phase5_ui_bridge.py`)
-- Added 3 unit tests verifying badge metadata lookups, rich-text HTML rendering, and SHA-256 tamper-evident payload generation.
+#### 2. PySide6 GUI Integration Layer (`gui_integration.py`)
+- **Readiness Summary Modal (`show_readiness_dialog`):** Renders modal `QMessageBox` with rich-text HTML summary and proceed/cancel buttons.
+- **Mass Analysis Policy Control (`create_mass_analysis_policy_widget`):** Provides a PySide6 `QGroupBox` and `QCheckBox` for choosing between `"MISSING_ONLY"` (Skip Tier 3 games) and `"OVERWRITE"` modes.
+
+#### 3. Automated UI Bridge Unit Tests (`test_phase5_ui_bridge.py`, `test_gui_integration.py`)
+- Added 5 unit tests verifying badge metadata lookups, rich-text HTML rendering, SHA-256 payload generation, and PySide6 policy widget controls.
 
 ---
 
