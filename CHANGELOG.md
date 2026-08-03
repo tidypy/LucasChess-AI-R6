@@ -20,6 +20,25 @@
 #### 4. Automated Testing (`test_truthful_performance_metrics.py`)
 - Added 6 unit tests verifying truthful metric gating, null returns on missing data, and absence of fake `1500` fallbacks.
 
+### 🛡️ Schema Migration & 4-Tier Quality Validation Engine (Phase 2)
+
+#### 1. Database Safety & Schema Migration (`db_migration.py`)
+- **Timestamped Integrity Backup:** `backup_database()` performs WAL checkpointing (`PRAGMA wal_checkpoint(FULL)`) and `PRAGMA integrity_check` before generating safety backup `.lcdb.bak_YYYYMMDD_HHMMSS`.
+- **Relational Quality Schema:** Created `GameQuality`, `GameQualityIssue`, and `AnalysisProvenance` tables with foreign key cascades and indexes (`idx_gq_tier`, `idx_gq_status`).
+- **Persistent UUID4 Mapping:** Automatically generates UUID4 `GAME_ID` values for existing database records to maintain identity independent of SQLite `rowid` changes.
+
+#### 2. Game Quality & Tier Validation Engine (`game_validator.py`)
+- **4-Tier Classification Logic:**
+  - **Tier 0:** Dirty/Invalid data (unparseable PGN, missing moves, or unparseable players/result).
+  - **Tier 1:** Basic PGN (valid move structure, player names, and normalized result `1-0`, `0-1`, `1/2-1/2`).
+  - **Tier 2:** Elo-Ready (Tier 1 + authoritative numeric Elo tags > 0 for both players).
+  - **Tier 3:** Gold Standard (Tier 2 + complete Stockfish move analysis & valid provenance).
+- **Issue Code Logging:** Logs granular issue codes (`MISSING_WHITE`, `MISSING_BLACK`, `MISSING_RESULT`, `MISSING_ELO`, `INVALID_MOVES`, `PARTIAL_ANALYSIS`) with severity tags.
+- **Content Hashing:** Computes SHA256 `source_hash` and `clean_hash` to detect data mutations or stale analysis.
+
+#### 3. Automated Validation Unit Tests (`test_phase2_validation.py`)
+- Added 8 comprehensive unit tests covering backups, DDL creation, database migration, tier classification (T0–T3), and result persistence.
+
 ---
 
 ## [R6.0.4 - July 31 / August 1, 2026]
