@@ -39,6 +39,19 @@
 #### 3. Automated Validation Unit Tests (`test_phase2_validation.py`)
 - Added 8 comprehensive unit tests covering backups, DDL creation, database migration, tier classification (T0–T3), and result persistence.
 
+### ⚡ Pre-Report Readiness Scan & Tier-Gated Analytics Engine (Phase 3)
+
+#### 1. Database Readiness Summary (`analytics_engine.py`)
+- **`get_database_readiness_summary()`**: Executes single-pass `GROUP BY` query on `GameQuality` returning total games, repairable count, and counts per `DERIVED_TIER` (0, 1, 2, 3).
+- **`process_gated_analytics()`**: Filters DuckDB and SQLite analytics queries strictly on `DERIVED_TIER >= 3` for chart generation, attaching eligibility metadata and ratio counters.
+
+#### 2. Auto-Validation Hooks (`DBgames.py`)
+- **Schema Auto-Creation:** `DBgames.__init__` executes `apply_phase2_schema()` on open.
+- **Auto-Validation Triggers:** `DBgames.insert()` and `DBgames.modify()` automatically validate game text and save quality results to `GameQuality` / `GameQualityIssue`.
+
+#### 3. Automated Readiness Unit Tests (`test_phase3_readiness.py`)
+- Added unit test suite verifying database readiness summary counts and tier-gated metric calculations.
+
 ---
 
 ## [R6.0.4 - July 31 / August 1, 2026]
