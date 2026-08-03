@@ -1,6 +1,19 @@
 # LucasChess R6 — Change Log
 
-## [R6.0.5 - August 2, 2026]
+## [R6.0.6 - August 3, 2026]
+
+### 🖥️ UX Modernization & Tiled Welcome Screen
+- **Tiled Welcome Screen (`WindowWelcome.py`):** Added a PySide6 tiled dashboard with 5 primary action cards: Databases, Spar against Engine, Trainings & Puzzles, Book Factory, Engine Tourneys.
+- **Startup Redirection (`Procesador.py`):** Replaced default 101 Challenge tactics puzzle greeting on startup with `WindowWelcome` hub.
+- **Streamlined Stats Generation (`WDB_Perfomance.py`):** Removed intrusive pre-flight modal popups (readiness dialog & estimated ELO toggle) and automated background data normalization with player auto-scoping.
+- **Database Selection (`WindowWelcome.py`):** Updated Database tile handler to set `all_elements=True` and `is_new=True`, ensuring all active databases and `[+] Create New Database` are listed.
+
+### 🐛 Bug Fixes & Executable Packaging
+- **Spar Against Engine `KeyError: 'ISWHITE'` (`WindowWelcome.py`):** Fixed `KeyError` by resolving side color (`dic['ISWHITE'] = side == "B"`) before starting `ManagerPlayAgainstEngine`. (GitHub Issue #3)
+- **PyInstaller `numpy` & `duckdb` Bundling (`elo_calculator.py` & `build_exe.py`):** Installed `duckdb` and `numpy` into `.venv`, added pure-Python `_NumPyFallback` in `elo_calculator.py`, and updated `build_exe.py` to `--collect-all` for all dependencies in `requirements.txt`. (GitHub Issue #4)
+- **All Venv Dependencies Self-Contained (`build_exe.py`):** Configured `--collect-all` for all `requirements.txt` modules (`PySide6`, `numpy`, `duckdb`, `chess`, `requests`, `urllib3`, `certifi`, `idna`, `bs4`, `cpuinfo`, `psutil`, `PIL`, `polib`, `deep_translator`, `sortedcontainers`, `charset-normalizer`) into `_internal/` bundle.
+
+---
 
 ### 🎯 Truthful Performance Metrics & Metric-Gating (Phase 1)
 

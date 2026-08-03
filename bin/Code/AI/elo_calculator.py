@@ -1,5 +1,19 @@
 import math
-import numpy as np
+
+try:
+    import numpy as np
+except ImportError:
+    class _NumPyFallback:
+        @staticmethod
+        def array(values, dtype=float):
+            return [float(x) for x in values]
+        @staticmethod
+        def mean(values):
+            return sum(values) / len(values) if values else 0.0
+        @staticmethod
+        def sort(values):
+            return sorted(values)
+    np = _NumPyFallback()
 
 
 class SigmoidELOCalculator:

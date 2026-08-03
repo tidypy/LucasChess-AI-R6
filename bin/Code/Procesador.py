@@ -301,7 +301,9 @@ class Procesador:
             self.board.lock_rotation(True)
             self.board.setToolTip("")
             self.board.activa_menu_visual(True)
-            Presentacion.ManagerChallenge101(self)
+            from Code.Main import WindowWelcome
+            w = WindowWelcome.WindowWelcome(self)
+            w.exec()
 
     def get_manager_tutor(self):
         if self.manager_tutor is None:

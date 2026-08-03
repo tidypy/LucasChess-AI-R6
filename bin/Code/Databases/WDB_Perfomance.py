@@ -456,22 +456,7 @@ class WPerfomance(QtWidgets.QWidget):
 
         if not self.session_prompted:
             self.session_prompted = True
-            from Code.Databases.gui_integration import show_readiness_dialog
-            proceed = show_readiness_dialog(self, self.db_games)
-            if not proceed:
-                return
-
-            from Code.QT import FormLayout
-            li = [(_("Show separately labeled estimated ELO when move accuracy exists"), True)]
-            msg = _("Estimated ELO is shown separately and is never used as an official rating or in performance calculations.")
-            resultado = FormLayout.fedit(
-                li,
-                title=_("Estimated ELO"),
-                parent=self,
-                icon=Iconos.FideBuilding(),
-                comment=msg,
-            )
-            self.use_accuracy = bool(resultado and resultado[1][0])
+            self.use_accuracy = True
             self.use_engine_elo = False
 
         li_regs = self.wb_games.grid.list_selected_recnos()
