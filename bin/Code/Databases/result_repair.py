@@ -149,7 +149,7 @@ def orchestrate_data_fitness_adjudication(
         if not recno_list:
             return summary
         placeholders = ",".join("?" for _ in recno_list)
-        sql = f"SELECT ROWID, RESULT, _DATA_ FROM Games WHERE ROWID IN ({placeholders})"
+        sql = f"SELECT ROWID, RESULT, _DATA_ FROM Games WHERE ROWID IN ({placeholders}) AND (RESULT = '*' OR RESULT IS NULL OR TRIM(RESULT) = '')"
         params = tuple(recno_list)
     else:
         sql = "SELECT ROWID, RESULT, _DATA_ FROM Games WHERE RESULT = '*' OR RESULT IS NULL OR TRIM(RESULT) = ''"
@@ -170,18 +170,23 @@ def orchestrate_data_fitness_adjudication(
         if isinstance(raw_str, bytes):
             raw_str = raw_str.decode("utf-8", errors="replace")
 
+        # Strip Lucas Chess custom prefix before parsing
+        parse_str = raw_str
+        if parse_str.startswith("#LUCAS#"):
+            parse_str = parse_str[7:].strip()
+
         new_res = None
         if policy == "TERMINATION":
-            new_res = _extract_termination_result(raw_str)
+            new_res = _extract_termination_result(parse_str)
         elif policy == "LAST_MOVE":
-            new_res = _extract_last_move_winner(raw_str)
+            new_res = _extract_last_move_winner(parse_str)
         elif policy == "ACCURACY_ACPL":
-            new_res = _extract_accuracy_acpl_result(raw_str, engine_fallback=fallback_to_eval, eval_win_threshold=eval_win_threshold, eval_draw_margin=eval_draw_margin)
+            new_res = _extract_accuracy_acpl_result(parse_str, engine_fallback=fallback_to_eval, eval_win_threshold=eval_win_threshold, eval_draw_margin=eval_draw_margin)
         elif policy == "ENGINE_EVAL":
-            new_res = _extract_accuracy_acpl_result(raw_str, engine_fallback=True, eval_win_threshold=eval_win_threshold, eval_draw_margin=eval_draw_margin)
+            new_res = _extract_accuracy_acpl_result(parse_str, engine_fallback=True, eval_win_threshold=eval_win_threshold, eval_draw_margin=eval_draw_margin)
 
         if new_res is None and fallback_to_eval and policy not in ("ENGINE_EVAL", "ACCURACY_ACPL"):
-            eval_score = _extract_eval_score(raw_str)
+            eval_score = _extract_eval_score(parse_str)
             if eval_score is not None:
                 if eval_score >= eval_win_threshold: new_res = "1-0"
                 elif eval_score <= -eval_win_threshold: new_res = "0-1"

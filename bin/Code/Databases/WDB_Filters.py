@@ -79,9 +79,9 @@ class WFiltrar(QtWidgets.QDialog):
         ly_details.controlc(self.ed_year, 2, 1)
         
         ly_res = Colocacion.H().control(Controles.LB(self, _("Result:")).set_font(f)).control(self.cb_res_10).control(self.cb_res_01).control(self.cb_res_12).control(self.cb_res_ast).relleno()
-        ly_details.control(ly_res, 3, 0, 1, 4)
         
         gb_details = QtWidgets.QGroupBox(_("Game Details"))
+        ly_details.otro(ly_res, 3, 0, 1, 4)
         gb_details.setLayout(ly_details)
 
         ly_adv = Colocacion.G()
