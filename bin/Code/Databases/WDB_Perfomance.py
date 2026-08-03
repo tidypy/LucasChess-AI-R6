@@ -486,10 +486,10 @@ class WPerfomance(QtWidgets.QWidget):
         duckdb_success = False
         if HAS_DUCKDB and db_path and os.path.isfile(db_path):
             # 1. DUCKDB FAST PATH
-            import duckdb
-            import pandas as pd
-            self.db_games.conexion.commit() # Release SQLite read lock for Windows
             try:
+                import duckdb
+                import pandas as pd
+                self.db_games.conexion.commit() # Release SQLite read lock for Windows
                 try:
                     con = duckdb.connect(database=":memory:")
                     try:
