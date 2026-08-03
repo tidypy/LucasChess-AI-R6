@@ -75,6 +75,139 @@ def _update_pgn_result_tag(raw_text: str, new_result: str) -> str:
         return f'{new_tag}\n{raw_text}'
 
 
+
+import chess.pgn
+import io
+from typing import Any
+
+def _extract_termination_result(raw_text: str) -> Optional[str]:
+    m = re.search(r'\[Termination\s+"([^"]+)"\]', raw_text, re.IGNORECASE)
+    if not m: return None
+    term = m.group(1).lower()
+    if "white wins" in term: return "1-0"
+    if "black wins" in term: return "0-1"
+    if "drawn" in term or "draw" in term: return "1/2-1/2"
+    return None
+
+def _extract_last_move_winner(raw_text: str) -> Optional[str]:
+    try:
+        game = chess.pgn.read_game(io.StringIO(raw_text))
+        if game:
+            turn = game.end().board().turn
+            return "1-0" if turn == chess.BLACK else "0-1"
+    except Exception:
+        pass
+    return None
+
+def _extract_accuracy_acpl_result(raw_text: str, engine_fallback: bool = False, eval_win_threshold: float = 2.0, eval_draw_margin: float = 0.55) -> Optional[str]:
+    w_acc, b_acc, w_acpl, b_acpl = None, None, None, None
+    m = re.search(r'\[AccuracyWhite\s+"([^"]+)"\]', raw_text, re.IGNORECASE)
+    if m: w_acc = float(m.group(1))
+    m = re.search(r'\[AccuracyBlack\s+"([^"]+)"\]', raw_text, re.IGNORECASE)
+    if m: b_acc = float(m.group(1))
+    
+    m = re.search(r'\[ACPLWhite\s+"([^"]+)"\]', raw_text, re.IGNORECASE)
+    if m: w_acpl = float(m.group(1))
+    m = re.search(r'\[ACPLBlack\s+"([^"]+)"\]', raw_text, re.IGNORECASE)
+    if m: b_acpl = float(m.group(1))
+    
+    if w_acpl is not None and b_acpl is not None:
+        if w_acpl < b_acpl: return "1-0"
+        if b_acpl < w_acpl: return "0-1"
+    elif w_acc is not None and b_acc is not None:
+        if w_acc > b_acc: return "1-0"
+        if b_acc > w_acc: return "0-1"
+        
+    if engine_fallback:
+        eval_score = _extract_eval_score(raw_text)
+        if eval_score is not None:
+            if eval_score >= eval_win_threshold: return "1-0"
+            if eval_score <= -eval_win_threshold: return "0-1"
+            if abs(eval_score) <= eval_draw_margin: return "1/2-1/2"
+    
+    return None
+
+def orchestrate_data_fitness_adjudication(
+    connection: sqlite3.Connection,
+    recnos: Optional[Sequence[int]],
+    policy: str,
+    fallback_to_eval: bool = False,
+    eval_win_threshold: float = 2.0,
+    eval_draw_margin: float = 0.55,
+) -> Dict[str, Any]:
+    connection.execute("PRAGMA foreign_keys = ON")
+    summary = {
+        "total_scanned": 0,
+        "repaired_wins": 0,
+        "repaired_draws": 0,
+        "repaired_losses": 0,
+        "unrepaired": 0,
+    }
+
+    if recnos is not None:
+        recno_list = list(recnos)
+        if not recno_list:
+            return summary
+        placeholders = ",".join("?" for _ in recno_list)
+        sql = f"SELECT ROWID, RESULT, _DATA_ FROM Games WHERE ROWID IN ({placeholders})"
+        params = tuple(recno_list)
+    else:
+        sql = "SELECT ROWID, RESULT, _DATA_ FROM Games WHERE RESULT = '*' OR RESULT IS NULL OR TRIM(RESULT) = ''"
+        params = ()
+
+    cursor = connection.execute(sql, params)
+    rows = cursor.fetchall()
+    summary["total_scanned"] = len(rows)
+
+    updates = []
+    validation_tasks = []
+
+    gq_cursor = connection.execute("SELECT ROW_ID, GAME_ID FROM GameQuality")
+    game_id_map = {r[0]: r[1] for r in gq_cursor.fetchall()}
+
+    for row_id, current_res, raw_data in rows:
+        raw_str = raw_data or ""
+        if isinstance(raw_str, bytes):
+            raw_str = raw_str.decode("utf-8", errors="replace")
+
+        new_res = None
+        if policy == "TERMINATION":
+            new_res = _extract_termination_result(raw_str)
+        elif policy == "LAST_MOVE":
+            new_res = _extract_last_move_winner(raw_str)
+        elif policy == "ACCURACY_ACPL":
+            new_res = _extract_accuracy_acpl_result(raw_str, engine_fallback=fallback_to_eval, eval_win_threshold=eval_win_threshold, eval_draw_margin=eval_draw_margin)
+        elif policy == "ENGINE_EVAL":
+            new_res = _extract_accuracy_acpl_result(raw_str, engine_fallback=True, eval_win_threshold=eval_win_threshold, eval_draw_margin=eval_draw_margin)
+
+        if new_res is None and fallback_to_eval and policy not in ("ENGINE_EVAL", "ACCURACY_ACPL"):
+            eval_score = _extract_eval_score(raw_str)
+            if eval_score is not None:
+                if eval_score >= eval_win_threshold: new_res = "1-0"
+                elif eval_score <= -eval_win_threshold: new_res = "0-1"
+                elif abs(eval_score) <= eval_draw_margin: new_res = "1/2-1/2"
+
+        if new_res == "1-0": summary["repaired_wins"] += 1
+        elif new_res == "0-1": summary["repaired_losses"] += 1
+        elif new_res == "1/2-1/2": summary["repaired_draws"] += 1
+        else:
+            summary["unrepaired"] += 1
+            continue
+
+        updated_pgn = _update_pgn_result_tag(raw_str, new_res)
+        updates.append((new_res, updated_pgn, row_id))
+        res_obj = validate_game_data(updated_pgn, game_id=game_id_map.get(row_id))
+        validation_tasks.append((row_id, res_obj))
+
+    with connection:
+        if updates:
+            connection.executemany("UPDATE Games SET RESULT = ?, _DATA_ = ? WHERE ROWID = ?", updates)
+        for row_id, res_obj in validation_tasks:
+            save_validation_result(connection, row_id, res_obj)
+
+    return summary
+
+
 def adjudicate_results_by_eval(
     connection: sqlite3.Connection,
     recnos: Optional[Sequence[int]] = None,

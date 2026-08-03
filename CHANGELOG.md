@@ -2,11 +2,15 @@
 
 ## [R6.0.6 - August 3, 2026]
 
-### 🖥️ UX Modernization & Tiled Welcome Screen
+### 🖥️ UX Modernization, Tiled Welcome Screen & Filter-Driven Analytics
 - **Tiled Welcome Screen (`WindowWelcome.py`):** Added a PySide6 tiled dashboard with 5 primary action cards: Databases, Spar against Engine, Trainings & Puzzles, Book Factory, Engine Tourneys.
 - **Startup Redirection (`Procesador.py`):** Replaced default 101 Challenge tactics puzzle greeting on startup with `WindowWelcome` hub.
-- **Streamlined Stats Generation (`WDB_Perfomance.py`):** Removed intrusive pre-flight modal popups (readiness dialog & estimated ELO toggle) and automated background data normalization with player auto-scoping.
-- **Database Selection (`WindowWelcome.py`):** Updated Database tile handler to set `all_elements=True` and `is_new=True`, ensuring all active databases and `[+] Create New Database` are listed.
+- **Data Fitness Workflow & Gating (`gui_integration.py` & `WDB_Games.py`):** Upgraded "Generate Statistics" to act as a Data Fitness gateway dialog where users explicitly choose to clean data (Mass Analysis) or generate analytics (Tactical Themes). (GitHub Issue #6)
+- **Decoupled Grid Selection (`WDB_Games.py` & `WDB_Theme_Analysis.py`):** Decoupled bulk operations from single-row grid selection; tools now authoritatively run on all filtered games.
+- **Opening Explorer Filter Persistence (`DBgames.py` & `WDB_Summary.py`):** Modified `rebuild_stat` to evaluate only the filtered database rowids and restricted rebuilding to the manual "Rebuild" button to preserve filter settings across tab switches. (GitHub Issue #7)
+- **Performance Tab Decoupling & Caching (`WDB_Perfomance.py`):** Scoped DuckDB/SQLite performance calculations strictly to active grid filters and cached player dictionary arrays to prevent aggressive tab-changed recalculation freezes. (GitHub Issue #8)
+- **Players Tab Redesign & SQL Caching (`WDB_Players.py` & `DBgames.py`):** Replaced startup select-player popups with a searchable 'Player List' grid tab, relaxed rigid case-sensitive database schema checks, and added SQLite config caching persistence so player statistics survive restarts. (GitHub Issue #9)
+- **Data Fitness Adjudication Wizard (`gui_integration.py`, `result_repair.py`, & `WDB_Games.py`):** Created a missing results (`*`) wizard dialog offering 4 distinct metadata/logic-based adjudication policies (Termination, Last Move, Accuracy/ACPL matchup) with custom engine eval fallbacks. Integrated into the Generate Statistics workflow and added a dedicated toolbar button. (GitHub Issue #10)
 
 ### 🐛 Bug Fixes & Executable Packaging
 - **Spar Against Engine `KeyError: 'ISWHITE'` (`WindowWelcome.py`):** Fixed `KeyError` by resolving side color (`dic['ISWHITE'] = side == "B"`) before starting `ManagerPlayAgainstEngine`. (GitHub Issue #3)

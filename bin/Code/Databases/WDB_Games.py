@@ -143,6 +143,7 @@ class WGames(QtWidgets.QWidget):
             add_tb(_("Import"), Iconos.Import8(), self.tw_import)
             add_tb(_("Export"), Iconos.Export8(), self.tw_export)
             add_tb(_("New Training"), Iconos.TrainStatic(), self.tw_train)
+            add_tb("Data Fitness", Iconos.Estadisticas(), self.tw_data_fitness)
             add_tb(_("Generate Statistics"), Iconos.Tacticas(), self.tw_themes)
             add_tb(_("Shortcuts"), Iconos.Mas(), self.tw_shortcuts)
 
@@ -1460,10 +1461,9 @@ class WGames(QtWidgets.QWidget):
         if not alm:
             return
 
-        if alm.multiple_selected:
-            candidates = li_seleccionadas or []
-        else:
-            candidates = list(range(self.db_games.reccount()))
+        candidates = [self.grid.recno(r) for r in range(self.grid.reccount())]
+        if not candidates:
+            return
 
         from Code.Databases.analysis_provenance import filter_recnos_for_analysis
         filtered_recnos, counts = filter_recnos_for_analysis(self.db_games.conexion, candidates, mode="MISSING_ONLY")
@@ -1492,9 +1492,75 @@ class WGames(QtWidgets.QWidget):
             except Exception:
                 pass
 
+
+    def _get_missing_results_count(self) -> int:
+        candidates = [self.grid.recno(r) for r in range(self.grid.reccount())]
+        if not candidates:
+            return 0
+        placeholders = ",".join("?" for _ in candidates)
+        sql = f"SELECT COUNT(*) FROM Games WHERE ROWID IN ({placeholders}) AND (RESULT = '*' OR RESULT IS NULL OR TRIM(RESULT) = '')"
+        cursor = self.db_games.conexion.execute(sql, candidates)
+        return cursor.fetchone()[0]
+
+    def tw_data_fitness(self):
+        count = self._get_missing_results_count()
+        if count == 0:
+            import Code.QT.QTMessages as QTMessages
+            QTMessages.message_information(self, "No missing results ('*') found in the current filter.\nAll game results are fit.")
+            return
+
+        from Code.Databases.gui_integration import show_data_fitness_wizard
+        result = show_data_fitness_wizard(self, count)
+        if result:
+            from Code.Databases.result_repair import orchestrate_data_fitness_adjudication
+            import Code.QT.QTMessages as QTMessages
+            candidates = [self.grid.recno(r) for r in range(self.grid.reccount())]
+            with QTMessages.one_moment_please(self.wb_database):
+                summary = orchestrate_data_fitness_adjudication(
+                    self.db_games.conexion, 
+                    candidates, 
+                    result["policy"], 
+                    result["fallback_to_eval"]
+                )
+            
+            msg = (
+                f"Adjudication Summary:\n"
+                f"Repaired Wins: {summary['repaired_wins']}\n"
+                f"Repaired Losses: {summary['repaired_losses']}\n"
+                f"Repaired Draws: {summary['repaired_draws']}\n"
+                f"Unrepaired: {summary['unrepaired']}"
+            )
+            QTMessages.message_information(self, msg)
+            if self.grid:
+                self.grid.setFocus() # Just to be safe
+                # Note: full reload is complex, users can click Refresh
+
     def tw_themes(self):
+        count = self._get_missing_results_count()
+        if count > 0:
+            from Code.Databases.gui_integration import show_data_fitness_wizard
+            result = show_data_fitness_wizard(self, count)
+            if result:
+                from Code.Databases.result_repair import orchestrate_data_fitness_adjudication
+                import Code.QT.QTMessages as QTMessages
+                candidates = [self.grid.recno(r) for r in range(self.grid.reccount())]
+                with QTMessages.one_moment_please(self.wb_database):
+                    orchestrate_data_fitness_adjudication(
+                        self.db_games.conexion, 
+                        candidates, 
+                        result["policy"], 
+                        result["fallback_to_eval"]
+                    )
+            else:
+                return # user canceled
+
         from Code.Databases.gui_integration import show_readiness_dialog
-        if not show_readiness_dialog(self, self.db_games):
+        action = show_readiness_dialog(self, self.db_games)
+        
+        if action == "MASS_ANALYSIS":
+            self.tw_massive_analysis()
+            return
+        elif action != "ANALYTICS":
             return
 
         with QTMessages.one_moment_please(self.wb_database, _("Analyzing tactical themes"), with_cancel=True) as um:
