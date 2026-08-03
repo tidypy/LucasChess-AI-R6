@@ -52,6 +52,16 @@
 #### 3. Automated Readiness Unit Tests (`test_phase3_readiness.py`)
 - Added unit test suite verifying database readiness summary counts and tier-gated metric calculations.
 
+### 🔬 Stockfish Mass Analysis & Provenance Engine (Phase 4)
+
+#### 1. Analysis Provenance Engine (`analysis_provenance.py`)
+- **`AnalysisProvenance` Dataclass & Persistence:** Records `game_id`, `engine_name`, `engine_version`, `depth`, `worker_count`, `analyzed_hash`, and ISO-8601 timestamps into `AnalysisProvenance` table via `record_analysis_provenance()`.
+- **Stale Analysis Detection (`is_analysis_stale`):** Automatically flags analysis as stale if game content hash (`CLEAN_HASH`) mutates after analysis run.
+- **Mass Analysis Selection (`filter_recnos_for_analysis`):** Supports `"MISSING_ONLY"` mode (skips existing Tier 3 games with fresh analysis, targeting only unanalyzed/stale games) and `"OVERWRITE"` mode.
+
+#### 2. Automated Provenance Unit Tests (`test_phase4_provenance.py`)
+- Added 4 unit tests covering provenance upserts, staleness detection, and candidate list filtering.
+
 ---
 
 ## [R6.0.4 - July 31 / August 1, 2026]
