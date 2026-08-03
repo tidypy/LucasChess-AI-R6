@@ -1461,7 +1461,7 @@ class WGames(QtWidgets.QWidget):
         if not alm:
             return
 
-        candidates = [self.grid.recno(r) for r in range(self.grid.reccount())]
+        candidates = [self.db_games.li_row_ids[r] for r in range(self.grid.reccount())]
         if not candidates:
             return
 
@@ -1486,6 +1486,12 @@ class WGames(QtWidgets.QWidget):
         if alm.accuracy_tags or alm.themes_tags:
             self.rehaz_columnas()
 
+        # Update position index files after analysis
+        try:
+            self.auto_update_positions()
+        except Exception:
+            pass
+
         if getattr(alm, "auto_update_stats", False):
             try:
                 self.tw_themes()
@@ -1494,13 +1500,25 @@ class WGames(QtWidgets.QWidget):
 
 
     def _get_missing_results_count(self) -> int:
-        candidates = [self.grid.recno(r) for r in range(self.grid.reccount())]
+        candidates = [self.db_games.li_row_ids[r] for r in range(self.grid.reccount())]
         if not candidates:
             return 0
-        placeholders = ",".join("?" for _ in candidates)
-        sql = f"SELECT COUNT(*) FROM Games WHERE ROWID IN ({placeholders}) AND (RESULT = '*' OR RESULT IS NULL OR TRIM(RESULT) = '')"
-        cursor = self.db_games.conexion.execute(sql, candidates)
-        return cursor.fetchone()[0]
+        count = 0
+        chunk_size = 900
+        for i in range(0, len(candidates), chunk_size):
+            chunk = candidates[i:i + chunk_size]
+            placeholders = ",".join("?" for _ in chunk)
+            sql = f"SELECT COUNT(*) FROM Games WHERE ROWID IN ({placeholders}) AND (RESULT = '*' OR RESULT IS NULL OR TRIM(RESULT) = '')"
+            cursor = self.db_games.conexion.execute(sql, chunk)
+            count += cursor.fetchone()[0]
+        return count
+
+    def auto_update_positions(self):
+        fp = DBgamesMov.DBgamesMov(self.db_games)
+        if fp.need_generate():
+            self.generate_positions_file()
+        elif fp.pending() > 0:
+            self.update_positions_file()
 
     def tw_data_fitness(self):
         count = self._get_missing_results_count()
@@ -1514,7 +1532,7 @@ class WGames(QtWidgets.QWidget):
         if result:
             from Code.Databases.result_repair import orchestrate_data_fitness_adjudication
             import Code.QT.QTMessages as QTMessages
-            candidates = [self.grid.recno(r) for r in range(self.grid.reccount())]
+            candidates = [self.db_games.li_row_ids[r] for r in range(self.grid.reccount())]
             with QTMessages.one_moment_please(self.wb_database):
                 summary = orchestrate_data_fitness_adjudication(
                     self.db_games.conexion, 
@@ -1543,7 +1561,7 @@ class WGames(QtWidgets.QWidget):
             if result:
                 from Code.Databases.result_repair import orchestrate_data_fitness_adjudication
                 import Code.QT.QTMessages as QTMessages
-                candidates = [self.grid.recno(r) for r in range(self.grid.reccount())]
+                candidates = [self.db_games.li_row_ids[r] for r in range(self.grid.reccount())]
                 with QTMessages.one_moment_please(self.wb_database):
                     orchestrate_data_fitness_adjudication(
                         self.db_games.conexion, 
@@ -1575,6 +1593,10 @@ class WGames(QtWidgets.QWidget):
                 return
         wma = WDB_Theme_Analysis.WDBMoveAnalysis(self, a.li_output_dic, a.title, a.missing_tags_output)
         wma.exec()
+        try:
+            self.auto_update_positions()
+        except Exception:
+            pass
 
     def tw_remove_duplicates(self):
         if not QTMessages.pregunta(self, f"{_('Remove duplicates')}\n{_('Are you sure?')}"):
