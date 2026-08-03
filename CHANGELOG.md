@@ -62,6 +62,16 @@
 #### 2. Automated Provenance Unit Tests (`test_phase4_provenance.py`)
 - Added 4 unit tests covering provenance upserts, staleness detection, and candidate list filtering.
 
+### 🎨 Visual QtCharts Badges & AI Coach Payload Bridge (Phase 5)
+
+#### 1. UI Bridge & AI Coach Payload Generator (`phase5_ui_bridge.py`)
+- **Visual Tier Badges (`get_tier_badge_info`):** Provides standardized metadata (title, color hex, icon, description) for Tier 0 (Invalid), Tier 1 (Basic PGN), Tier 2 (Elo-Ready), and Tier 3 (Gold Standard).
+- **Qt-Rich-Text HTML Renderer (`format_readiness_html`):** Formats database readiness summaries into HTML table fragments suitable for `QLabel` and `QMessageBox`.
+- **Truthful AI Coach Payload (`build_ai_coach_payload`):** Bundles player stats, explicit exclusion counters (`elo_games_excluded`, `accuracy_games_excluded`), tier distributions, system guardrail directives, and SHA-256 integrity hash for `Code/AI/StatsSummary.py` (LM Studio & OpenAI BYOK).
+
+#### 2. Automated UI Bridge Unit Tests (`test_phase5_ui_bridge.py`)
+- Added 3 unit tests verifying badge metadata lookups, rich-text HTML rendering, and SHA-256 tamper-evident payload generation.
+
 ---
 
 ## [R6.0.4 - July 31 / August 1, 2026]
