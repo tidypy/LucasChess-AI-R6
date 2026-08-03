@@ -10,6 +10,8 @@ import Code
 from Code.Base import Game
 from Code.Base.Constantes import FEN_INITIAL, STANDARD_TAGS, TACTICTHEMES
 from Code.Databases import DBgamesST
+from Code.Databases.db_migration import apply_phase2_schema
+from Code.Databases.game_validator import save_validation_result, validate_game_data
 from Code.Openings import OpeningsStd
 from Code.SQL import UtilSQL, RowidReader
 from Code.Z import Util
@@ -90,6 +92,10 @@ class DBgames:
 
         self.conexion = sqlite3.connect(self.path_file)
         self.conexion.row_factory = sqlite3.Row
+        try:
+            apply_phase2_schema(self.conexion)
+        except Exception:
+            pass
         self.order = None
         self.filter = None
 
@@ -1234,6 +1240,24 @@ class DBgames:
         dl_tmp.put_continue()
         return si_cols_cambiados
 
+    def _validate_and_store(self, rowid: int, game_obj_or_data: Any, headers_dict: dict = None) -> None:
+        """Validate a game's raw data and persist the quality result into SQLite. Safe fallback."""
+        try:
+            if not rowid:
+                return
+            raw = ""
+            if hasattr(game_obj_or_data, "save"):
+                raw = game_obj_or_data.save(False) or ""
+            elif isinstance(game_obj_or_data, str):
+                raw = game_obj_or_data
+            elif isinstance(game_obj_or_data, bytes):
+                raw = game_obj_or_data.decode("utf-8", errors="replace")
+
+            res = validate_game_data(raw, headers_dict)
+            save_validation_result(self.conexion, rowid, res)
+        except Exception:
+            pass
+
     def check_game(self, game):
         is_complete = game.is_fen_initial()
 
@@ -1326,6 +1350,7 @@ class DBgames:
         sql = f"UPDATE Games SET {set_clause} WHERE ROWID = ?"
         try:
             self.conexion.execute(sql, li_data + [rowid])
+            self._validate_and_store(rowid, game_modificada)
             if with_commit:
                 self.conexion.commit()
         except sqlite3.Error as e:

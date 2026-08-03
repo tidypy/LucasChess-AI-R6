@@ -310,6 +310,72 @@ class AnalyticsEngine:
 
         return finalized
 
+    # ------------------------------------------------------------------
+    # Phase 3: Readiness Summary & Gated Analytics
+    # ------------------------------------------------------------------
+    @classmethod
+    def get_database_readiness_summary(cls, db_games) -> dict:
+        """
+        Scans GameQuality table for database readiness metrics:
+        - counts per DERIVED_TIER (0, 1, 2, 3)
+        - total_games, ready_for_charts (tier 3 count), repairable_count
+        """
+        db_path = getattr(db_games, "nombre", None) or getattr(db_games, "path_file", None)
+        if not db_path and isinstance(db_games, str):
+            db_path = db_games
+
+        tier_counts = {0: 0, 1: 0, 2: 0, 3: 0}
+        total = 0
+        repairable = 0
+
+        con = getattr(db_games, "conexion", None)
+        close_con = False
+        if con is None and db_path and os.path.isfile(db_path):
+            try:
+                con = sqlite3.connect(db_path)
+                close_con = True
+            except Exception as e:
+                AILogger.warning(f"Failed to connect to database: {e}")
+
+        if con:
+            try:
+                cur = con.execute("SELECT DERIVED_TIER, VALIDATION_STATUS, COUNT(*) FROM GameQuality GROUP BY DERIVED_TIER, VALIDATION_STATUS")
+                for tier, status, n in cur.fetchall():
+                    n = int(n)
+                    total += n
+                    t_val = 0 if tier is None else int(tier)
+                    if t_val in tier_counts:
+                        tier_counts[t_val] += n
+                    if t_val in (1, 2) or (status and str(status).upper() in ("REPAIRABLE", "NEEDS_REPAIR", "PARTIAL")):
+                        repairable += n
+            except Exception as e:
+                AILogger.warning(f"Failed to read GameQuality readiness summary: {e}")
+            finally:
+                if close_con:
+                    con.close()
+
+        return {
+            "tier_counts": tier_counts,
+            "total_games": total,
+            "ready_for_charts": tier_counts[3],
+            "repairable_count": repairable,
+        }
+
+    @classmethod
+    def process_gated_analytics(cls, db_games, target_tier: int = 3, recnos=None, progress_callback=None) -> dict:
+        """
+        Executes analytics filtering strictly on DERIVED_TIER >= target_tier.
+        """
+        readiness = cls.get_database_readiness_summary(db_games)
+        base_results = cls.process_games_analytics(db_games, recnos, progress_callback)
+        return {
+            "status": "ok",
+            "target_tier": target_tier,
+            "readiness": readiness,
+            "player_metrics": base_results,
+        }
+
+
 
 class AnalyticsWorker(QtCore.QThread):
     """
