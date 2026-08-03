@@ -456,6 +456,11 @@ class WPerfomance(QtWidgets.QWidget):
 
         if not self.session_prompted:
             self.session_prompted = True
+            from Code.Databases.gui_integration import show_readiness_dialog
+            proceed = show_readiness_dialog(self, self.db_games)
+            if not proceed:
+                return
+
             from Code.QT import FormLayout
             li = [(_("Show separately labeled estimated ELO when move accuracy exists"), True)]
             msg = _("Estimated ELO is shown separately and is never used as an official rating or in performance calculations.")
