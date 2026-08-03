@@ -1461,10 +1461,23 @@ class WGames(QtWidgets.QWidget):
             return
 
         if alm.multiple_selected:
-            nregs = n_seleccionadas
+            candidates = li_seleccionadas or []
         else:
-            nregs = self.db_games.reccount()
-            li_seleccionadas = None
+            candidates = list(range(self.db_games.reccount()))
+
+        from Code.Databases.analysis_provenance import filter_recnos_for_analysis
+        filtered_recnos, counts = filter_recnos_for_analysis(self.db_games.conexion, candidates, mode="MISSING_ONLY")
+        if counts["skipped_already_tier3"] > 0:
+            QTMessages.message_information(
+                self,
+                f"{_('Mass Analysis Filter')}\n\n"
+                f"{_('Total candidates')}: {counts['total_candidates']}\n"
+                f"{_('Games to analyze')}: {counts['to_analyze']}\n"
+                f"{_('Skipped (already Tier 3 Gold Standard)')}: {counts['skipped_already_tier3']}"
+            )
+
+        nregs = len(filtered_recnos)
+        li_seleccionadas = filtered_recnos
 
         self.setDisabled(True)
         RunAnalysisControl.lanzar_analisis_masivo(self, alm, nregs, li_seleccionadas)
@@ -1480,6 +1493,10 @@ class WGames(QtWidgets.QWidget):
                 pass
 
     def tw_themes(self):
+        from Code.Databases.gui_integration import show_readiness_dialog
+        if not show_readiness_dialog(self, self.db_games):
+            return
+
         with QTMessages.one_moment_please(self.wb_database, _("Analyzing tactical themes"), with_cancel=True) as um:
             a = WDB_Theme_Analysis.SelectedGameThemeAnalyzer(self, um)
             if a.is_canceled():
