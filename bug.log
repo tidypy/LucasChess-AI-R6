@@ -169,3 +169,205 @@ Traceback (most recent call last):
   File "Code\Databases\WDB_Perfomance.py", line 702, in tw_select_player
   File "Code\Databases\WDB_Perfomance.py", line 470, in actualiza
 ModuleNotFoundError: No module named 'pandas'
+2026-08-02 22:51:59.960459
+Traceback (most recent call last):
+  File "Code\Databases\WDatabase.py", line 172, in tab_changed
+  File "Code\Databases\WDB_Perfomance.py", line 470, in actualiza
+ModuleNotFoundError: No module named 'pandas'
+2026-08-03 13:34:42.232743
+Traceback (most recent call last):
+  File "Code\Main\WindowWelcome.py", line 170, in action_spar
+  File "Code\PlayAgainstEngine\ManagerPlayAgainstEngine.py", line 154, in start
+  File "Code\PlayAgainstEngine\ManagerPlayAgainstEngine.py", line 166, in base_inicio
+  File "Code\PlayAgainstEngine\ManagerPlayAgainstEngine.py", line 189, in _init_vars
+KeyError: 'ISWHITE'
+2026-08-03 13:35:09.380019
+Traceback (most recent call last):
+  File "Code\Main\WindowWelcome.py", line 161, in action_databases
+  File "Code\Databases\WDatabase.py", line 58, in __init__
+  File "Code\Databases\WDB_Perfomance.py", line 428, in __init__
+  File "pyimod02_importers.py", line 457, in exec_module
+  File "Code\Databases\analytics_engine.py", line 6, in <module>
+  File "pyimod02_importers.py", line 457, in exec_module
+  File "Code\AI\elo_calculator.py", line 2, in <module>
+ModuleNotFoundError: No module named 'numpy'
+2026-08-03 15:36:16.421980
+Traceback (most recent call last):
+  File "Code\Main\WindowWelcome.py", line 165, in action_databases
+  File "Code\Databases\WDatabase.py", line 46, in __init__
+  File "Code\Databases\WDB_Players.py", line 123, in __init__
+  File "Code\QT\Grid.py", line 336, in __init__
+  File "Code\QT\Grid.py", line 57, in rowCount
+  File "Code\Databases\WDB_Players.py", line 361, in grid_num_datos
+AttributeError: Error calling Python override of QAbstractTableModel::rowCount(): 'WPlayer' object has no attribute 'gridPlayerList'
+2026-08-03 15:37:08.908221
+Traceback (most recent call last):
+  File "Code\Main\WBase.py", line 459, in run_action
+  File "Code\Procesador.py", line 471, in run_action
+  File "Code\Procesador.py", line 428, in menu_tools
+  File "Code\Menus\BaseMenu.py", line 139, in run
+  File "Code\Menus\ToolsMenu.py", line 66, in run_select
+  File "Code\Menus\ToolsMenuRun.py", line 38, in run
+  File "Code\Menus\ToolsMenuRun.py", line 87, in database
+  File "Code\Databases\WDatabase.py", line 46, in __init__
+  File "Code\Databases\WDB_Players.py", line 123, in __init__
+  File "Code\QT\Grid.py", line 336, in __init__
+  File "Code\QT\Grid.py", line 57, in rowCount
+  File "Code\Databases\WDB_Players.py", line 361, in grid_num_datos
+AttributeError: Error calling Python override of QAbstractTableModel::rowCount(): 'WPlayer' object has no attribute 'gridPlayerList'
+2026-08-03 15:42:07.863839
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Games.py", line 1506, in tw_data_fitness
+  File "Code\Databases\WDB_Games.py", line 1497, in _get_missing_results_count
+TypeError: Grid.recno() takes 1 positional argument but 2 were given
+2026-08-03 15:42:09.855557
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Games.py", line 1506, in tw_data_fitness
+  File "Code\Databases\WDB_Games.py", line 1497, in _get_missing_results_count
+TypeError: Grid.recno() takes 1 positional argument but 2 were given
+2026-08-03 15:42:10.031151
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Games.py", line 1506, in tw_data_fitness
+  File "Code\Databases\WDB_Games.py", line 1497, in _get_missing_results_count
+TypeError: Grid.recno() takes 1 positional argument but 2 were given
+2026-08-03 15:42:10.199455
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Games.py", line 1506, in tw_data_fitness
+  File "Code\Databases\WDB_Games.py", line 1497, in _get_missing_results_count
+TypeError: Grid.recno() takes 1 positional argument but 2 were given
+2026-08-03 15:43:27.729051
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Games.py", line 1539, in tw_themes
+  File "Code\Databases\WDB_Games.py", line 1497, in _get_missing_results_count
+TypeError: Grid.recno() takes 1 positional argument but 2 were given
+2026-08-03 15:43:29.728877
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Games.py", line 1539, in tw_themes
+  File "Code\Databases\WDB_Games.py", line 1497, in _get_missing_results_count
+TypeError: Grid.recno() takes 1 positional argument but 2 were given
+2026-08-03 15:43:29.904592
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Games.py", line 1539, in tw_themes
+  File "Code\Databases\WDB_Games.py", line 1497, in _get_missing_results_count
+TypeError: Grid.recno() takes 1 positional argument but 2 were given
+2026-08-03 15:43:30.081132
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Games.py", line 1539, in tw_themes
+  File "Code\Databases\WDB_Games.py", line 1497, in _get_missing_results_count
+TypeError: Grid.recno() takes 1 positional argument but 2 were given
+2026-08-03 15:43:30.256973
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Games.py", line 1539, in tw_themes
+  File "Code\Databases\WDB_Games.py", line 1497, in _get_missing_results_count
+TypeError: Grid.recno() takes 1 positional argument but 2 were given
+2026-08-03 15:43:31.025039
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Games.py", line 1506, in tw_data_fitness
+  File "Code\Databases\WDB_Games.py", line 1497, in _get_missing_results_count
+TypeError: Grid.recno() takes 1 positional argument but 2 were given
+2026-08-03 15:43:31.200888
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Games.py", line 1506, in tw_data_fitness
+  File "Code\Databases\WDB_Games.py", line 1497, in _get_missing_results_count
+TypeError: Grid.recno() takes 1 positional argument but 2 were given
+2026-08-03 15:43:31.377052
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Games.py", line 1506, in tw_data_fitness
+  File "Code\Databases\WDB_Games.py", line 1497, in _get_missing_results_count
+TypeError: Grid.recno() takes 1 positional argument but 2 were given
+2026-08-03 15:43:32.041016
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Games.py", line 1539, in tw_themes
+  File "Code\Databases\WDB_Games.py", line 1497, in _get_missing_results_count
+TypeError: Grid.recno() takes 1 positional argument but 2 were given
+2026-08-03 15:43:32.216822
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Games.py", line 1539, in tw_themes
+  File "Code\Databases\WDB_Games.py", line 1497, in _get_missing_results_count
+TypeError: Grid.recno() takes 1 positional argument but 2 were given
+2026-08-03 15:43:32.401294
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Games.py", line 1539, in tw_themes
+  File "Code\Databases\WDB_Games.py", line 1497, in _get_missing_results_count
+TypeError: Grid.recno() takes 1 positional argument but 2 were given
+2026-08-03 15:51:10.067188
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Games.py", line 704, in tw_filtrar
+  File "Code\Databases\WDB_Games.py", line 656, in standard
+  File "Code\Databases\WDB_Filters.py", line 40, in __init__
+AttributeError: 'ED' object has no attribute 'ancho'
+2026-08-03 15:51:24.969374
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Games.py", line 1544, in tw_themes
+  File "Code\Databases\WDB_Games.py", line 1497, in _get_missing_results_count
+TypeError: Grid.recno() takes 1 positional argument but 2 were given
+2026-08-03 15:51:28.313642
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Games.py", line 1511, in tw_data_fitness
+  File "Code\Databases\WDB_Games.py", line 1497, in _get_missing_results_count
+TypeError: Grid.recno() takes 1 positional argument but 2 were given
+2026-08-03 15:52:55.787319
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Games.py", line 1511, in tw_data_fitness
+  File "Code\Databases\WDB_Games.py", line 1497, in _get_missing_results_count
+TypeError: Grid.recno() takes 1 positional argument but 2 were given
+2026-08-03 15:52:57.810769
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Games.py", line 1544, in tw_themes
+  File "Code\Databases\WDB_Games.py", line 1497, in _get_missing_results_count
+TypeError: Grid.recno() takes 1 positional argument but 2 were given
+2026-08-03 15:53:15.403682
+Traceback (most recent call last):
+  File "Code\QT\Grid.py", line 484, in mousePressEvent
+  File "Code\QT\Grid.py", line 458, in selectionChanged
+  File "Code\Databases\WDB_Players.py", line 410, in grid_cambiado_registro
+TypeError: Error calling Python override of QTableView::selectionChanged(): object of type 'NoneType' has no len()
+2026-08-03 15:53:19.995623
+Traceback (most recent call last):
+  File "Code\QT\Grid.py", line 484, in mousePressEvent
+  File "Code\QT\Grid.py", line 458, in selectionChanged
+  File "Code\Databases\WDB_Players.py", line 410, in grid_cambiado_registro
+TypeError: Error calling Python override of QTableView::selectionChanged(): object of type 'NoneType' has no len()
+2026-08-03 15:53:30.067597
+Traceback (most recent call last):
+  File "Code\Databases\WDatabase.py", line 172, in tab_changed
+  File "Code\Databases\WDB_Perfomance.py", line 466, in actualiza
+TypeError: Grid.recno() takes 1 positional argument but 2 were given
+2026-08-03 15:53:31.708704
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Perfomance.py", line 387, in <lambda>
+  File "Code\Databases\WDB_Perfomance.py", line 466, in actualiza
+TypeError: Grid.recno() takes 1 positional argument but 2 were given
+2026-08-03 16:08:01.711131
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Games.py", line 1522, in tw_data_fitness
+TypeError: Grid.recno() takes 1 positional argument but 2 were given
+2026-08-03 16:08:24.014830
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Games.py", line 1522, in tw_data_fitness
+TypeError: Grid.recno() takes 1 positional argument but 2 were given
+2026-08-03 16:09:49.222104
+Traceback (most recent call last):
+  File "Code\QT\Grid.py", line 477, in mouseDoubleClickEvent
+  File "Code\Databases\WDB_Players.py", line 251, in grid_doble_click
+  File "Code\Databases\WDB_Players.py", line 816, in tw_rebuild
+  File "Code\Base\Game.py", line 1339, in lipv_lipgn
+AttributeError: 'NoneType' object has no attribute 'san'
+2026-08-03 16:12:11.466207
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Games.py", line 704, in tw_filtrar
+  File "Code\Databases\WDB_Games.py", line 656, in standard
+  File "Code\Databases\WDB_Filters.py", line 40, in __init__
+AttributeError: 'NoneType' object has no attribute 'set_font'
+2026-08-03 16:17:26.042472
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Games.py", line 704, in tw_filtrar
+  File "Code\Databases\WDB_Games.py", line 656, in standard
+  File "Code\Databases\WDB_Filters.py", line 82, in __init__
+  File "Code\QT\Colocacion.py", line 108, in control
+TypeError: 'PySide6.QtWidgets.QGridLayout.addWidget' called with wrong argument types:
+  PySide6.QtWidgets.QGridLayout.addWidget(H, int, int, int, int, AlignmentFlag)
+Supported signatures:
+  PySide6.QtWidgets.QGridLayout.addWidget(w: PySide6.QtWidgets.QWidget, /)
+  PySide6.QtWidgets.QGridLayout.addWidget(arg__1: PySide6.QtWidgets.QWidget, row: int, column: int, /, alignment: PySide6.QtCore.Qt.AlignmentFlag = Default(Qt.Alignment))
+  PySide6.QtWidgets.QGridLayout.addWidget(arg__1: PySide6.QtWidgets.QWidget, row: int, column: int, rowSpan: int, columnSpan: int, /, alignment: PySide6.QtCore.Qt.AlignmentFlag = Default(Qt.Alignment))

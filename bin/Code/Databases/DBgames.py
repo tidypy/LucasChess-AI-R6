@@ -513,35 +513,27 @@ class DBgames:
         self.save_config("SUMMARY_DEPTH", depth)
         self.db_stat.depth = depth
         self.db_stat.reset()
-        if self.filter:
-            self.filter_pv("")
+        
         while self.if_there_are_records_to_read():
             time.sleep(0.1)
             dispatch(0, self.reccount())
+            
         reccount = self.reccount()
         if reccount:
-            cursor = self.conexion.execute("SELECT XPV, RESULT FROM Games")
-            recno = 0
             self.db_stat.massive_append_set(True)
-            while dispatch(recno, reccount):
-                chunk = random.randint(60000, 100000)
-                li = cursor.fetchmany(chunk)
-                if li:
-                    for pos, (XPV, RESULT) in enumerate(li):
-                        if XPV.startswith("|"):
-                            continue
-                        pv = xpv_pv(XPV)
-                        self.db_stat.append(pv, RESULT)
-                        if (pos % (chunk // 20)) == 0:
-                            if not dispatch(recno + pos, reccount):
-                                break
-                    nli = len(li)
-                    if nli < chunk:
-                        break
-                    recno += nli
-                    self.db_stat.commit()
-                else:
+            chunk = 20000
+            for offset in range(0, reccount, chunk):
+                if not dispatch(offset, reccount):
                     break
+                rowids = self.li_row_ids[offset:offset+chunk]
+                placeholders = ",".join(["?"] * len(rowids))
+                cursor = self.conexion.execute(f"SELECT XPV, RESULT FROM Games WHERE ROWID IN ({placeholders})", rowids)
+                li = cursor.fetchall()
+                for XPV, RESULT in li:
+                    if XPV.startswith("|"):
+                        continue
+                    pv = xpv_pv(XPV)
+                    self.db_stat.append(pv, RESULT)
             self.db_stat.massive_append_set(False)
             self.db_stat.commit()
 
@@ -685,17 +677,23 @@ class DBgames:
             if raw is not None:
                 yield self.read_game_raw(raw)
 
-    def players(self):
+    def players_with_counts(self):
+        # Extracts players and game counts, safely handling whitespace
         sql = '''
             SELECT player, COUNT(*) as cnt FROM (
-                SELECT WHITE AS player FROM Games WHERE WHITE IS NOT NULL AND WHITE != ''
+                SELECT TRIM(WHITE) AS player FROM Games WHERE WHITE IS NOT NULL AND TRIM(WHITE) != ''
                 UNION ALL
-                SELECT BLACK AS player FROM Games WHERE BLACK IS NOT NULL AND BLACK != ''
+                SELECT TRIM(BLACK) AS player FROM Games WHERE BLACK IS NOT NULL AND TRIM(BLACK) != ''
             ) GROUP BY player ORDER BY cnt DESC, UPPER(player) ASC
         '''
-        cursor = self.conexion.execute(sql)
-        lista = [raw[0] for raw in cursor.fetchall() if raw[0]]
-        return lista
+        try:
+            cursor = self.conexion.execute(sql)
+            return [(raw[0], raw[1]) for raw in cursor.fetchall() if raw[0]]
+        except Exception:
+            return []
+
+    def players(self):
+        return [name for name, count in self.players_with_counts()]
 
     def read_data(self, recno):
         raw = self.read_complete_recno(recno)

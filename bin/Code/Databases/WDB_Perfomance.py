@@ -438,6 +438,9 @@ class WPerfomance(QtWidgets.QWidget):
         self.setLayout(ly)
 
     def actualiza(self, force_prompt=False):
+        if self.dic_players is not None and not force_prompt:
+            return
+            
         # Always refresh ROWID list to avoid stale references after inserts/deletes
         cursor = self.db_games.conexion.execute("SELECT rowid FROM Games")
         self.db_games.li_row_ids = [r[0] for r in cursor.fetchall()]
@@ -459,9 +462,14 @@ class WPerfomance(QtWidgets.QWidget):
             self.use_accuracy = True
             self.use_engine_elo = False
 
-        li_regs = self.wb_games.grid.list_selected_recnos()
-        if len(li_regs) <= 1 or not li_regs:
-            li_regs = range(len(self.db_games.li_row_ids))
+        reccount = self.wb_games.grid.reccount()
+        li_regs = [self.wb_games.db_games.li_row_ids[r] for r in range(reccount)]
+        
+        if not li_regs:
+            self.dic_players = None
+            self.li_players = []
+            self.grid.refresh()
+            return
 
         pb = QTMessages.ProgressBarWithTime(self, _("Calculating Performance Matrix..."), formato1="%p%")
         pb.set_total(len(li_regs))

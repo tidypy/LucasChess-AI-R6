@@ -407,7 +407,7 @@ class WPlayer(QtWidgets.QWidget):
             nfila = self.movesWhite[nfila]
         elif grid == self.gridMovesBlack:
             nfila = self.movesBlack[nfila]
-        if len(dt) > nfila >= 0:
+        if dt is not None and len(dt) > nfila >= 0:
             game = dt[nfila]["game"]
             if game is None:
                 pv = dt[nfila]["pv"]

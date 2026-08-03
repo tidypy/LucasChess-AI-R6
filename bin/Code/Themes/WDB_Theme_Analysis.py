@@ -76,15 +76,13 @@ class WDBMoveAnalysis(LCDialog.LCDialog):
 class SelectedGameThemeAnalyzer:
     def __init__(self, w_parent, um: QTMessages.WaitingMessage):
         if hasattr(w_parent, "wgames") and hasattr(w_parent.wgames, "grid"):
-            li_sel = w_parent.wgames.grid.list_selected_recnos()
+            li_sel = [w_parent.wgames.grid.recno(r) for r in range(w_parent.wgames.grid.reccount())]
         elif hasattr(w_parent, "wb_games") and hasattr(w_parent.wb_games, "grid"):
-            li_sel = w_parent.wb_games.grid.list_selected_recnos()
+            li_sel = [w_parent.wb_games.grid.recno(r) for r in range(w_parent.wb_games.grid.reccount())]
         elif hasattr(w_parent, "grid"):
-            li_sel = w_parent.grid.list_selected_recnos()
+            li_sel = [w_parent.grid.recno(r) for r in range(w_parent.grid.reccount())]
         else:
-            li_sel = [0]
-        if len(li_sel) == 1:
-            li_sel = range(w_parent.db_games.reccount())
+            li_sel = list(range(w_parent.db_games.all_reccount()))
         self.dic_themes = dict()
         self.li_output_dic = []
         self.missing_tags_output = ""

@@ -339,10 +339,13 @@ class AnalyticsEngine:
 
         if con:
             try:
+                cur = con.execute("SELECT COUNT(*) FROM Games")
+                row = cur.fetchone()
+                total = int(row[0]) if row else 0
+
                 cur = con.execute("SELECT DERIVED_TIER, VALIDATION_STATUS, COUNT(*) FROM GameQuality GROUP BY DERIVED_TIER, VALIDATION_STATUS")
                 for tier, status, n in cur.fetchall():
                     n = int(n)
-                    total += n
                     t_val = 0 if tier is None else int(tier)
                     if t_val in tier_counts:
                         tier_counts[t_val] += n
