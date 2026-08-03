@@ -79,13 +79,14 @@ class StatsSummaryFormatter:
         b_score = sum(b_results) if tot_b else 0
         tot_score = w_score + b_score
 
-        w_perf = performance_obj.according_method("FIDE", "W") if tot_w else None
-        b_perf = performance_obj.according_method("FIDE", "B") if tot_b else None
-        tot_perf = performance_obj.according_method("FIDE", "WB") if tot_games else None
+        w_perf = performance_obj.according_method("FIDE", True) or None
+        b_perf = performance_obj.according_method("FIDE", False) or None
+        tot_perf = performance_obj.according_method("FIDE", None) or None
 
-        avg_opp_w = sum(w_opps) / tot_w if tot_w else 0
-        avg_opp_b = sum(b_opps) / tot_b if tot_b else 0
-        avg_opp_tot = (sum(w_opps) + sum(b_opps)) / tot_games if tot_games else 0
+        all_opps = w_opps + b_opps
+        avg_opp_w = int(sum(w_opps) / len(w_opps)) if w_opps else None
+        avg_opp_b = int(sum(b_opps) / len(b_opps)) if b_opps else None
+        avg_opp_tot = int(sum(all_opps) / len(all_opps)) if all_opps else None
 
         data = {
             "player": player_name or _("All Players"),
@@ -93,18 +94,22 @@ class StatsSummaryFormatter:
             "total_games": tot_games,
             "total_score": f"{tot_score}/{tot_games} ({tot_score * 100 / tot_games:.1f}%)" if tot_games else "0%",
             "performance_elo": tot_perf,
-            "avg_opponent_elo": int(avg_opp_tot),
+            "avg_opponent_elo": avg_opp_tot,
+            "elo_metric_games_used": len(all_opps),
+            "elo_metric_games_excluded": tot_games - len(all_opps),
             "white_stats": {
                 "games": tot_w,
-                "score": f"{w_score}/{tot_w} ({w_score * 100 / tot_w:.1f}%)" if tot_w else "N/A",
+                "score": f"{w_score}/{tot_w} ({w_score * 100 / tot_w:.1f}%)" if tot_w else None,
                 "performance_elo": w_perf,
-                "avg_opponent_elo": int(avg_opp_w),
+                "avg_opponent_elo": avg_opp_w,
+                "elo_metric_games_used": len(w_opps),
             },
             "black_stats": {
                 "games": tot_b,
-                "score": f"{b_score}/{tot_b} ({b_score * 100 / tot_b:.1f}%)" if tot_b else "N/A",
+                "score": f"{b_score}/{tot_b} ({b_score * 100 / tot_b:.1f}%)" if tot_b else None,
                 "performance_elo": b_perf,
-                "avg_opponent_elo": int(avg_opp_b),
+                "avg_opponent_elo": avg_opp_b,
+                "elo_metric_games_used": len(b_opps),
             },
         }
         return data
@@ -182,6 +187,7 @@ def generate_stats_summary_async(parent_window, stats_data, title=None):
             "1. 📊 **Executive Performance Overview**: Evaluate overall score, Elo performance vs. average opponent strength, and consistency.\n"
             "2. ⚔️ **Color & Opening Dynamics**: Contrast White vs. Black performance, highlight strong lines, and point out color imbalances.\n"
             "3. 🎯 **Key Action Items & Training Focus**: Give 2 concrete, realistic recommendations for improvement.\n\n"
+            "Never infer, estimate, or substitute a missing metric. Treat null values as unavailable, and state when conclusions are based on a partial set of games.\n"
             "Tone: Constructive, analytical, precise, and encouraging."
         )
 

@@ -1,10 +1,14 @@
 import os
-import sqlite3
-import numpy as np
+import re
 from PySide6 import QtCore
 
 from Code.AI.AILogger import AILogger
-from Code.AI.elo_calculator import Glicko2Calculator, SigmoidELOCalculator, WDLConverter
+from Code.AI.elo_calculator import SigmoidELOCalculator
+
+_RE_WHITE_ELO = re.compile(r'\[WhiteElo\s+"([0-9]+)"\]')
+_RE_BLACK_ELO = re.compile(r'\[BlackElo\s+"([0-9]+)"\]')
+_RE_WHITE_ACCURACY = re.compile(r'\[WhiteAccuracy\s+"([0-9.]+)"\]')
+_RE_BLACK_ACCURACY = re.compile(r'\[BlackAccuracy\s+"([0-9.]+)"\]')
 
 # Check if duckdb is installed
 try:
@@ -19,17 +23,84 @@ class AnalyticsEngine:
     """
     Dual-engine analytics layer for database statistics:
     - Primary: DuckDB ATTACH (Read-Only) for instant vectorized queries across large datasets.
-    - Fallback: Pure SQLite CTE + NumPy array processing.
+    - Fallback: Pure SQLite/Python processing with identical metric gating.
     """
 
     @classmethod
     def is_duckdb_available(cls) -> bool:
         return HAS_DUCKDB
 
+    @staticmethod
+    def _optional_positive_int(value):
+        try:
+            parsed = int(value)
+            return parsed if parsed > 0 else None
+        except (TypeError, ValueError):
+            return None
+
+    @staticmethod
+    def _safe_field(db_games, recno, field):
+        try:
+            return db_games.field(recno, field)
+        except (KeyError, IndexError, TypeError, AttributeError):
+            return None
+
+    @staticmethod
+    def _decode_data(value):
+        if isinstance(value, bytes):
+            return value.decode("utf-8", errors="ignore")
+        return value or ""
+
+    @classmethod
+    def _extract_elo(cls, data, pattern):
+        match = pattern.search(data)
+        return cls._optional_positive_int(match.group(1)) if match else None
+
+    @staticmethod
+    def _extract_accuracy(data, pattern):
+        match = pattern.search(data)
+        if not match:
+            return None
+        try:
+            value = float(match.group(1))
+            return value if 0.0 <= value <= 100.0 else None
+        except ValueError:
+            return None
+
+    @staticmethod
+    def _record_player(players, player, is_white, opponent_elo, score, accuracy):
+        if player not in players:
+            players[player] = {
+                "games": 0, "wins": 0, "draws": 0, "losses": 0,
+                "opponents_elo": [], "elo_results": [], "results": [],
+                "white_games": 0, "black_games": 0,
+                "acpl_list": [], "accuracy_list": [],
+                "elo_excluded": 0, "accuracy_excluded": 0,
+            }
+        data = players[player]
+        data["games"] += 1
+        data["white_games" if is_white else "black_games"] += 1
+        data["results"].append(score)
+        if score == 1.0:
+            data["wins"] += 1
+        elif score == 0.0:
+            data["losses"] += 1
+        else:
+            data["draws"] += 1
+        if opponent_elo is None:
+            data["elo_excluded"] += 1
+        else:
+            data["opponents_elo"].append(opponent_elo)
+            data["elo_results"].append(score)
+        if accuracy is None:
+            data["accuracy_excluded"] += 1
+        else:
+            data["accuracy_list"].append(accuracy)
+
     @classmethod
     def process_games_analytics(cls, db_games, recnos=None, progress_callback=None):
         """
-        Executes game analysis pipeline using DuckDB if available, falling back to SQLite/NumPy.
+        Executes game analytics using DuckDB when available, with a SQLite/Python fallback.
         """
         if recnos is None:
             recnos = list(range(db_games.reccount()))
@@ -83,9 +154,15 @@ class AnalyticsEngine:
             con.execute(f"ATTACH '{escaped_db_path}' AS db (TYPE SQLITE, READ_ONLY);")
     
             recno_str = ",".join(str(r) for r in rowids)
+            fields = getattr(db_games, "st_fields", set())
+            white_elo_expr = "WHITEELO" if "WHITEELO" in fields else "NULL"
+            black_elo_expr = "BLACKELO" if "BLACKELO" in fields else "NULL"
             query = f"""
-                SELECT 
-                    WHITE, BLACK, RESULT
+                SELECT
+                    WHITE, BLACK, RESULT,
+                    {white_elo_expr} AS WHITEELO,
+                    {black_elo_expr} AS BLACKELO,
+                    _DATA_
                 FROM db.Games 
                 WHERE rowid IN ({recno_str})
             """
@@ -102,8 +179,13 @@ class AnalyticsEngine:
 
             white = str(row.get("WHITE", "") or "").strip()
             black = str(row.get("BLACK", "") or "").strip()
-            w_elo = 1500
-            b_elo = 1500
+            w_elo = cls._optional_positive_int(row.get("WHITEELO"))
+            b_elo = cls._optional_positive_int(row.get("BLACKELO"))
+            data = cls._decode_data(row.get("_DATA_"))
+            w_elo = w_elo or cls._extract_elo(data, _RE_WHITE_ELO)
+            b_elo = b_elo or cls._extract_elo(data, _RE_BLACK_ELO)
+            w_accuracy = cls._extract_accuracy(data, _RE_WHITE_ACCURACY)
+            b_accuracy = cls._extract_accuracy(data, _RE_BLACK_ACCURACY)
             res = str(row.get("RESULT", "") or "").strip()
 
             if not white or not black:
@@ -118,32 +200,16 @@ class AnalyticsEngine:
             else:
                 continue
 
-            for player, is_white, opp_name, opp_elo, is_win, is_loss in [
-                (white, True, black, b_elo, is_win_w, is_loss_w),
-                (black, False, white, w_elo, is_loss_w, is_win_w),
-            ]:
-                if player not in players:
-                    players[player] = {
-                        "games": 0, "wins": 0, "draws": 0, "losses": 0,
-                        "opponents_elo": [], "results": [],
-                        "white_games": 0, "black_games": 0,
-                        "acpl_list": [], "accuracy_list": [],
-                    }
-                p_data = players[player]
-                p_data["games"] += 1
-                if is_white:
-                    p_data["white_games"] += 1
-                else:
-                    p_data["black_games"] += 1
-
-                score = 1.0 if is_win else (0.0 if is_loss else 0.5)
-                p_data["results"].append(score)
-                if is_win: p_data["wins"] += 1
-                elif is_loss: p_data["losses"] += 1
-                else: p_data["draws"] += 1
-
-                if opp_elo > 0:
-                    p_data["opponents_elo"].append(opp_elo)
+            cls._record_player(
+                players, white, True, b_elo,
+                1.0 if is_win_w else (0.0 if is_loss_w else 0.5),
+                w_accuracy,
+            )
+            cls._record_player(
+                players, black, False, w_elo,
+                0.0 if is_win_w else (1.0 if is_loss_w else 0.5),
+                b_accuracy,
+            )
 
         return cls._finalize_player_metrics(players)
 
@@ -159,15 +225,20 @@ class AnalyticsEngine:
             if progress_callback and idx % 50 == 0:
                 progress_callback(idx, total_count)
 
-            white = (db_games.field(recno, "WHITE") or "").strip()
-            black = (db_games.field(recno, "BLACK") or "").strip()
+            white = (cls._safe_field(db_games, recno, "WHITE") or "").strip()
+            black = (cls._safe_field(db_games, recno, "BLACK") or "").strip()
             if not white or not black:
                 continue
 
-            w_elo = 1500
-            b_elo = 1500
+            w_elo = cls._optional_positive_int(cls._safe_field(db_games, recno, "WHITEELO"))
+            b_elo = cls._optional_positive_int(cls._safe_field(db_games, recno, "BLACKELO"))
+            data = cls._decode_data(cls._safe_field(db_games, recno, "_DATA_"))
+            w_elo = w_elo or cls._extract_elo(data, _RE_WHITE_ELO)
+            b_elo = b_elo or cls._extract_elo(data, _RE_BLACK_ELO)
+            w_accuracy = cls._extract_accuracy(data, _RE_WHITE_ACCURACY)
+            b_accuracy = cls._extract_accuracy(data, _RE_BLACK_ACCURACY)
 
-            cresult = (db_games.field(recno, "RESULT") or "").strip()
+            cresult = (cls._safe_field(db_games, recno, "RESULT") or "").strip()
             if cresult in ("1-0", "1:0"):
                 score_w, score_b = 1.0, 0.0
             elif cresult in ("0-1", "0:1"):
@@ -177,29 +248,8 @@ class AnalyticsEngine:
             else:
                 continue
 
-            for player, is_white, opp_elo, score in [
-                (white, True, b_elo, score_w),
-                (black, False, w_elo, score_b),
-            ]:
-                if player not in players:
-                    players[player] = {
-                        "games": 0, "wins": 0, "draws": 0, "losses": 0,
-                        "opponents_elo": [], "results": [],
-                        "white_games": 0, "black_games": 0,
-                        "acpl_list": [], "accuracy_list": [],
-                    }
-                p = players[player]
-                p["games"] += 1
-                if is_white: p["white_games"] += 1
-                else: p["black_games"] += 1
-
-                p["results"].append(score)
-                if score == 1.0: p["wins"] += 1
-                elif score == 0.0: p["losses"] += 1
-                else: p["draws"] += 1
-
-                if opp_elo > 0:
-                    p["opponents_elo"].append(opp_elo)
+            cls._record_player(players, white, True, b_elo, score_w, w_accuracy)
+            cls._record_player(players, black, False, w_elo, score_b, b_accuracy)
 
         return cls._finalize_player_metrics(players)
 
@@ -214,19 +264,22 @@ class AnalyticsEngine:
             if tot == 0:
                 continue
 
-            avg_opp_elo = int(np.mean(d["opponents_elo"])) if d["opponents_elo"] else 1500
-            trimmed_acc = SigmoidELOCalculator.calculate_trimmed_mean(d["accuracy_list"]) if d["accuracy_list"] else None
-            trimmed_acpl = SigmoidELOCalculator.calculate_trimmed_mean(d["acpl_list"]) if d["acpl_list"] else None
-
-            sigmoid_elo = SigmoidELOCalculator.calculate_sigmoid_elo(trimmed_acc) if trimmed_acc is not None else 1500
-
-            # Calculate Glicko-2
-            g2 = Glicko2Calculator(rating=1500.0, rd=350.0)
-            if d["opponents_elo"] and d["results"]:
-                opp_rds = [100.0] * len(d["opponents_elo"])
-                g2_r, g2_rd, _ = g2.update(d["opponents_elo"], opp_rds, d["results"][:len(d["opponents_elo"])])
-            else:
-                g2_r, g2_rd = 1500, 350
+            avg_opp_elo = (
+                int(sum(d["opponents_elo"]) / len(d["opponents_elo"]))
+                if d["opponents_elo"] else None
+            )
+            trimmed_acc = (
+                SigmoidELOCalculator.calculate_trimmed_mean(d["accuracy_list"])
+                if d["accuracy_list"] else None
+            )
+            trimmed_acpl = (
+                SigmoidELOCalculator.calculate_trimmed_mean(d["acpl_list"])
+                if d["acpl_list"] else None
+            )
+            sigmoid_elo = (
+                SigmoidELOCalculator.calculate_sigmoid_elo(trimmed_acc)
+                if trimmed_acc is not None else None
+            )
 
             finalized[player] = {
                 "player": player,
@@ -237,10 +290,22 @@ class AnalyticsEngine:
                 "score_pct": (d["wins"] + 0.5 * d["draws"]) * 100.0 / tot,
                 "avg_opp_elo": avg_opp_elo,
                 "sigmoid_elo": sigmoid_elo,
-                "glicko2_elo": f"{g2_r} ± {g2_rd}",
-                "trimmed_acpl": round(trimmed_acpl, 1) if trimmed_acpl is not None else "N/A",
-                "trimmed_accuracy": round(trimmed_acc, 1) if trimmed_acc is not None else "N/A",
-                "outliers_count": len(d["accuracy_list"]) - int(len(d["accuracy_list"]) * 0.8) if d["accuracy_list"] else 0,
+                "glicko2_elo": None,
+                "trimmed_acpl": round(trimmed_acpl, 1) if trimmed_acpl is not None else None,
+                "trimmed_accuracy": round(trimmed_acc, 1) if trimmed_acc is not None else None,
+                "outliers_count": (
+                    len(d["accuracy_list"]) - int(len(d["accuracy_list"]) * 0.8)
+                    if d["accuracy_list"] else None
+                ),
+                "metric_counts": {
+                    "basic_games_used": tot,
+                    "elo_games_used": len(d["opponents_elo"]),
+                    "elo_games_excluded": d["elo_excluded"],
+                    "accuracy_games_used": len(d["accuracy_list"]),
+                    "accuracy_games_excluded": d["accuracy_excluded"],
+                    "glicko2_games_used": 0,
+                    "glicko2_games_excluded": tot,
+                },
             }
 
         return finalized

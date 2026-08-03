@@ -1,7 +1,6 @@
 import csv
 import os
 import webbrowser
-import math
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
@@ -118,30 +117,51 @@ class Performance:
     def __init__(self):
         self.dic_elo_player = {"W": [], "B": []}
         self.dic_elo_opponents = {"W": [], "B": []}
+        self.dic_elo_results = {"W": [], "B": []}
         self.dic_results = {"W": [], "B": []}
+        self.dic_accuracies = {"W": [], "B": []}
 
     def avg_elo_player(self):
         li_both = self.dic_elo_player["W"] + self.dic_elo_player["B"]
-        return int(round(sum(li_both) / len(li_both))) if len(li_both) > 0 else 0
+        return int(round(sum(li_both) / len(li_both))) if li_both else None
 
     def with_data(self):
-        return len(self.dic_elo_opponents["W"]) + len(self.dic_elo_opponents["B"]) > 0
+        return bool(self.dic_results["W"] or self.dic_results["B"])
 
-    def add_game(self, is_white: bool, elo: int, opponent_elo: int, result: float):
+    def add_game(self, is_white: bool, elo, opponent_elo, result: float, accuracy=None):
         color = "W" if is_white else "B"
-        self.dic_elo_player[color].append(elo)
-        self.dic_elo_opponents[color].append(opponent_elo)
         self.dic_results[color].append(result)
+        if elo is not None:
+            self.dic_elo_player[color].append(elo)
+        if opponent_elo is not None:
+            self.dic_elo_opponents[color].append(opponent_elo)
+            self.dic_elo_results[color].append(result)
+        if accuracy is not None:
+            self.dic_accuracies[color].append(accuracy)
 
     def datos_base(self, is_white):
         if is_white is None:
             elo_opponents = self.dic_elo_opponents["W"] + self.dic_elo_opponents["B"]
-            results = self.dic_results["W"] + self.dic_results["B"]
+            results = self.dic_elo_results["W"] + self.dic_elo_results["B"]
         else:
             color = "W" if is_white else "B"
             elo_opponents = self.dic_elo_opponents[color]
-            results = self.dic_results[color]
+            results = self.dic_elo_results[color]
         return elo_opponents, results
+
+    def metric_counts(self):
+        total = len(self.dic_results["W"]) + len(self.dic_results["B"])
+        elo = len(self.dic_elo_opponents["W"]) + len(self.dic_elo_opponents["B"])
+        accuracy = len(self.dic_accuracies["W"]) + len(self.dic_accuracies["B"])
+        return total, elo, accuracy
+
+    def estimated_sigmoid_elo(self):
+        accuracies = self.dic_accuracies["W"] + self.dic_accuracies["B"]
+        if not accuracies:
+            return None
+        from Code.AI.elo_calculator import SigmoidELOCalculator
+        accuracy = SigmoidELOCalculator.calculate_trimmed_mean(accuracies)
+        return SigmoidELOCalculator.calculate_sigmoid_elo(accuracy)
 
     def mathematical_method(self, is_white):
         elo_opponents, results = self.datos_base(is_white)
@@ -382,7 +402,8 @@ class WPerfomance(QtWidgets.QWidget):
         o_columns = Columnas.ListaColumnas()
         o_columns.nueva("__num__", _("N."), 50, align_center=True)
         o_columns.nueva("player", _("Player"), 180, align_center=True)
-        o_columns.nueva("sigmoid_elo", f"{_('Sigmoid ELO')}\n({_('Non-Book')})", 120, align_center=True)
+        o_columns.nueva("coverage", f"{_('Games Used')}\n{_('Basic')}/{_('ELO')}/{_('Accuracy')}", 120, align_center=True)
+        o_columns.nueva("sigmoid_elo", f"{_('Estimated ELO')}\n({_('From Accuracy')})", 120, align_center=True)
         o_columns.nueva("glicko2", f"{_('Glicko-2')}\n({_('Rating ± RD')})", 120, align_center=True)
         o_columns.nueva("elo", _("Avg Elo"), 80, align_center=True)
         o_columns.nueva("WB", perf, 100, align_center=True)
@@ -428,26 +449,25 @@ class WPerfomance(QtWidgets.QWidget):
             QTMessages.message_information(self, _("There are no games in this database."))
             return
 
-        missing_data = False
+        missing_elo_games = 0
+        missing_accuracy_games = 0
         if force_prompt:
             self.session_prompted = False
-
-        dic_engine_elos = None
 
         if not self.session_prompted:
             self.session_prompted = True
             from Code.QT import FormLayout
-            li = [
-                (_("Estimate missing ELO ratings from player move accuracy"), True),
-                (_("Fill engine reported ELO (author's full-strength rating)"), False),
-            ]
-            msg = _("Some games are missing ELO ratings. How should performance metrics be estimated?")
-            resultado = FormLayout.fedit(li, title=_("Missing ELO Data"), parent=self, icon=Iconos.FideBuilding(), comment=msg)
-            if resultado:
-                _accion, (self.use_accuracy, self.use_engine_elo) = resultado
-            else:
-                self.use_accuracy = False
-                self.use_engine_elo = False
+            li = [(_("Show separately labeled estimated ELO when move accuracy exists"), True)]
+            msg = _("Estimated ELO is shown separately and is never used as an official rating or in performance calculations.")
+            resultado = FormLayout.fedit(
+                li,
+                title=_("Estimated ELO"),
+                parent=self,
+                icon=Iconos.FideBuilding(),
+                comment=msg,
+            )
+            self.use_accuracy = bool(resultado and resultado[1][0])
+            self.use_engine_elo = False
 
         li_regs = self.wb_games.grid.list_selected_recnos()
         if len(li_regs) <= 1 or not li_regs:
@@ -488,11 +508,14 @@ class WPerfomance(QtWidgets.QWidget):
                         escaped_filter = self.player_filter.replace("'", "''")
                         where_clause += f" AND (LOWER(TRIM(WHITE)) = LOWER('{escaped_filter}') OR LOWER(TRIM(BLACK)) = LOWER('{escaped_filter}'))"
     
+                    fields = getattr(self.db_games, "st_fields", set())
+                    w_elo_expr = "TRY_CAST(WHITEELO AS INTEGER)" if "WHITEELO" in fields else "NULL"
+                    b_elo_expr = "TRY_CAST(BLACKELO AS INTEGER)" if "BLACKELO" in fields else "NULL"
                     query = f"""
                         SELECT 
                             rowid, WHITE, BLACK, RESULT,
-                            TRY_CAST(WHITEELO AS INTEGER) as w_elo, 
-                            TRY_CAST(BLACKELO AS INTEGER) as b_elo
+                            {w_elo_expr} as w_elo,
+                            {b_elo_expr} as b_elo
                         FROM db.Games 
                         {where_clause}
                     """
@@ -531,7 +554,9 @@ class WPerfomance(QtWidgets.QWidget):
                     
                     b_elo = row.get("b_elo")
                     b_elo = int(b_elo) if pd.notna(b_elo) and b_elo > 0 else 0
-    
+                    w_accuracy = None
+                    b_accuracy = None
+
                     if w_elo == 0 or b_elo == 0 or self.use_accuracy:
                         rowid = int(row.get("rowid"))
                         c = self.db_games.conexion.execute("SELECT _DATA_ FROM Games WHERE rowid=?", (rowid,))
@@ -548,45 +573,34 @@ class WPerfomance(QtWidgets.QWidget):
                             if mb: b_elo = int(mb.group(1))
                             
                         if self.use_accuracy:
-                            if w_elo == 0:
-                                aw = re_wacc.search(data_str)
-                                if aw:
-                                    acc_w = float(aw.group(1))
-                                    w_elo = int((acc_w - 50) * 40 + 800) if acc_w >= 50 else 800
-                            if b_elo == 0:
-                                ab = re_bacc.search(data_str)
-                                if ab:
-                                    acc_b = float(ab.group(1))
-                                    b_elo = int((acc_b - 50) * 40 + 800) if acc_b >= 50 else 800
-                            
-                    if self.use_engine_elo:
-                        if dic_engine_elos is None:
-                            dic_engine_elos = {}
-                            for eng in Code.configuration.engines.dic_engines().values():
-                                if getattr(eng, "elo", 0) > 0:
-                                    dic_engine_elos[eng.nombre_ext().upper()] = eng.elo
-                                    if hasattr(eng, "id_name") and eng.id_name:
-                                        dic_engine_elos[eng.id_name.upper()] = eng.elo
-                        if w_elo == 0: w_elo = dic_engine_elos.get(white.upper(), 0)
-                        if b_elo == 0: b_elo = dic_engine_elos.get(black.upper(), 0)
-                        
-                    if w_elo == 0:
-                        w_elo = 1500
-                        missing_data = True
-                    if b_elo == 0:
-                        b_elo = 1500
-                        missing_data = True
-                        
-                    if white not in dic_players: dic_players[white] = Performance()
-                    dic_players[white].add_game(True, w_elo, b_elo, result_w)
-                    if black not in dic_players: dic_players[black] = Performance()
-                    dic_players[black].add_game(False, b_elo, w_elo, result_b)
+                            aw = re_wacc.search(data_str)
+                            ab = re_bacc.search(data_str)
+                            w_accuracy = float(aw.group(1)) if aw else None
+                            b_accuracy = float(ab.group(1)) if ab else None
+                            w_accuracy = w_accuracy if w_accuracy is not None and 0.0 <= w_accuracy <= 100.0 else None
+                            b_accuracy = b_accuracy if b_accuracy is not None and 0.0 <= b_accuracy <= 100.0 else None
+
+                    w_elo = w_elo or None
+                    b_elo = b_elo or None
+                    if w_elo is None or b_elo is None:
+                        missing_elo_games += 1
+                    if self.use_accuracy and (w_accuracy is None or b_accuracy is None):
+                        missing_accuracy_games += 1
+
+                    if white not in dic_players:
+                        dic_players[white] = Performance()
+                    dic_players[white].add_game(True, w_elo, b_elo, result_w, w_accuracy)
+                    if black not in dic_players:
+                        dic_players[black] = Performance()
+                    dic_players[black].add_game(False, b_elo, w_elo, result_b, b_accuracy)
                 duckdb_success = True
             except Exception as e:
                 import traceback
                 traceback.print_exc()
                 print(f"DuckDB Error: {e}, falling back to SQLite")
                 dic_players.clear()
+                missing_elo_games = 0
+                missing_accuracy_games = 0
                 pb.etiqueta.setText(_("Calculating Performance Matrix (SQLite Fallback)..."))
                 pb.set_total(len(li_regs))
 
@@ -602,7 +616,10 @@ class WPerfomance(QtWidgets.QWidget):
             if self.player_filter:
                 escaped_filter = self.player_filter.replace("'", "''")
                 where_clause += f" AND (LOWER(TRIM(WHITE)) = LOWER('{escaped_filter}') OR LOWER(TRIM(BLACK)) = LOWER('{escaped_filter}'))"
-            query = f"SELECT WHITE, BLACK, RESULT, WHITEELO, BLACKELO, _DATA_ FROM Games {where_clause}"
+            fields = getattr(self.db_games, "st_fields", set())
+            w_elo_expr = "WHITEELO" if "WHITEELO" in fields else "NULL"
+            b_elo_expr = "BLACKELO" if "BLACKELO" in fields else "NULL"
+            query = f"SELECT WHITE, BLACK, RESULT, {w_elo_expr}, {b_elo_expr}, _DATA_ FROM Games {where_clause}"
             cursor = self.db_games.conexion.execute(query)
             
             re_welo = re.compile(r'\[WhiteElo\s+"([0-9]+)"\]')
@@ -626,10 +643,18 @@ class WPerfomance(QtWidgets.QWidget):
                 elif res in ("1/2-1/2", "1/2", "0.5-0.5", "=", "0.5"): result_w, result_b = 0.5, 0.5
                 else: continue
                 
-                try: w_elo = int(raw[3])
-                except: w_elo = 0
-                try: b_elo = int(raw[4])
-                except: b_elo = 0
+                try:
+                    w_elo = int(raw[3])
+                    if w_elo <= 0:
+                        w_elo = 0
+                except (TypeError, ValueError):
+                    w_elo = 0
+                try:
+                    b_elo = int(raw[4])
+                    if b_elo <= 0:
+                        b_elo = 0
+                except (TypeError, ValueError):
+                    b_elo = 0
                 
                 data_str = raw[5] or ""
                 if isinstance(data_str, bytes):
@@ -642,40 +667,31 @@ class WPerfomance(QtWidgets.QWidget):
                     m = re_belo.search(data_str)
                     if m: b_elo = int(m.group(1))
                     
+                w_accuracy = None
+                b_accuracy = None
                 if self.use_accuracy:
-                    if w_elo == 0:
-                        m = re_wacc.search(data_str)
-                        if m:
-                            acc_w = float(m.group(1))
-                            w_elo = int((acc_w - 50) * 40 + 800) if acc_w >= 50 else 800
-                    if b_elo == 0:
-                        m = re_bacc.search(data_str)
-                        if m:
-                            acc_b = float(m.group(1))
-                            b_elo = int((acc_b - 50) * 40 + 800) if acc_b >= 50 else 800
+                    m = re_wacc.search(data_str)
+                    if m:
+                        value = float(m.group(1))
+                        w_accuracy = value if 0.0 <= value <= 100.0 else None
+                    m = re_bacc.search(data_str)
+                    if m:
+                        value = float(m.group(1))
+                        b_accuracy = value if 0.0 <= value <= 100.0 else None
 
-                if self.use_engine_elo:
-                    if dic_engine_elos is None:
-                        dic_engine_elos = {}
-                        for eng in Code.configuration.engines.dic_engines().values():
-                            if getattr(eng, "elo", 0) > 0:
-                                dic_engine_elos[eng.nombre_ext().upper()] = eng.elo
-                                if hasattr(eng, "id_name") and eng.id_name:
-                                    dic_engine_elos[eng.id_name.upper()] = eng.elo
-                    if w_elo == 0: w_elo = dic_engine_elos.get(white.upper(), 0)
-                    if b_elo == 0: b_elo = dic_engine_elos.get(black.upper(), 0)
+                w_elo = w_elo or None
+                b_elo = b_elo or None
+                if w_elo is None or b_elo is None:
+                    missing_elo_games += 1
+                if self.use_accuracy and (w_accuracy is None or b_accuracy is None):
+                    missing_accuracy_games += 1
 
-                if w_elo == 0:
-                    w_elo = 1500
-                    missing_data = True
-                if b_elo == 0:
-                    b_elo = 1500
-                    missing_data = True
-                    
-                if white not in dic_players: dic_players[white] = Performance()
-                dic_players[white].add_game(True, w_elo, b_elo, result_w)
-                if black not in dic_players: dic_players[black] = Performance()
-                dic_players[black].add_game(False, b_elo, w_elo, result_b)
+                if white not in dic_players:
+                    dic_players[white] = Performance()
+                dic_players[white].add_game(True, w_elo, b_elo, result_w, w_accuracy)
+                if black not in dic_players:
+                    dic_players[black] = Performance()
+                dic_players[black].add_game(False, b_elo, w_elo, result_b, b_accuracy)
 
         pb.cerrar()
 
@@ -693,19 +709,18 @@ class WPerfomance(QtWidgets.QWidget):
                 completer.setFilterMode(QtCore.Qt.MatchContains)
                 self.ed_search.setCompleter(completer)
             
-            if missing_data:
+            if missing_elo_games or missing_accuracy_games:
                 QTMessages.temporary_message(
-                    _("Some games were excluded because they lack both Elo and Accuracy data."),
-                    parent=self
+                    self,
+                    _("Partial results: %d games were excluded from ELO-based metrics and %d games were excluded from accuracy-based metrics because required data is missing.")
+                    % (missing_elo_games, missing_accuracy_games),
+                    5.0,
                 )
         else:
             self.dic_players = None
             self.li_players = []
             self.grid.refresh()
-            if missing_data:
-                QTMessages.message_information(self, _("No games with ELO or Accuracy data were found in this dataset."))
-            else:
-                QTMessages.message_information(self, _("There are no games with valid results in this database."))
+            QTMessages.message_information(self, _("There are no games with valid player names and results in this database."))
 
     def tw_select_player(self):
         from Code.QT import FormLayout
@@ -758,45 +773,7 @@ class WPerfomance(QtWidgets.QWidget):
         self.grid.refresh()
 
     def tw_pass_data_to_lm(self):
-        if not self.dic_players:
-            QTMessages.message_information(self, _("Please generate performance statistics first."))
-            return
-        from Code.AI.StatsSummary import generate_stats_summary_async
-        from Code.AI.elo_calculator import SigmoidELOCalculator
-
-        target_player = self.player_filter or (self.li_players[0] if self.li_players else None)
-        if not target_player:
-            return
-
-        perf = self.dic_players.get(target_player)
-        if perf is None:
-            QTMessages.message_information(self, _("Player has no valid games for analytics."))
-            return
-        tot_games = len(perf.dic_results["W"]) + len(perf.dic_results["B"])
-        tot_score = sum(perf.dic_results["W"]) + sum(perf.dic_results["B"])
-        acc_pct = (tot_score / tot_games * 100.0) if tot_games else 50.0
-
-        payload = {
-            "dossier_type": "Scouting Dossier",
-            "player": target_player,
-            "metrics": {
-                "total_games": tot_games,
-                "score_pct": round(tot_score * 100.0 / tot_games, 1) if tot_games else 0.0,
-                "sigmoid_elo": SigmoidELOCalculator.calculate_sigmoid_elo(acc_pct),
-                "fide_elo": perf.fide_method(None),
-                "avg_opponent_elo": int(sum(perf.dic_elo_opponents["W"] + perf.dic_elo_opponents["B"]) / tot_games) if tot_games else 0,
-            },
-            "error_spectrum": {
-                "brilliant": 0, "good": int(tot_games * 0.4), "acceptable": int(tot_games * 0.4),
-                "dubious": int(tot_games * 0.1), "mistakes": int(tot_games * 0.07), "blunders": int(tot_games * 0.03),
-            },
-            "phase_acpl": {
-                "opening": 15.2, "middlegame": 38.4, "endgame": 24.1
-            },
-            "tactical_motifs": ["Pins", "Discovered Attacks", "Back-rank Mates"],
-        }
-
-        generate_stats_summary_async(self, payload, title=f"{_('AI Scouting Dossier')}: {target_player}")
+        self.tw_ai_summary()
 
     def show_type(self):
         if self.tipo == "FIDE":
@@ -848,36 +825,28 @@ class WPerfomance(QtWidgets.QWidget):
             return str(row + 1)
 
         performance: Performance = self.dic_players[self.li_players[row]]
+        if col == "coverage":
+            return "%d/%d/%d" % performance.metric_counts()
         if col == "sigmoid_elo":
-            from Code.AI.elo_calculator import SigmoidELOCalculator
-            tot = len(performance.dic_results["W"]) + len(performance.dic_results["B"])
-            score = sum(performance.dic_results["W"]) + sum(performance.dic_results["B"])
-            acc = (score / tot * 100.0) if tot else None
-            return str(SigmoidELOCalculator.calculate_sigmoid_elo(acc)) if acc is not None else "N/A"
+            estimated_elo = performance.estimated_sigmoid_elo() if self.use_accuracy else None
+            return str(estimated_elo) if estimated_elo is not None else "—"
         if col == "glicko2":
-            from Code.AI.elo_calculator import Glicko2Calculator
-            opps = performance.dic_elo_opponents["W"] + performance.dic_elo_opponents["B"]
-            res = performance.dic_results["W"] + performance.dic_results["B"]
-            if opps and res:
-                g2 = Glicko2Calculator(1500, 350)
-                opp_rds = [250 if elo == 1500 else 100 for elo in opps]
-                r, rd, _ = g2.update(opps, opp_rds, res[:len(opps)])
-                return f"{r} ± {rd}"
-            return "1500 ± 350"
+            return "—"
         if col == "elo":
-            return str(performance.avg_elo_player())
+            elo = performance.avg_elo_player()
+            return str(elo) if elo is not None else "—"
         if col == "WB":
-            return performance.str_according_method(self.tipo, None)
+            return performance.str_according_method(self.tipo, None) or "—"
         if col == "W":
-            return performance.str_according_method(self.tipo, True)
+            return performance.str_according_method(self.tipo, True) or "—"
         if col == "B":
-            return performance.str_according_method(self.tipo, False)
+            return performance.str_according_method(self.tipo, False) or "—"
         if col == "scorep":
             return performance.str_scorep()
         if col == "score":
             return performance.str_score()
         if col == "opponent":
-            return performance.str_opponents()
+            return performance.str_opponents() or "—"
         if col == "results":
             return performance.str_results()
         return None
@@ -906,8 +875,11 @@ class WPerfomance(QtWidgets.QWidget):
             if col == "player":
                 return player.upper()
             if col == "elo":
-                return performance.avg_elo_player()
-            return None
+                return performance.avg_elo_player() or -1
+            if col == "coverage":
+                total, elo, accuracy = performance.metric_counts()
+                return total * 1000000 + elo * 1000 + accuracy
+            return -1
 
         reset = False
 
