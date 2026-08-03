@@ -73,8 +73,12 @@
 - **Readiness Summary Modal (`show_readiness_dialog`):** Renders modal `QMessageBox` with rich-text HTML summary and proceed/cancel buttons.
 - **Mass Analysis Policy Control (`create_mass_analysis_policy_widget`):** Provides a PySide6 `QGroupBox` and `QCheckBox` for choosing between `"MISSING_ONLY"` (Skip Tier 3 games) and `"OVERWRITE"` modes.
 
-#### 3. Automated UI Bridge Unit Tests (`test_phase5_ui_bridge.py`, `test_gui_integration.py`)
-- Added 5 unit tests verifying badge metadata lookups, rich-text HTML rendering, SHA-256 payload generation, and PySide6 policy widget controls.
+#### 3. Game Result Repair Engine (`result_repair.py`)
+- **Policy 1 Engine Eval Adjudication (`adjudicate_results_by_eval`):** Adjudicates games with `Result "*"` based on centipawn evaluations (eval $\ge 2.0 \rightarrow$ `"1-0"`, $\le -2.0 \rightarrow$ `"0-1"`, $\le \pm 0.55 \rightarrow$ `"1/2-1/2"`), updating PGN headers and upgrading game quality records to Tier 1/2/3.
+- **Policy 4 Bulk Result Assignment (`bulk_set_game_results`):** Batch-updates selected game results to `"1-0"`, `"0-1"`, or `"1/2-1/2"` and re-validates quality tiers.
+
+#### 4. Automated Unit Tests (`test_phase5_ui_bridge.py`, `test_gui_integration.py`, `test_result_repair.py`)
+- Added 7 unit tests verifying badge metadata lookups, rich-text HTML rendering, SHA-256 payload generation, PySide6 policy widget controls, and result repair engines.
 
 ---
 
