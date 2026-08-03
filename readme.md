@@ -1,86 +1,57 @@
-Lucas Chess (R6)
-================
+# LucasChess AI R6
 
-Lucas Chess (R6) is a GUI of chess:
+> Refactored, AI-Enhanced Edition of Lucas Chess featuring Dual-Engine DuckDB Vectorized Analytics, a Sigmoid & Glicko-2 Rating Matrix Engine, an AI Grandmaster Coach (LM Studio / BYOK), and a 4-Tier Data Quality & Provenance Pipeline.
 
-1. To train in many different ways.
-2. To play chess against any UCI engine.
-3. To compete against engines to obtain an elo.
-4. It has utilities to edit games, create polyglot books, tournaments between engines ...
+---
 
-This is an update of Lucas Chess with a new version of python (3.7 -> 3.12) and the main graphic library, from pyside2 to pyside6 (qt5 -> qt6).
+## 🚀 Key Features & Architectural Upgrades
 
+### 1. ⚡ Dual-Engine Vectorized Analytics (`DuckDB` + `SQLite`)
+* **DuckDB C++ Engine:** ATTACHes SQLite database files in read-only mode (`ATTACH 'db.sqlite' AS db (TYPE SQLITE, READ_ONLY)`) for instant vectorized aggregation across massive game databases.
+* **SQLite CTE / NumPy Fallback:** High-performance fallback query layer using SQLite Common Table Expressions and `numpy` array vectorization.
+* **Live Progress Tracking:** Replaced static blocking wait dialogs with a live `QProgressBar` and time-remaining estimator (`ProgressBarWithTime`).
 
-Incompatibilities
------------------
-* **Does not support Windows 8 or previous versions.**
-* **Not compatible with 32-bit operating systems.**
+### 2. 📊 Rating Matrix Engine (`Sigmoid ELO` & `Glicko-2`)
+* **Depth-Aware Sigmoid ELO:** Logistic accuracy-to-ELO conversion ($\text{ELO} = 800 + \frac{2000}{1 + e^{-0.08 \times (\text{Accuracy} - 72)}}$).
+* **Non-Book Accuracy Filtering:** Automatically excludes opening book moves (`is_book == True`) from accuracy calculations to prevent opening preparation inflation.
+* **Phase-Weighted Accuracy:** Weighted evaluation across game phases: Opening ($20\%$), Middlegame ($50\%$), Endgame ($30\%$).
+* **Outlier Trimming:** 10% trimmed mean / rolling median filtering to eliminate short draw miniatures or single-game blowouts from distorting rating trends.
+* **Multi-Game Glicko-2:** Calculates rating ($R$), deviation ($RD$), and volatility ($\sigma$).
 
-Dependencies
-------------
+### 3. 🤖 AI Grandmaster Coach (`LM Studio` & `BYOK`)
+* **AI Performance Reviews:** Asynchronous chat worker generating natural language performance analyses, color dynamics, and concrete training items.
+* **Local & Cloud Endpoints:** Seamless support for local LLM servers via **LM Studio** (`http://localhost:1234/v1`) or **BYOK** (Bring Your Own Key) OpenAI-compatible APIs.
+* **Scouting Dossier Bridge:** Exports rich JSON payloads (phase ACPL, error spectrum, tactical motifs) to LLM endpoints.
+* **Truthful Prompt Guardrails:** System prompts strictly forbid hallucinating or substituting missing metrics.
 
-* Python 3.12+
-* charset-normalizer
-* sortedcontainers
-* python-chess
-* pillow
-* psutil
-* polib
-* deep-translator
-* requests
-* urllib3
-* idna
-* certifi
-* beautifulsoup4
+### 4. 🛡️ Truthful 4-Tier Data Quality Pipeline
+* **Strict Quality Gating:**
+  * **Tier 0:** Dirty/Invalid data (excluded from statistics).
+  * **Tier 1:** Basic PGN (valid games & results only).
+  * **Tier 2:** Elo-Ready (authoritative player ratings).
+  * **Tier 3:** Gold Standard (complete Stockfish move analysis for charts & reports).
+* **Transparent Exclusion Messaging:** UI grids and dialogs explicitly report how many games were used versus excluded per metric, displaying `"—"` when metrics lack eligible data.
 
-Important Note for Developers / Cloning
----------------------------------------
+---
 
-This repository uses **Git LFS (Large File Storage)** to manage large binary files (such as chess engines, networks, or databases).
+## 🛠️ Installation & Dependencies
 
-If you download the repository using the GitHub web interface as a **.zip file, these large files will not be included correctly** (you will only get small text pointer files).
+### Prerequisites
+* **Python 3.12+**
+* **Operating System:** Windows 10/11 (64-bit), Linux, macOS.
 
-To get a complete and working copy of the project, please ensure you have **Git LFS** installed on your system before cloning.
+### Required Python Libraries
+```bash
+pip install -r requirements.txt
+```
 
-1. **Install Git LFS** (if you haven't already):
-   - Windows: `winget install GitHub.GitLFS` or download from [git-lfs.github.com](https://git-lfs.github.com/)
-   - Mac: `brew install git-lfs`
-   - Linux: `sudo apt install git-lfs`
+Key packages: `PySide6`, `duckdb>=1.0.0`, `numpy>=1.26.0`, `python-chess`, `requests`, `pillow`, `psutil`.
 
-2. **Initialize Git LFS** in your terminal:
-   ```bash
-   git lfs install
+---
 
-3. Clone the repository:
-   ```bash
-   git clone https://github.com/lukasmonk/lucaschessR6.git
+## 📜 Legal & Attribution
 
-Links
------
+This project is a refactored, modernized fork based on the original **Lucas Chess** created by **Lucas Monge**.
 
-* Web: [https://lucaschess.pythonanywhere.com/](https://lucaschess.pythonanywhere.com/).
-* Blog: [https://lucaschess.blogspot.com.es/](https://lucaschess.blogspot.com.es/).
-
-
-Legal Details
--------------
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or (at
-your option) any later version.
-
-This program is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-USA
-
-See the file "LICENSE" for details.
-
-
-
+* **Original Author:** Lucas Monge ([Website](https://lucaschess.pythonanywhere.com/) | [Blog](https://lucaschess.blogspot.com.es/))
+* **License:** GNU General Public License v2.0 or later (GPL-2.0-or-later). See [LICENSE](LICENSE) for details.
