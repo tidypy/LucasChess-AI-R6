@@ -1,5 +1,27 @@
 # LucasChess R6 — Change Log
 
+## [R6.0.5 - August 2, 2026]
+
+### 🎯 Truthful Performance Metrics & Metric-Gating (Phase 1)
+
+#### 1. Removed Fake Fallback Values (`analytics_engine.py` & `WDB_Perfomance.py`)
+- **No More 1500 / 350 Fallbacks:** Removed hardcoded `1500` Elo and `"1500 ± 350"` Glicko-2 fallbacks for games missing player or opponent rating tags. Missing metrics return `None` (rendered as `"—"` in the UI).
+- **Separated Accuracy from Score %:** Fixed bug where game score percentage was incorrectly passed as move-accuracy to `SigmoidELOCalculator`. Sigmoid Elo calculation is now strictly gated on actual move-accuracy tags.
+- **Metric Population Tracking:** Added `metric_counts` tracking (`basic_games_used`, `elo_games_used`, `elo_games_excluded`, `accuracy_games_used`, `accuracy_games_excluded`).
+
+#### 2. Enhanced UI Transparency & Coverage Reporting (`WDB_Perfomance.py`)
+- **Grid Coverage Column:** Added a dynamic `Coverage` column (`Total/Elo/Accuracy` games used) in the performance table.
+- **User Exclusion Alerts:** Added explicit notification popups informing users when games are excluded from Elo or Accuracy metrics due to incomplete data.
+
+#### 3. AI Coach Guardrails (`StatsSummary.py`)
+- **Exclusion Metadata in Payload:** Passes `elo_metric_games_used` and `elo_metric_games_excluded` into the AI summary prompt payload.
+- **Strict Prompt Instructions:** Added system prompt directives prohibiting the LLM from inferring, estimating, or substituting missing metrics.
+
+#### 4. Automated Testing (`test_truthful_performance_metrics.py`)
+- Added 6 unit tests verifying truthful metric gating, null returns on missing data, and absence of fake `1500` fallbacks.
+
+---
+
 ## [R6.0.4 - July 31 / August 1, 2026]
 
 ### 🚀 New Features & Architecture Upgrades
