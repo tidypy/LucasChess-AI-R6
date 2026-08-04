@@ -127,6 +127,124 @@ def _extract_accuracy_acpl_result(raw_text: str, engine_fallback: bool = False, 
     
     return None
 
+import os
+import sys
+import subprocess
+
+def _get_stockfish_exe() -> Optional[str]:
+    try:
+        import Code
+        if hasattr(Code, "configuration") and Code.configuration:
+            eng = Code.configuration.engines.search("stockfish")
+            if eng and hasattr(eng, "exe") and os.path.exists(eng.exe):
+                return eng.exe
+            if eng and hasattr(eng, "path") and os.path.exists(eng.path):
+                return eng.path
+    except Exception:
+        pass
+    return None
+
+def _get_final_fen_from_xpv_or_pgn(xpv: str, parse_str: str) -> Optional[str]:
+    if xpv:
+        try:
+            from Code.Databases.DBgames import FasterCode
+            init_fen = chess.STARTING_FEN
+            moves_str = xpv
+            if xpv.startswith("|"):
+                parts = xpv.split("|")
+                if len(parts) >= 3:
+                    init_fen = parts[1] or chess.STARTING_FEN
+                    moves_str = parts[2]
+            pv = FasterCode.xpv_pv(moves_str) if hasattr(FasterCode, 'xpv_pv') else moves_str
+            board = chess.Board(init_fen)
+            for m_str in pv.split():
+                if m_str:
+                    try:
+                        board.push_uci(m_str)
+                    except Exception:
+                        try:
+                            board.push_san(m_str)
+                        except Exception:
+                            pass
+            return board.fen()
+        except Exception:
+            pass
+    if parse_str:
+        try:
+            game = chess.pgn.read_game(io.StringIO(parse_str))
+            if game:
+                board = game.board()
+                for move in game.mainline_moves():
+                    board.push(move)
+                return board.fen()
+        except Exception:
+            pass
+    return None
+
+def _batch_evaluate_fens_with_stockfish(fen_map: Dict[int, str], depth: int = 10) -> Dict[int, float]:
+    exe = _get_stockfish_exe()
+    if not exe or not fen_map:
+        return {}
+
+    creation_flags = 0
+    if sys.platform == "win32":
+        creation_flags = getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0) | getattr(subprocess, "CREATE_NO_WINDOW", 0)
+
+    results = {}
+    try:
+        proc = subprocess.Popen(
+            [exe],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            creationflags=creation_flags
+        )
+        proc.stdin.write("uci\n")
+        proc.stdin.flush()
+
+        for row_id, fen in fen_map.items():
+            proc.stdin.write(f"position fen {fen}\ngo depth {depth}\n")
+            proc.stdin.flush()
+
+            cp_score = None
+            while True:
+                line = proc.stdout.readline()
+                if not line:
+                    break
+                if "score cp" in line:
+                    parts = line.split()
+                    if "cp" in parts:
+                        idx = parts.index("cp")
+                        if idx + 1 < len(parts):
+                            try:
+                                cp_score = float(parts[idx + 1]) / 100.0
+                            except ValueError:
+                                pass
+                elif "score mate" in line:
+                    parts = line.split()
+                    if "mate" in parts:
+                        idx = parts.index("mate")
+                        if idx + 1 < len(parts):
+                            try:
+                                m = int(parts[idx + 1])
+                                cp_score = 999.0 if m > 0 else -999.0
+                            except ValueError:
+                                pass
+                if line.startswith("bestmove"):
+                    break
+
+            if cp_score is not None:
+                results[row_id] = cp_score
+
+        proc.stdin.write("quit\n")
+        proc.stdin.flush()
+        proc.terminate()
+    except Exception:
+        pass
+    return results
+
+
 def orchestrate_data_fitness_adjudication(
     connection: sqlite3.Connection,
     recnos: Optional[Sequence[int]],
@@ -179,16 +297,16 @@ def orchestrate_data_fitness_adjudication(
     rows = cursor.fetchall()
     summary["total_scanned"] = len(rows)
 
-    updates = []
-    validation_tasks = []
-
     gq_cursor = connection.execute("SELECT ROW_ID, GAME_ID FROM GameQuality")
     game_id_map = {r[0]: r[1] for r in gq_cursor.fetchall()}
+
+    # Phase A: First pass extraction
+    row_records = []
+    stockfish_fen_map = {}
 
     for row in rows:
         d_row = dict(zip(columns, row))
         row_id = d_row["ROWID"]
-        current_res = d_row.get("RESULT")
         raw_data = d_row.get("_DATA_")
         xpv = d_row.get("XPV", "") or ""
 
@@ -196,7 +314,6 @@ def orchestrate_data_fitness_adjudication(
         if isinstance(raw_str, bytes):
             raw_str = raw_str.decode("utf-8", errors="replace")
 
-        # Strip Lucas Chess custom prefix before parsing
         parse_str = raw_str
         if parse_str.startswith("#LUCAS#"):
             parse_str = parse_str[7:].strip()
@@ -210,7 +327,7 @@ def orchestrate_data_fitness_adjudication(
                 elif "black" in term_val or "0-1" in term_val: new_res = "0-1"
                 elif "draw" in term_val or "1/2" in term_val or "drawn" in term_val: new_res = "1/2-1/2"
 
-        elif policy in ("LAST_MOVE", "STOCKFISH"):
+        elif policy == "LAST_MOVE":
             new_res = _extract_last_move_winner(parse_str)
 
         elif policy == "ACCURACY_ACPL":
@@ -232,30 +349,64 @@ def orchestrate_data_fitness_adjudication(
                 except (ValueError, TypeError):
                     pass
 
-        # Secondary Fallbacks if primary policy returns None
-        if new_res is None and fallback_type != "NONE":
-            if fallback_type in ("EMBEDDED_EVAL", "STOCKFISH"):
-                eval_score = _extract_eval_score(parse_str)
-                if eval_score is not None:
-                    if eval_score >= eval_win_threshold: new_res = "1-0"
-                    elif eval_score <= -eval_win_threshold: new_res = "0-1"
-                    elif abs(eval_score) <= eval_draw_margin: new_res = "1/2-1/2"
+        # Check embedded evals if required
+        if new_res is None and (policy == "STOCKFISH" or fallback_type in ("EMBEDDED_EVAL", "STOCKFISH")):
+            eval_score = _extract_eval_score(parse_str)
+            if eval_score is not None:
+                if eval_score >= eval_win_threshold: new_res = "1-0"
+                elif eval_score <= -eval_win_threshold: new_res = "0-1"
+                elif abs(eval_score) <= eval_draw_margin: new_res = "1/2-1/2"
 
-            if new_res is None and (fallback_type in ("LAST_MOVE", "STOCKFISH") or policy == "LAST_MOVE") and xpv:
-                try:
-                    from Code.Databases.DBgames import FasterCode
-                    pv = FasterCode.xpv_pv(xpv) if hasattr(FasterCode, 'xpv_pv') else ""
-                    if not pv and xpv:
-                        if xpv.startswith("|"):
-                            parts = xpv.split("|")
-                            pv = parts[-1]
-                        else:
-                            pv = xpv
-                    moves = [m for m in pv.split() if m]
-                    if moves:
-                        new_res = "1-0" if (len(moves) % 2 == 1) else "0-1"
-                except Exception:
-                    pass
+        # Queue for Stockfish Live Evaluation if still un-adjudicated
+        if new_res is None and (policy == "STOCKFISH" or fallback_type == "STOCKFISH"):
+            fen = _get_final_fen_from_xpv_or_pgn(xpv, parse_str)
+            if fen:
+                stockfish_fen_map[row_id] = fen
+
+        row_records.append({
+            "row_id": row_id,
+            "raw_str": raw_str,
+            "xpv": xpv,
+            "new_res": new_res
+        })
+
+    # Phase B: Live Stockfish Batch Evaluation
+    sf_eval_results = {}
+    if stockfish_fen_map:
+        sf_eval_results = _batch_evaluate_fens_with_stockfish(stockfish_fen_map, depth=engine_depth)
+
+    # Phase C: Finalize results
+    updates = []
+    validation_tasks = []
+
+    for rec in row_records:
+        row_id = rec["row_id"]
+        new_res = rec["new_res"]
+        raw_str = rec["raw_str"]
+        xpv = rec["xpv"]
+
+        if new_res is None and row_id in sf_eval_results:
+            score = sf_eval_results[row_id]
+            if score >= eval_win_threshold: new_res = "1-0"
+            elif score <= -eval_win_threshold: new_res = "0-1"
+            elif abs(score) <= eval_draw_margin: new_res = "1/2-1/2"
+
+        # Final Fallback to Turn-Based Move Count
+        if new_res is None and xpv:
+            try:
+                from Code.Databases.DBgames import FasterCode
+                pv = FasterCode.xpv_pv(xpv) if hasattr(FasterCode, 'xpv_pv') else ""
+                if not pv and xpv:
+                    if xpv.startswith("|"):
+                        parts = xpv.split("|")
+                        pv = parts[-1]
+                    else:
+                        pv = xpv
+                moves = [m for m in pv.split() if m]
+                if moves:
+                    new_res = "1-0" if (len(moves) % 2 == 1) else "0-1"
+            except Exception:
+                pass
 
         if new_res == "1-0": summary["repaired_wins"] += 1
         elif new_res == "0-1": summary["repaired_losses"] += 1
