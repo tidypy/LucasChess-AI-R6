@@ -135,15 +135,24 @@ class KimiK3Adapter:
     """
     Adapter for Kimi K3 Fast on Fireworks AI / MCP Server.
     """
+    DEFAULT_MODEL = "accounts/fireworks/models/kimi-k3-fast"
+
     def __init__(self, api_key: str = None, timeout: int = 25):
         import os
         self.api_key = api_key or os.environ.get("FIREWORKS_API_KEY", "")
         self.timeout = timeout
         self.url = "https://api.fireworks.ai/inference/v1/chat/completions"
 
+    def is_configured(self) -> bool:
+        return bool(self.api_key)
+
     def chat_completion(self, messages: list, temperature: float = 0.7, max_tokens: int = 800, model: str = None) -> str:
+        if not self.api_key:
+            AILogger.warning("Kimi K3: No API key configured (FIREWORKS_API_KEY or x_ai_byok_key)")
+            return "[Error: Kimi K3 API key not configured. Set FIREWORKS_API_KEY or BYOK key in settings.]"
+
         payload = {
-            "model": model or "accounts/fireworks/models/kimi-k3-fast",
+            "model": model or self.DEFAULT_MODEL,
             "messages": messages,
             "temperature": temperature,
             "max_tokens": max_tokens
@@ -151,19 +160,28 @@ class KimiK3Adapter:
         data = json.dumps(payload).encode("utf-8")
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}" if self.api_key else ""
+            "Authorization": f"Bearer {self.api_key}"
         }
         req = urllib.request.Request(self.url, data=data, headers=headers, method="POST")
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as response:
-                if response.status == 200:
-                    resp_data = json.loads(response.read().decode("utf-8"))
-                    if "choices" in resp_data and len(resp_data["choices"]) > 0:
-                        return resp_data["choices"][0]["message"]["content"]
-                return f"[Kimi K3 HTTP Error {response.status}]"
+                resp_data = json.loads(response.read().decode("utf-8"))
+                choices = resp_data.get("choices") or []
+                content = choices and (choices[0].get("message") or {}).get("content")
+                if content:
+                    return content.strip()
+                return "[Error: Empty response content from Kimi K3]"
+        except urllib.error.HTTPError as e:
+            body = ""
+            try:
+                body = e.read().decode("utf-8", "replace")[:300]
+            except Exception:
+                pass
+            AILogger.error(f"Kimi K3 HTTP {e.code}: {body}", e)
+            return f"[Error: Kimi K3 HTTP {e.code}]"
         except Exception as e:
             AILogger.error("Kimi K3 completion error", e)
-            return f"[Kimi K3 Error: {str(e)}]"
+            return f"[Error connecting to Kimi K3: {str(e)}]"
 
 
 class AsyncChatWorker(QtCore.QThread):

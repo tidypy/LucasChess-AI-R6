@@ -887,6 +887,7 @@ class WPlayer(QtWidgets.QWidget):
     def tw_ai_summary(self):
         if not self.player:
             QTMessages.message_information(self, _("Please select a player first."))
+            return
         from Code.AI.StatsSummary import StatsSummaryFormatter, generate_stats_summary_async
         stats_data = StatsSummaryFormatter.format_player_data(self.player, self)
         generate_stats_summary_async(self, stats_data, title=f"{_('AI Repertoire Review')} - {self.player}")
