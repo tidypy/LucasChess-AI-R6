@@ -49,16 +49,16 @@ def show_readiness_dialog(parent: Optional[QtWidgets.QWidget], db_games: Any) ->
     html = format_readiness_html(summary)
 
     dialog = QtWidgets.QMessageBox(parent)
-    dialog.setWindowTitle("Data Fitness & Analytics")
+    dialog.setWindowTitle("Database Analytics & Mass Analysis")
     dialog.setIcon(QtWidgets.QMessageBox.Icon.Information)
     dialog.setTextFormat(QtCore.Qt.TextFormat.RichText)
     dialog.setText(html)
     
-    btn_clean = dialog.addButton("Data Fitness", QtWidgets.QMessageBox.ButtonRole.ActionRole)
-    btn_analytics = dialog.addButton("Generate Analytics", QtWidgets.QMessageBox.ButtonRole.ActionRole)
+    btn_mass = dialog.addButton("Mass Analysis + Generate Stats", QtWidgets.QMessageBox.ButtonRole.ActionRole)
+    btn_quick = dialog.addButton("Quick Tier 2 Generate Stats", QtWidgets.QMessageBox.ButtonRole.ActionRole)
     btn_cancel = dialog.addButton("Cancel", QtWidgets.QMessageBox.ButtonRole.RejectRole)
     
-    dialog.setDefaultButton(btn_clean)
+    dialog.setDefaultButton(btn_quick)
     dialog.setEscapeButton(btn_cancel)
     dialog.setWindowModality(QtCore.Qt.WindowModality.ApplicationModal)
     dialog.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.TextBrowserInteraction)
@@ -66,10 +66,10 @@ def show_readiness_dialog(parent: Optional[QtWidgets.QWidget], db_games: Any) ->
 
     dialog.exec()
     
-    if dialog.clickedButton() == btn_clean:
+    if dialog.clickedButton() == btn_mass:
         return "MASS_ANALYSIS"
-    elif dialog.clickedButton() == btn_analytics:
-        return "ANALYTICS"
+    elif dialog.clickedButton() == btn_quick:
+        return "QUICK_STATS"
     return "CANCEL"
 
 

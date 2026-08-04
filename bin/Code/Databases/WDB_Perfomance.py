@@ -163,6 +163,15 @@ class Performance:
         accuracy = SigmoidELOCalculator.calculate_trimmed_mean(accuracies)
         return SigmoidELOCalculator.calculate_sigmoid_elo(accuracy)
 
+    def glicko2_rating(self):
+        elo_opponents, results = self.datos_base(None)
+        if not elo_opponents:
+            return None
+        from Code.AI.elo_calculator import Glicko2Calculator
+        rds = [250 if elo == 1500 else 100 for elo in elo_opponents]
+        r, rd = Glicko2Calculator.calculate_glicko2(1500, 350, elo_opponents, rds, results)
+        return f"{round(r)} ± {round(rd)}"
+
     def mathematical_method(self, is_white):
         elo_opponents, results = self.datos_base(is_white)
         num_games = len(elo_opponents)
@@ -818,10 +827,11 @@ class WPerfomance(QtWidgets.QWidget):
         if col == "coverage":
             return "%d/%d/%d" % performance.metric_counts()
         if col == "sigmoid_elo":
-            estimated_elo = performance.estimated_sigmoid_elo() if self.use_accuracy else None
+            estimated_elo = performance.estimated_sigmoid_elo()
             return str(estimated_elo) if estimated_elo is not None else "—"
         if col == "glicko2":
-            return "—"
+            g2 = performance.glicko2_rating()
+            return g2 if g2 is not None else "—"
         if col == "elo":
             elo = performance.avg_elo_player()
             return str(elo) if elo is not None else "—"

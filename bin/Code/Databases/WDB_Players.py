@@ -186,21 +186,18 @@ class WPlayer(QtWidgets.QWidget):
         # ToolBar
         self.tbWork = QTDialogs.LCTB(self)
         self.tbWork.new(_("Close"), Iconos.MainMenu(), wb_database.tw_terminar)
-        self.tbWork.new(_("Select Player"), Iconos.Player32(), self.tw_select_player)
-        self.tbWork.new(_("Edit Player & Aliases"), Iconos.ModificarP(), self.tw_edit_aliases)
         self.tbWork.new(_("Reread Players List"), Iconos.Reindexar(), self.tw_reread_players)
         self.tbWork.new(_("Generate / Update Statistics"), Iconos.Estadisticas(), self.tw_rebuild)
         self.tbWork.new(_("AI Summary"), Iconos.AIChip(), self.tw_ai_summary)
 
-        # self.tbWork.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
-
         # Search Player Box with autocomplete
+        self.lb_player_icon = Controles.LB(self).set_imagen(Iconos.Player32())
         self.ed_search = QtWidgets.QLineEdit(self)
         self.ed_search.setPlaceholderText(_("Begin Typing Name..."))
         self.ed_search.setClearButtonEnabled(True)
         self.ed_search.textChanged.connect(self.on_search_player_changed)
 
-        ly_tb = Colocacion.H().control(self.tbWork).control(Controles.LB(self, f"{_('Search Player')}:")).control(self.ed_search).margen(2)
+        ly_tb = Colocacion.H().control(self.tbWork).control(self.lb_player_icon).control(Controles.LB(self, f"{_('Search Player')}:")).control(self.ed_search).margen(2)
         layout = Colocacion.V().otro(ly_tb).control(tabs).margen(1)
 
         self.setLayout(layout)

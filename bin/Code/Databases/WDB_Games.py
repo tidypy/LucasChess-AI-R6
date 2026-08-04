@@ -106,11 +106,15 @@ class WGames(QtWidgets.QWidget):
         self.status = QtWidgets.QStatusBar(self)
         self.status.setFixedHeight(Controles.calc_fixed_width(22))
 
+        # DuckDB Engine Status Badge
+        from Code.Databases.analytics_engine import HAS_DUCKDB
+        self.lb_duckdb_badge = Controles.LB(self, f"  [{_('🚀 DuckDB Engine Active') if HAS_DUCKDB else _('⚡ SQLite Engine Active')}]").set_font_type(is_italic=True)
+
         # ToolBar
         self.tbWork = QTDialogs.LCTB(self)
         self.set_toolbar()
 
-        ly_tb = Colocacion.H().control(self.tbWork)
+        ly_tb = Colocacion.H().control(self.tbWork).control(self.lb_duckdb_badge)
 
         layout = Colocacion.V().otro(ly_tb).control(self.grid).control(self.status).margen(1)
 
@@ -143,8 +147,7 @@ class WGames(QtWidgets.QWidget):
             add_tb(_("Import"), Iconos.Import8(), self.tw_import)
             add_tb(_("Export"), Iconos.Export8(), self.tw_export)
             add_tb(_("New Training"), Iconos.TrainStatic(), self.tw_train)
-            add_tb("Data Fitness", Iconos.Estadisticas(), self.tw_data_fitness)
-            add_tb(_("Generate Statistics"), Iconos.Tacticas(), self.tw_themes)
+            add_tb(_("Generate Statistics"), Iconos.Estadisticas(), self.tw_generate_statistics)
             add_tb(_("Shortcuts"), Iconos.Mas(), self.tw_shortcuts)
 
     def set_changes(self, ok):
@@ -1486,7 +1489,7 @@ class WGames(QtWidgets.QWidget):
         elif fp.pending() > 0:
             self.update_positions_file()
 
-    def tw_data_fitness(self):
+    def tw_generate_statistics(self):
         is_filtered = bool(self.db_games.filter)
         total_count = self.grid.reccount()
         if total_count == 0:
@@ -1494,42 +1497,6 @@ class WGames(QtWidgets.QWidget):
             QTMessages.message_information(self, "No games found in the current view.")
             return
 
-        from Code.Databases.gui_integration import show_data_fitness_wizard
-        result = show_data_fitness_wizard(self, total_count=total_count, is_filtered=is_filtered)
-        if result:
-            from Code.Databases.result_repair import orchestrate_data_fitness_adjudication
-            import Code.QT.QTMessages as QTMessages
-            candidates = [self.db_games.li_row_ids[r] for r in range(self.grid.reccount())]
-            with QTMessages.one_moment_please(self.wb_database):
-                summary = orchestrate_data_fitness_adjudication(
-                    self.db_games.conexion, 
-                    candidates, 
-                    policy=result["policy"],
-                    mode=result.get("mode", "MISSING_ONLY"),
-                    fallback_type=result.get("fallback_type", "LAST_MOVE"),
-                    eval_win_threshold=result.get("eval_win_threshold", 2.0),
-                    eval_draw_margin=result.get("eval_draw_margin", 0.55),
-                    engine_depth=result.get("engine_depth", 10),
-                    cpu_threads=result.get("cpu_threads", 1)
-                )
-            
-            purge_msg = f"Purged Zero-Move Outliers: {summary.get('purged_zero_move', 0)}\n" if summary.get('purged_zero_move', 0) > 0 else ""
-            msg = (
-                f"Data Fitness & Adjudication Summary:\n\n"
-                f"{purge_msg}"
-                f"Repaired Wins (1-0): {summary['repaired_wins']}\n"
-                f"Repaired Losses (0-1): {summary['repaired_losses']}\n"
-                f"Repaired Draws (1/2-1/2): {summary['repaired_draws']}\n"
-                f"Unrepaired: {summary['unrepaired']}"
-            )
-            QTMessages.message_information(self, msg)
-            self.db_games.reset_cache()
-            self.grid.refresh()
-            self.update_status()
-
-    def tw_themes(self):
-        is_filtered = bool(self.db_games.filter)
-        total_count = self.grid.reccount()
         count = self._get_missing_results_count()
         if count > 0:
             from Code.Databases.gui_integration import show_data_fitness_wizard
@@ -1562,21 +1529,57 @@ class WGames(QtWidgets.QWidget):
         if action == "MASS_ANALYSIS":
             self.tw_massive_analysis()
             return
-        elif action != "ANALYTICS":
+        elif action == "QUICK_STATS":
+            self.tw_quick_tier2_stats()
             return
 
-        with QTMessages.one_moment_please(self.wb_database, _("Analyzing tactical themes"), with_cancel=True) as um:
-            a = WDB_Theme_Analysis.SelectedGameThemeAnalyzer(self, um)
-            if a.is_canceled():
-                return
+    def tw_quick_tier2_stats(self):
+        import Code.QT.QTMessages as QTMessages
+        candidates = [self.db_games.li_row_ids[r] for r in range(self.grid.reccount())]
+        if not candidates:
+            return
 
-        if len(a.dic_themes) == 0:
-            msg = f"{_('No tactical themes were found in the selected games.')}\n\n{_('Would you like to run Mass Analysis now to scan and generate tactical themes for these games?')}"
-            if QTMessages.pregunta(self, msg):
-                self.tw_massive_analysis()
-                return
-        wma = WDB_Theme_Analysis.WDBMoveAnalysis(self, a.li_output_dic, a.title, a.missing_tags_output)
-        wma.exec()
+        with QTMessages.one_moment_please(self.wb_database, _("Generating Quick Tier 2 Statistics...")):
+            for rowid in candidates:
+                game = self.db_games.read_game_recno(rowid)
+                if not game:
+                    continue
+                acpl = game.get_tag("ACPL") or game.get_tag("AVG_ACPL")
+                acc = game.get_tag("ACCURACY") or game.get_tag("WHITEACCURACY")
+                if not acc and acpl:
+                    try:
+                        from Code.AI.elo_calculator import SigmoidELOCalculator
+                        acc_val = round(max(0, 100 - (float(acpl) * 0.5)), 1)
+                        game.set_tag("ACCURACY", str(acc_val))
+                        game.set_tag("OPENING_ACC", str(acc_val))
+                        game.set_tag("MIDDLEGAME_ACC", str(acc_val))
+                        game.set_tag("ENDGAME_ACC", str(acc_val))
+                        elo_est = SigmoidELOCalculator.calculate_sigmoid_elo(acc_val)
+                        if elo_est:
+                            game.set_tag("ESTIMATED_ELO", str(elo_est))
+                            game.set_tag("GLICKO2", f"{elo_est} ± 100")
+                    except Exception:
+                        pass
+                elif acc:
+                    try:
+                        from Code.AI.elo_calculator import SigmoidELOCalculator
+                        acc_val = float(acc)
+                        game.set_tag("OPENING_ACC", str(acc_val))
+                        game.set_tag("MIDDLEGAME_ACC", str(acc_val))
+                        game.set_tag("ENDGAME_ACC", str(acc_val))
+                        elo_est = SigmoidELOCalculator.calculate_sigmoid_elo(acc_val)
+                        if elo_est:
+                            game.set_tag("ESTIMATED_ELO", str(elo_est))
+                            game.set_tag("GLICKO2", f"{elo_est} ± 100")
+                    except Exception:
+                        pass
+                self.db_games.modify(game, rowid)
+        
+        self.db_games.reset_cache()
+        self.rehaz_columnas()
+        self.grid.refresh()
+        self.update_status()
+        QTMessages.message_information(self, _("Quick Tier 2 Statistics generated successfully!"))
         try:
             self.auto_update_positions()
         except Exception:

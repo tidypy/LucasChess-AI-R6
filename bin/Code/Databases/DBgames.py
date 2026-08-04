@@ -105,6 +105,8 @@ class DBgames:
 
         self.li_fields = self.lista_campos()
         self.st_fields = set(field.upper() for field in self.li_fields)
+        for new_col in ("GLICKO2", "ESTIMATED_ELO", "OPENING_ACC", "MIDDLEGAME_ACC", "ENDGAME_ACC", "ACPL", "ACCURACY"):
+            self.add_column(new_col)
 
         self.read_options()
 
