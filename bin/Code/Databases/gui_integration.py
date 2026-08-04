@@ -129,9 +129,56 @@ def show_data_fitness_wizard(parent: Optional[QtWidgets.QWidget], total_count: i
     ly_fallback.addWidget(cb_fallback_type)
     layout.addWidget(gb_fallback)
 
+    # Group 4: Engine & Threshold Settings
+    import os
+    gb_engine = QtWidgets.QGroupBox("Engine Evaluation & Threshold Settings", dialog)
+    ly_engine = QtWidgets.QGridLayout(gb_engine)
+
+    sp_win_thresh = QtWidgets.QDoubleSpinBox(gb_engine)
+    sp_win_thresh.setRange(0.5, 10.0)
+    sp_win_thresh.setValue(2.0)
+    sp_win_thresh.setSingleStep(0.1)
+    sp_win_thresh.setSuffix(" pawns")
+
+    sp_draw_margin = QtWidgets.QDoubleSpinBox(gb_engine)
+    sp_draw_margin.setRange(0.0, 2.0)
+    sp_draw_margin.setValue(0.50)
+    sp_draw_margin.setSingleStep(0.05)
+    sp_draw_margin.setSuffix(" pawns")
+
+    cb_depth = QtWidgets.QComboBox(gb_engine)
+    cb_depth.addItem("Ultra Fast (Depth 6 ~ 10ms per game)", 6)
+    cb_depth.addItem("Fast (Depth 10 ~ 30ms per game)", 10)
+    cb_depth.addItem("Medium (Depth 14 ~ 100ms per game)", 14)
+    cb_depth.addItem("Deep (Depth 18 ~ 300ms per game)", 18)
+    cb_depth.setCurrentIndex(1) # Fast (Depth 10)
+
+    max_cpus = os.cpu_count() or 4
+    safe_cpus = max(1, max_cpus - 1)
+    sp_cpus = QtWidgets.QSpinBox(gb_engine)
+    sp_cpus.setRange(1, max_cpus)
+    sp_cpus.setValue(safe_cpus)
+    sp_cpus.setSuffix(f" / {max_cpus} cores")
+
+    ly_engine.addWidget(QtWidgets.QLabel("Win Threshold:"), 0, 0)
+    ly_engine.addWidget(sp_win_thresh, 0, 1)
+    ly_engine.addWidget(QtWidgets.QLabel("Draw Margin (±):"), 0, 2)
+    ly_engine.addWidget(sp_draw_margin, 0, 3)
+
+    ly_engine.addWidget(QtWidgets.QLabel("Engine Depth:"), 1, 0)
+    ly_engine.addWidget(cb_depth, 1, 1)
+    ly_engine.addWidget(QtWidgets.QLabel("CPU Threads:"), 1, 2)
+    ly_engine.addWidget(sp_cpus, 1, 3)
+
+    layout.addWidget(gb_engine)
+
     def on_policy_toggled():
+        needs_engine = rb4.isChecked() or (cb_fallback_type.currentData() == "STOCKFISH" and not rb4.isChecked())
         gb_fallback.setEnabled(not rb4.isChecked())
+        gb_engine.setEnabled(needs_engine or rb2.isChecked())
+
     bg_policy.buttonToggled.connect(on_policy_toggled)
+    cb_fallback_type.currentIndexChanged.connect(on_policy_toggled)
 
     btn_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel)
     btn_box.accepted.connect(dialog.accept)
@@ -157,7 +204,11 @@ def show_data_fitness_wizard(parent: Optional[QtWidgets.QWidget], total_count: i
         return {
             "mode": "OVERWRITE" if rb_overwrite.isChecked() else "MISSING_ONLY",
             "policy": policy_token,
-            "fallback_type": cb_fallback_type.currentData() if not rb4.isChecked() else "NONE"
+            "fallback_type": cb_fallback_type.currentData() if not rb4.isChecked() else "NONE",
+            "eval_win_threshold": sp_win_thresh.value(),
+            "eval_draw_margin": sp_draw_margin.value(),
+            "engine_depth": cb_depth.currentData(),
+            "cpu_threads": sp_cpus.value()
         }
     return None
 

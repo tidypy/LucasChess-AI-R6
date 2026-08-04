@@ -136,6 +136,8 @@ def orchestrate_data_fitness_adjudication(
     fallback_type: str = "LAST_MOVE",
     eval_win_threshold: float = 2.0,
     eval_draw_margin: float = 0.55,
+    engine_depth: int = 10,
+    cpu_threads: int = 1,
 ) -> Dict[str, Any]:
     connection.execute("PRAGMA foreign_keys = ON")
     summary = {

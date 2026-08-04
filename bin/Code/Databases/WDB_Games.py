@@ -1496,7 +1496,11 @@ class WGames(QtWidgets.QWidget):
                     candidates, 
                     policy=result["policy"],
                     mode=result.get("mode", "MISSING_ONLY"),
-                    fallback_type=result.get("fallback_type", "LAST_MOVE")
+                    fallback_type=result.get("fallback_type", "LAST_MOVE"),
+                    eval_win_threshold=result.get("eval_win_threshold", 2.0),
+                    eval_draw_margin=result.get("eval_draw_margin", 0.55),
+                    engine_depth=result.get("engine_depth", 10),
+                    cpu_threads=result.get("cpu_threads", 1)
                 )
             
             purge_msg = f"Purged Zero-Move Outliers: {summary.get('purged_zero_move', 0)}\n" if summary.get('purged_zero_move', 0) > 0 else ""
@@ -1530,7 +1534,11 @@ class WGames(QtWidgets.QWidget):
                         candidates, 
                         policy=result["policy"],
                         mode=result.get("mode", "MISSING_ONLY"),
-                        fallback_type=result.get("fallback_type", "LAST_MOVE")
+                        fallback_type=result.get("fallback_type", "LAST_MOVE"),
+                        eval_win_threshold=result.get("eval_win_threshold", 2.0),
+                        eval_draw_margin=result.get("eval_draw_margin", 0.55),
+                        engine_depth=result.get("engine_depth", 10),
+                        cpu_threads=result.get("cpu_threads", 1)
                     )
                 self.db_games.reset_cache()
                 self.grid.refresh()
