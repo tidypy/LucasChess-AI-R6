@@ -30,6 +30,31 @@ from Code.Z import XRun, Util
 #             XRun.run_lucas(f"{resp.key}.shortcut")
 #
 
+import time
+
+class GlobalClickLogger(QtCore.QObject):
+    def eventFilter(self, obj, event):
+        if event.type() == QtCore.QEvent.Type.MouseButtonPress:
+            try:
+                txt = ""
+                if hasattr(obj, "text") and callable(obj.text):
+                    txt = obj.text()
+                elif hasattr(obj, "toolTip") and callable(obj.toolTip):
+                    txt = obj.toolTip()
+                elif hasattr(obj, "objectName") and callable(obj.objectName):
+                    txt = obj.objectName()
+                
+                cls_name = obj.__class__.__name__
+                timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+                log_msg = f"[{timestamp}] [UI CLICK] {cls_name}: '{txt}'\n"
+                
+                log_path = os.path.join(os.getcwd(), "lucas_debug_trace.log")
+                with open(log_path, "a", encoding="utf-8") as f:
+                    f.write(log_msg)
+            except Exception:
+                pass
+        return super().eventFilter(obj, event)
+
 def run_gui(procesador):
 
     if Util.is_linux() and (os.environ.get("XDG_SESSION_TYPE") == "wayland" or os.environ.get("WAYLAND_DISPLAY")):
@@ -45,10 +70,10 @@ def run_gui(procesador):
     QtWidgets.QApplication.setHighDpiScaleFactorRoundingPolicy(QtCore.Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
 
     app = QtWidgets.QApplication([])
-    app.setEffectEnabled(QtCore.Qt.UIEffect.UI_FadeMenu, True)  # Agregar
-
-    # filtro = GlobalFilter()
-    # app.installEventFilter(filtro)  #
+    app.setEffectEnabled(QtCore.Qt.UIEffect.UI_FadeMenu, True)
+    
+    click_logger = GlobalClickLogger(app)
+    app.installEventFilter(click_logger)
 
     first_run = main_config.paths.is_first_time
     main_config.lee()  # Necesaria la doble lectura, para que _ permanezca como builting tras QApplication
