@@ -424,15 +424,15 @@ class WPerfomance(QtWidgets.QWidget):
 
         self.grid = Grid.Grid(self, o_columns, complete_row_select=True, header_heigh=alto_cabecera)
 
-        # Engine Status Badge — actualiza() uses SQLite iteration directly
+        # Engine Status Badge & Toggle
         from Code.Databases.analytics_engine import HAS_DUCKDB
-        if HAS_DUCKDB:
-            engine_txt = f"  [{_('DuckDB Available (SQLite Active)')}]"
-        else:
-            engine_txt = f"  [{_('SQLite Engine Active')}]"
-        self.lb_engine_status = Controles.LB(self, engine_txt).set_font_type(is_italic=True)
+        self.cb_use_duckdb = Controles.CHB(self, _("Use DuckDB High-Speed Analytics Engine"), HAS_DUCKDB).set_font(Controles.FontType(puntos=9))
+        self.cb_use_duckdb.setEnabled(HAS_DUCKDB)
+        self.cb_use_duckdb.setToolTip(_("When checked, DuckDB runs ultra-fast columnar analytical queries. If unchecked or unavailable, SQLite fallback is used."))
+        
+        self.lb_engine_status = Controles.LB(self, f"  [{_('DuckDB Active') if HAS_DUCKDB else _('SQLite Active')}]").set_font_type(is_italic=True)
 
-        ly_search = Colocacion.H().control(Controles.LB(self, f"{_('Search Player')}:")).control(self.ed_search).control(self.lb_engine_status).margen(2)
+        ly_search = Colocacion.H().control(Controles.LB(self, f"{_('Search Player')}:")).control(self.ed_search).control(self.cb_use_duckdb).control(self.lb_engine_status).margen(2)
         ly = Colocacion.V().control(self.tb).otro(ly_search).control(self.grid).margen(1)
 
         self.setLayout(ly)
@@ -480,9 +480,8 @@ class WPerfomance(QtWidgets.QWidget):
         # DUAL-ENGINE ARCHITECTURE
         from Code.Databases.analytics_engine import HAS_DUCKDB
         db_path = getattr(self.db_games, "nombre", None)
-        
         duckdb_success = False
-        if HAS_DUCKDB and db_path and os.path.isfile(db_path):
+        if HAS_DUCKDB and self.cb_use_duckdb.valor() and db_path and os.path.isfile(db_path):
             # 1. DUCKDB FAST PATH
             try:
                 import duckdb
@@ -509,12 +508,6 @@ class WPerfomance(QtWidgets.QWidget):
                     fields = getattr(self.db_games, "st_fields", set())
                     w_elo_expr = "TRY_CAST(WHITEELO AS INTEGER)" if "WHITEELO" in fields else "NULL"
                     b_elo_expr = "TRY_CAST(BLACKELO AS INTEGER)" if "BLACKELO" in fields else "NULL"
-                    query = f"""
-                        SELECT 
-                            rowid, WHITE, BLACK, RESULT,
-                            {w_elo_expr} as w_elo,
-                            {b_elo_expr} as b_elo
-                        FROM db.Games 
                         {where_clause}
                     """
                     df = con.execute(query).df()

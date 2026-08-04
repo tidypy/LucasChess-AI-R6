@@ -659,6 +659,16 @@ class WGames(QtWidgets.QWidget):
             self.db_games.filter_pv(xpv, self.where)
             refresh()
 
+    def apply_player_filter(self, player_name):
+        if not player_name:
+            return
+        w_escaped = player_name.replace("'", "''")
+        self.where = f"(White LIKE '%{w_escaped}%' OR Black LIKE '%{w_escaped}%')"
+        self.db_games.filter_pv(None, self.where)
+        self.grid.refresh()
+        self.grid.gotop()
+        self.update_status()
+
     def generate_positions_file(self):
         pb = QTMessages.ProgressBarWithTime(self, _("Indexing..."), formato1="%p%", show_time=True)
         pb.mostrar()
