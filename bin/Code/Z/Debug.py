@@ -120,3 +120,20 @@ class LogDebug:
 
     def flush(self):
         pass  # To remove error 120 at exit
+
+
+try:
+    log_file_path = os.path.join(os.getcwd(), "lucas_debug_trace.log")
+    sys.stderr = LogDebug(log_file_path)
+    def _global_excepthook(exctype, value, tb):
+        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+        msg = f"\n[{timestamp}] UNHANDLED EXCEPTION:\n" + "".join(traceback.format_exception(exctype, value, tb))
+        try:
+            with open(log_file_path, "a", encoding="utf-8") as f:
+                f.write(msg)
+        except Exception:
+            pass
+        sys.__excepthook__(exctype, value, tb)
+    sys.excepthook = _global_excepthook
+except Exception:
+    pass
