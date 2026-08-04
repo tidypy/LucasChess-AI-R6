@@ -131,6 +131,41 @@ class OpenAICompatibleAdapter:
             return f"[Error connecting to AI endpoint: {str(e)}]"
 
 
+class KimiK3Adapter:
+    """
+    Adapter for Kimi K3 Fast on Fireworks AI / MCP Server.
+    """
+    def __init__(self, api_key: str = None, timeout: int = 25):
+        import os
+        self.api_key = api_key or os.environ.get("FIREWORKS_API_KEY", "")
+        self.timeout = timeout
+        self.url = "https://api.fireworks.ai/inference/v1/chat/completions"
+
+    def chat_completion(self, messages: list, temperature: float = 0.7, max_tokens: int = 800, model: str = None) -> str:
+        payload = {
+            "model": model or "accounts/fireworks/models/kimi-k3-fast",
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens
+        }
+        data = json.dumps(payload).encode("utf-8")
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}" if self.api_key else ""
+        }
+        req = urllib.request.Request(self.url, data=data, headers=headers, method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=self.timeout) as response:
+                if response.status == 200:
+                    resp_data = json.loads(response.read().decode("utf-8"))
+                    if "choices" in resp_data and len(resp_data["choices"]) > 0:
+                        return resp_data["choices"][0]["message"]["content"]
+                return f"[Kimi K3 HTTP Error {response.status}]"
+        except Exception as e:
+            AILogger.error("Kimi K3 completion error", e)
+            return f"[Kimi K3 Error: {str(e)}]"
+
+
 class AsyncChatWorker(QtCore.QThread):
     """
     QThread worker to run AI requests asynchronously without freezing PySide6 UI.

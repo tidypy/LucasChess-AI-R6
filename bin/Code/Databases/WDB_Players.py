@@ -887,23 +887,6 @@ class WPlayer(QtWidgets.QWidget):
     def tw_ai_summary(self):
         if not self.player:
             QTMessages.message_information(self, _("Please select a player first."))
-            return
-
-        w_openings = self.data[OPENINGS_WHITE] if len(self.data) > OPENINGS_WHITE else []
-        b_openings = self.data[OPENINGS_BLACK] if len(self.data) > OPENINGS_BLACK else []
-
-        top_w = [f"{x['opening']} ({x['games']} games, {x['pwin']}% W)" for x in w_openings[:5]] if w_openings else ["None"]
-        top_b = [f"{x['opening']} ({x['games']} games, {x['pwin']}% W)" for x in b_openings[:5]] if b_openings else ["None"]
-
-        summary_txt = (
-            f"=== PLAYER REPERTOIRE REPORT: {self.player} ===\n\n"
-            f"Top White Openings:\n - " + "\n - ".join(top_w) + "\n\n"
-            f"Top Black Openings:\n - " + "\n - ".join(top_b) + "\n\n"
-            f"[Payload prepared for AI LLM Repertoire Narration]"
-        )
-
-        dialog = QtWidgets.QMessageBox(self)
-        dialog.setWindowTitle(f"AI Repertoire Report - {self.player}")
-        dialog.setText(summary_txt)
-        dialog.setIcon(QtWidgets.QMessageBox.Icon.Information)
-        dialog.exec()
+        from Code.AI.StatsSummary import StatsSummaryFormatter, generate_stats_summary_async
+        stats_data = StatsSummaryFormatter.format_player_data(self.player, self)
+        generate_stats_summary_async(self, stats_data, title=f"{_('AI Repertoire Review')} - {self.player}")

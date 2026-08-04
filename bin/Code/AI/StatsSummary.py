@@ -165,17 +165,21 @@ def generate_stats_summary_async(parent_window, stats_data, title=None):
             dialog.set_error(_("Configuration not loaded."))
             return
 
-        backend = getattr(config, "x_ai_backend", "lm_studio")
-        if backend == "byok":
+        backend = getattr(config, "x_ai_backend", "kimi_k3")
+        if backend == "kimi_k3":
+            from Code.AI.Adapters import KimiK3Adapter
+            api_key = getattr(config, "x_ai_byok_key", "")
+            adapter = KimiK3Adapter(api_key=api_key)
+        elif backend == "byok":
             url = getattr(config, "x_ai_byok_url", "https://api.openai.com/v1")
             api_key = getattr(config, "x_ai_byok_key", "")
             model = getattr(config, "x_ai_model_name", "gpt-4o-mini")
+            adapter = OpenAICompatibleAdapter(base_url=url, api_key=api_key, model=model)
         else:
             url = getattr(config, "x_ai_lm_url", "http://localhost:1234/v1")
             api_key = "local"
             model = getattr(config, "x_ai_model_name", "local-model")
-
-        adapter = OpenAICompatibleAdapter(base_url=url, api_key=api_key, model=model)
+            adapter = OpenAICompatibleAdapter(base_url=url, api_key=api_key, model=model)
 
         memory_manager = AIMemoryManager()
         active_profile = memory_manager.get_active_profile_content()
