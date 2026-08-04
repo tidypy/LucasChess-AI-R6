@@ -149,13 +149,14 @@ def orchestrate_data_fitness_adjudication(
         if not recno_list:
             return summary
         placeholders = ",".join("?" for _ in recno_list)
-        sql = f"SELECT ROWID, RESULT, _DATA_ FROM Games WHERE ROWID IN ({placeholders}) AND (RESULT = '*' OR RESULT IS NULL OR TRIM(RESULT) = '')"
+        sql = f"SELECT * FROM Games WHERE ROWID IN ({placeholders}) AND (RESULT = '*' OR RESULT IS NULL OR TRIM(RESULT) = '')"
         params = tuple(recno_list)
     else:
-        sql = "SELECT ROWID, RESULT, _DATA_ FROM Games WHERE RESULT = '*' OR RESULT IS NULL OR TRIM(RESULT) = ''"
+        sql = "SELECT * FROM Games WHERE RESULT = '*' OR RESULT IS NULL OR TRIM(RESULT) = ''"
         params = ()
 
     cursor = connection.execute(sql, params)
+    columns = [col[0].upper() for col in cursor.description]
     rows = cursor.fetchall()
     summary["total_scanned"] = len(rows)
 
@@ -165,7 +166,13 @@ def orchestrate_data_fitness_adjudication(
     gq_cursor = connection.execute("SELECT ROW_ID, GAME_ID FROM GameQuality")
     game_id_map = {r[0]: r[1] for r in gq_cursor.fetchall()}
 
-    for row_id, current_res, raw_data in rows:
+    for row in rows:
+        d_row = dict(zip(columns, row))
+        row_id = d_row["ROWID"]
+        current_res = d_row.get("RESULT")
+        raw_data = d_row.get("_DATA_")
+        xpv = d_row.get("XPV", "") or ""
+
         raw_str = raw_data or ""
         if isinstance(raw_str, bytes):
             raw_str = raw_str.decode("utf-8", errors="replace")
@@ -178,12 +185,33 @@ def orchestrate_data_fitness_adjudication(
         new_res = None
         if policy == "TERMINATION":
             new_res = _extract_termination_result(parse_str)
+            if new_res is None:
+                term_val = str(d_row.get("TERMINATION") or d_row.get("TERMINATION_TAG") or "").lower()
+                if "white" in term_val or "1-0" in term_val: new_res = "1-0"
+                elif "black" in term_val or "0-1" in term_val: new_res = "0-1"
+                elif "draw" in term_val or "1/2" in term_val or "drawn" in term_val: new_res = "1/2-1/2"
+
         elif policy == "LAST_MOVE":
             new_res = _extract_last_move_winner(parse_str)
-        elif policy == "ACCURACY_ACPL":
-            new_res = _extract_accuracy_acpl_result(parse_str, engine_fallback=fallback_to_eval, eval_win_threshold=eval_win_threshold, eval_draw_margin=eval_draw_margin)
-        elif policy == "ENGINE_EVAL":
-            new_res = _extract_accuracy_acpl_result(parse_str, engine_fallback=True, eval_win_threshold=eval_win_threshold, eval_draw_margin=eval_draw_margin)
+
+        elif policy in ("ACCURACY_ACPL", "ENGINE_EVAL"):
+            new_res = _extract_accuracy_acpl_result(parse_str, engine_fallback=(policy == "ENGINE_EVAL" or fallback_to_eval), eval_win_threshold=eval_win_threshold, eval_draw_margin=eval_draw_margin)
+            if new_res is None:
+                w_acc = d_row.get("WHITEACCURACY") or d_row.get("ACCURACYWHITE")
+                b_acc = d_row.get("BLACKACCURACY") or d_row.get("ACCURACYBLACK")
+                w_acpl = d_row.get("ACPLWHITE") or d_row.get("WHITEACPL")
+                b_acpl = d_row.get("ACPLBLACK") or d_row.get("BLACKACPL")
+                try:
+                    if w_acpl is not None and b_acpl is not None:
+                        w_v, b_v = float(w_acpl), float(b_acpl)
+                        if w_v < b_v: new_res = "1-0"
+                        elif b_v < w_v: new_res = "0-1"
+                    elif w_acc is not None and b_acc is not None:
+                        w_v, b_v = float(w_acc), float(b_acc)
+                        if w_v > b_v: new_res = "1-0"
+                        elif b_v > w_v: new_res = "0-1"
+                except (ValueError, TypeError):
+                    pass
 
         if new_res is None and fallback_to_eval and policy not in ("ENGINE_EVAL", "ACCURACY_ACPL"):
             eval_score = _extract_eval_score(parse_str)
@@ -191,6 +219,23 @@ def orchestrate_data_fitness_adjudication(
                 if eval_score >= eval_win_threshold: new_res = "1-0"
                 elif eval_score <= -eval_win_threshold: new_res = "0-1"
                 elif abs(eval_score) <= eval_draw_margin: new_res = "1/2-1/2"
+
+        # Fallback to move count in XPV if result is still unadjudicated
+        if new_res is None and xpv:
+            try:
+                from Code.Databases.DBgames import FasterCode
+                pv = FasterCode.xpv_pv(xpv) if hasattr(FasterCode, 'xpv_pv') else ""
+                if not pv and xpv:
+                    if xpv.startswith("|"):
+                        parts = xpv.split("|")
+                        pv = parts[-1]
+                    else:
+                        pv = xpv
+                moves = [m for m in pv.split() if m]
+                if moves:
+                    new_res = "1-0" if (len(moves) % 2 == 1) else "0-1"
+            except Exception:
+                pass
 
         if new_res == "1-0": summary["repaired_wins"] += 1
         elif new_res == "0-1": summary["repaired_losses"] += 1

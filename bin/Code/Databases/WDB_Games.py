@@ -652,56 +652,12 @@ class WGames(QtWidgets.QWidget):
             self.update_status()
             self.grid_cambiado_registro(None, 0, 0)
 
-        def standard():
-            w = WDB_Filters.WFiltrar(self, self.li_filter, self.db_games.path_file)
-            if w.exec():
-                self.li_filter = w.li_filter
-
-                self.where = w.where()
-                self.db_games.filter_pv(xpv, self.where)
-                refresh()
-
-        def raw_sql():
-            w = WDB_Filters.WFiltrarRaw(self, self.grid.o_columns, self.where)
-            if w.exec():
-                self.where = w.where
-                self.db_games.filter_pv(xpv, self.where)
-                refresh()
-
-        def opening():
-            with QTMessages.one_moment_please(self.wb_database):
-                w = WindowOpenings.WOpenings(self.wb_database, self.last_opening)
-            if w.exec():
-                self.last_opening = ap = w.resultado()
-                pv = getattr(ap, "a1h8", "")
-                self.db_games.filter_pv(pv)
-                self.where = self.db_games.filter
-                self.movenum = pv.count(" ")
-                refresh()
-
-        def remove_filter():
-            self.db_games.filter_pv("")
-            self.where = None
-            if self.summaryActivo:
-                self.summaryActivo["game"] = Game.Game()
-                self.wsummary.start()
+        w = WDB_Filters.WFiltrar(self, self.li_filter, self.db_games.path_file)
+        if w.exec():
+            self.li_filter = w.li_filter
+            self.where = w.where()
+            self.db_games.filter_pv(xpv, self.where)
             refresh()
-
-        menu = QTDialogs.LCMenu(self)
-        menu.opcion(standard, _("Standard"), Iconos.Filtrar())
-        menu.separador()
-        menu.opcion(raw_sql, _("Advanced"), Iconos.SQL_RAW())
-        menu.separador()
-        menu.opcion(opening, _("Opening"), Iconos.Opening())
-        menu.separador()
-        menu.opcion(self.filter_position, _("By position"), Iconos.Board())
-        if self.db_games.filter is not None and self.db_games.filter:
-            menu.separador()
-            menu.opcion(remove_filter, _("Remove filter"), Iconos.Cancelar())
-
-        resp = menu.lanza()
-        if resp:
-            resp()
 
     def generate_positions_file(self):
         pb = QTMessages.ProgressBarWithTime(self, _("Indexing..."), formato1="%p%", show_time=True)
