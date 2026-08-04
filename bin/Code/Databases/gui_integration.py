@@ -74,58 +74,90 @@ def show_readiness_dialog(parent: Optional[QtWidgets.QWidget], db_games: Any) ->
 
 
 
-def show_data_fitness_wizard(parent: Optional[QtWidgets.QWidget], missing_count: int = 0) -> Optional[dict]:
-    """Shows the missing results adjudication wizard."""
+def show_data_fitness_wizard(parent: Optional[QtWidgets.QWidget], total_count: int = 0, is_filtered: bool = False) -> Optional[dict]:
+    """Shows the comprehensive Data Fitness & Adjudication Wizard."""
     dialog = QtWidgets.QDialog(parent)
-    dialog.setWindowTitle("Data Fitness Wizard - Missing Results")
+    dialog.setWindowTitle("Data Fitness & Adjudication Wizard")
+    dialog.setMinimumWidth(560)
     layout = QtWidgets.QVBoxLayout(dialog)
-    
-    lbl = QtWidgets.QLabel(f"{missing_count} games with missing results ('*') detected in this filtered subset.\nHow would you like to adjudicate them?")
-    layout.addWidget(lbl)
-    
-    bg = QtWidgets.QButtonGroup(dialog)
-    
-    rb1 = QtWidgets.QRadioButton("Option 1: Adjudicate via Engine Evaluation (Final Position)")
-    rb2 = QtWidgets.QRadioButton("Option 2: Extract from [Termination] PGN Tag (Fallback to Blank)")
-    rb3 = QtWidgets.QRadioButton("Option 3: Award based on Time Forfeit / Last Move")
-    rb4 = QtWidgets.QRadioButton("Option 4: Award to player with Highest Accuracy / Lowest ACPL")
-    
+
+    scope_str = "Filtered View" if is_filtered else "Entire Database"
+    lbl_scope = QtWidgets.QLabel(f"<b>Data Fitness Scope:</b> {scope_str} ({total_count} games)")
+    layout.addWidget(lbl_scope)
+
+    # Group 1: Target Mode
+    gb_target = QtWidgets.QGroupBox("Target Mode", dialog)
+    ly_target = QtWidgets.QVBoxLayout(gb_target)
+    rb_missing = QtWidgets.QRadioButton("Target games with missing results ('*') only", gb_target)
+    rb_overwrite = QtWidgets.QRadioButton("Redo / Overwrite ALL game results in current view", gb_target)
+    rb_missing.setChecked(True)
+    ly_target.addWidget(rb_missing)
+    ly_target.addWidget(rb_overwrite)
+    layout.addWidget(gb_target)
+
+    # Group 2: Primary Policy
+    gb_policy = QtWidgets.QGroupBox("Primary Adjudication Policy", dialog)
+    ly_policy = QtWidgets.QVBoxLayout(gb_policy)
+    bg_policy = QtWidgets.QButtonGroup(dialog)
+
+    rb1 = QtWidgets.QRadioButton("1. Extract from [Termination] PGN Tag")
+    rb2 = QtWidgets.QRadioButton("2. Highest Move Accuracy / Lowest ACPL Matchup")
+    rb3 = QtWidgets.QRadioButton("3. Time Forfeit / Last Move Turn")
+    rb4 = QtWidgets.QRadioButton("4. Live Stockfish Engine Evaluation (Final Position)")
+
     rb1.setChecked(True)
-    
-    bg.addButton(rb1, 1)
-    bg.addButton(rb2, 2)
-    bg.addButton(rb3, 3)
-    bg.addButton(rb4, 4)
-    
-    layout.addWidget(rb1)
-    layout.addWidget(rb2)
-    layout.addWidget(rb3)
-    layout.addWidget(rb4)
-    
-    chk_fallback = QtWidgets.QCheckBox("Fallback to Engine Evaluation if metadata is missing")
-    chk_fallback.setChecked(True)
-    chk_fallback.setEnabled(False) # since option 1 is checked by default
-    layout.addWidget(chk_fallback)
-    
-    def on_rb_toggled():
-        chk_fallback.setEnabled(not rb1.isChecked())
-    bg.buttonToggled.connect(on_rb_toggled)
-    
+    bg_policy.addButton(rb1, 1)
+    bg_policy.addButton(rb2, 2)
+    bg_policy.addButton(rb3, 3)
+    bg_policy.addButton(rb4, 4)
+
+    ly_policy.addWidget(rb1)
+    ly_policy.addWidget(rb2)
+    ly_policy.addWidget(rb3)
+    ly_policy.addWidget(rb4)
+    layout.addWidget(gb_policy)
+
+    # Group 3: Secondary Fallback
+    gb_fallback = QtWidgets.QGroupBox("Secondary Fallback Policy (if primary fails)", dialog)
+    ly_fallback = QtWidgets.QVBoxLayout(gb_fallback)
+    cb_fallback_type = QtWidgets.QComboBox(gb_fallback)
+    cb_fallback_type.addItem("Live Stockfish Engine Evaluation (runs Stockfish analysis)", "STOCKFISH")
+    cb_fallback_type.addItem("Embedded PGN Evaluation Comments ([%eval])", "EMBEDDED_EVAL")
+    cb_fallback_type.addItem("Turn-based Last Move (1-0 if White moved last, 0-1 if Black)", "LAST_MOVE")
+    cb_fallback_type.addItem("None (Leave un-adjudicated)", "NONE")
+    cb_fallback_type.setCurrentIndex(0)
+    ly_fallback.addWidget(cb_fallback_type)
+    layout.addWidget(gb_fallback)
+
+    def on_policy_toggled():
+        gb_fallback.setEnabled(not rb4.isChecked())
+    bg_policy.buttonToggled.connect(on_policy_toggled)
+
     btn_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel)
     btn_box.accepted.connect(dialog.accept)
     btn_box.rejected.connect(dialog.reject)
     layout.addWidget(btn_box)
-    
+
     if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
-        policy = "ENGINE_EVAL"
-        id = bg.checkedId()
-        if id == 2: policy = "TERMINATION"
-        elif id == 3: policy = "LAST_MOVE"
-        elif id == 4: policy = "ACCURACY_ACPL"
-        
+        if rb_overwrite.isChecked():
+            msg = (
+                "⚠️ WARNING: You have chosen to REDO / OVERWRITE all game results in the current view.\n\n"
+                "Existing results will be updated according to your selected policy.\n\n"
+                "Are you sure you want to proceed?"
+            )
+            if not QtWidgets.QMessageBox.warning(dialog, "Confirm Re-adjudication", msg, QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No) == QtWidgets.QMessageBox.StandardButton.Yes:
+                return None
+
+        pol_id = bg_policy.checkedId()
+        policy_token = "TERMINATION"
+        if pol_id == 2: policy_token = "ACCURACY_ACPL"
+        elif pol_id == 3: policy_token = "LAST_MOVE"
+        elif pol_id == 4: policy_token = "STOCKFISH"
+
         return {
-            "policy": policy,
-            "fallback_to_eval": chk_fallback.isChecked()
+            "mode": "OVERWRITE" if rb_overwrite.isChecked() else "MISSING_ONLY",
+            "policy": policy_token,
+            "fallback_type": cb_fallback_type.currentData() if not rb4.isChecked() else "NONE"
         }
     return None
 

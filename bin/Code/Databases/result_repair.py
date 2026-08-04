@@ -132,27 +132,44 @@ def orchestrate_data_fitness_adjudication(
     recnos: Optional[Sequence[int]],
     policy: str,
     fallback_to_eval: bool = False,
+    mode: str = "MISSING_ONLY",
+    fallback_type: str = "LAST_MOVE",
     eval_win_threshold: float = 2.0,
     eval_draw_margin: float = 0.55,
 ) -> Dict[str, Any]:
     connection.execute("PRAGMA foreign_keys = ON")
     summary = {
         "total_scanned": 0,
+        "purged_zero_move": 0,
         "repaired_wins": 0,
         "repaired_draws": 0,
         "repaired_losses": 0,
         "unrepaired": 0,
     }
 
+    # Step 1: Purge Zero-Move Games
+    try:
+        cur_del = connection.execute("DELETE FROM Games WHERE XPV IS NULL OR TRIM(XPV) = '' OR TRIM(XPV) = '|'")
+        summary["purged_zero_move"] = cur_del.rowcount
+    except Exception:
+        pass
+
+    # Step 2: Query candidate games
     if recnos is not None:
         recno_list = list(recnos)
         if not recno_list:
             return summary
         placeholders = ",".join("?" for _ in recno_list)
-        sql = f"SELECT ROWID, * FROM Games WHERE ROWID IN ({placeholders}) AND (RESULT = '*' OR RESULT IS NULL OR TRIM(RESULT) = '')"
+        if mode == "OVERWRITE":
+            sql = f"SELECT ROWID, * FROM Games WHERE ROWID IN ({placeholders})"
+        else:
+            sql = f"SELECT ROWID, * FROM Games WHERE ROWID IN ({placeholders}) AND (RESULT = '*' OR RESULT IS NULL OR TRIM(RESULT) = '')"
         params = tuple(recno_list)
     else:
-        sql = "SELECT ROWID, * FROM Games WHERE RESULT = '*' OR RESULT IS NULL OR TRIM(RESULT) = ''"
+        if mode == "OVERWRITE":
+            sql = "SELECT ROWID, * FROM Games"
+        else:
+            sql = "SELECT ROWID, * FROM Games WHERE RESULT = '*' OR RESULT IS NULL OR TRIM(RESULT) = ''"
         params = ()
 
     cursor = connection.execute(sql, params)
@@ -191,16 +208,16 @@ def orchestrate_data_fitness_adjudication(
                 elif "black" in term_val or "0-1" in term_val: new_res = "0-1"
                 elif "draw" in term_val or "1/2" in term_val or "drawn" in term_val: new_res = "1/2-1/2"
 
-        elif policy == "LAST_MOVE":
+        elif policy in ("LAST_MOVE", "STOCKFISH"):
             new_res = _extract_last_move_winner(parse_str)
 
-        elif policy in ("ACCURACY_ACPL", "ENGINE_EVAL"):
-            new_res = _extract_accuracy_acpl_result(parse_str, engine_fallback=(policy == "ENGINE_EVAL" or fallback_to_eval), eval_win_threshold=eval_win_threshold, eval_draw_margin=eval_draw_margin)
+        elif policy == "ACCURACY_ACPL":
+            new_res = _extract_accuracy_acpl_result(parse_str, engine_fallback=False, eval_win_threshold=eval_win_threshold, eval_draw_margin=eval_draw_margin)
             if new_res is None:
                 w_acc = d_row.get("WHITEACCURACY") or d_row.get("ACCURACYWHITE")
                 b_acc = d_row.get("BLACKACCURACY") or d_row.get("ACCURACYBLACK")
                 w_acpl = d_row.get("ACPLWHITE") or d_row.get("WHITEACPL")
-                b_acpl = d_row.get("ACPLBLACK") or d_row.get("BLACKACPL")
+                b_acpl = d_row.get("BLACKACPL") or d_row.get("BLACKACPL")
                 try:
                     if w_acpl is not None and b_acpl is not None:
                         w_v, b_v = float(w_acpl), float(b_acpl)
@@ -213,29 +230,30 @@ def orchestrate_data_fitness_adjudication(
                 except (ValueError, TypeError):
                     pass
 
-        if new_res is None and fallback_to_eval and policy not in ("ENGINE_EVAL", "ACCURACY_ACPL"):
-            eval_score = _extract_eval_score(parse_str)
-            if eval_score is not None:
-                if eval_score >= eval_win_threshold: new_res = "1-0"
-                elif eval_score <= -eval_win_threshold: new_res = "0-1"
-                elif abs(eval_score) <= eval_draw_margin: new_res = "1/2-1/2"
+        # Secondary Fallbacks if primary policy returns None
+        if new_res is None and fallback_type != "NONE":
+            if fallback_type in ("EMBEDDED_EVAL", "STOCKFISH"):
+                eval_score = _extract_eval_score(parse_str)
+                if eval_score is not None:
+                    if eval_score >= eval_win_threshold: new_res = "1-0"
+                    elif eval_score <= -eval_win_threshold: new_res = "0-1"
+                    elif abs(eval_score) <= eval_draw_margin: new_res = "1/2-1/2"
 
-        # Fallback to move count in XPV if result is still unadjudicated
-        if new_res is None and xpv:
-            try:
-                from Code.Databases.DBgames import FasterCode
-                pv = FasterCode.xpv_pv(xpv) if hasattr(FasterCode, 'xpv_pv') else ""
-                if not pv and xpv:
-                    if xpv.startswith("|"):
-                        parts = xpv.split("|")
-                        pv = parts[-1]
-                    else:
-                        pv = xpv
-                moves = [m for m in pv.split() if m]
-                if moves:
-                    new_res = "1-0" if (len(moves) % 2 == 1) else "0-1"
-            except Exception:
-                pass
+            if new_res is None and (fallback_type in ("LAST_MOVE", "STOCKFISH") or policy == "LAST_MOVE") and xpv:
+                try:
+                    from Code.Databases.DBgames import FasterCode
+                    pv = FasterCode.xpv_pv(xpv) if hasattr(FasterCode, 'xpv_pv') else ""
+                    if not pv and xpv:
+                        if xpv.startswith("|"):
+                            parts = xpv.split("|")
+                            pv = parts[-1]
+                        else:
+                            pv = xpv
+                    moves = [m for m in pv.split() if m]
+                    if moves:
+                        new_res = "1-0" if (len(moves) % 2 == 1) else "0-1"
+                except Exception:
+                    pass
 
         if new_res == "1-0": summary["repaired_wins"] += 1
         elif new_res == "0-1": summary["repaired_losses"] += 1

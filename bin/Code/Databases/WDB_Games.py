@@ -1477,14 +1477,15 @@ class WGames(QtWidgets.QWidget):
             self.update_positions_file()
 
     def tw_data_fitness(self):
-        count = self._get_missing_results_count()
-        if count == 0:
+        is_filtered = bool(self.db_games.filter)
+        total_count = self.grid.reccount()
+        if total_count == 0:
             import Code.QT.QTMessages as QTMessages
-            QTMessages.message_information(self, "No missing results ('*') found in the current filter.\nAll game results are fit.")
+            QTMessages.message_information(self, "No games found in the current view.")
             return
 
         from Code.Databases.gui_integration import show_data_fitness_wizard
-        result = show_data_fitness_wizard(self, count)
+        result = show_data_fitness_wizard(self, total_count=total_count, is_filtered=is_filtered)
         if result:
             from Code.Databases.result_repair import orchestrate_data_fitness_adjudication
             import Code.QT.QTMessages as QTMessages
@@ -1493,15 +1494,18 @@ class WGames(QtWidgets.QWidget):
                 summary = orchestrate_data_fitness_adjudication(
                     self.db_games.conexion, 
                     candidates, 
-                    result["policy"], 
-                    result["fallback_to_eval"]
+                    policy=result["policy"],
+                    mode=result.get("mode", "MISSING_ONLY"),
+                    fallback_type=result.get("fallback_type", "LAST_MOVE")
                 )
             
+            purge_msg = f"Purged Zero-Move Outliers: {summary.get('purged_zero_move', 0)}\n" if summary.get('purged_zero_move', 0) > 0 else ""
             msg = (
-                f"Adjudication Summary:\n"
-                f"Repaired Wins: {summary['repaired_wins']}\n"
-                f"Repaired Losses: {summary['repaired_losses']}\n"
-                f"Repaired Draws: {summary['repaired_draws']}\n"
+                f"Data Fitness & Adjudication Summary:\n\n"
+                f"{purge_msg}"
+                f"Repaired Wins (1-0): {summary['repaired_wins']}\n"
+                f"Repaired Losses (0-1): {summary['repaired_losses']}\n"
+                f"Repaired Draws (1/2-1/2): {summary['repaired_draws']}\n"
                 f"Unrepaired: {summary['unrepaired']}"
             )
             QTMessages.message_information(self, msg)
@@ -1510,10 +1514,12 @@ class WGames(QtWidgets.QWidget):
             self.update_status()
 
     def tw_themes(self):
+        is_filtered = bool(self.db_games.filter)
+        total_count = self.grid.reccount()
         count = self._get_missing_results_count()
         if count > 0:
             from Code.Databases.gui_integration import show_data_fitness_wizard
-            result = show_data_fitness_wizard(self, count)
+            result = show_data_fitness_wizard(self, total_count=total_count, is_filtered=is_filtered)
             if result:
                 from Code.Databases.result_repair import orchestrate_data_fitness_adjudication
                 import Code.QT.QTMessages as QTMessages
@@ -1522,8 +1528,9 @@ class WGames(QtWidgets.QWidget):
                     orchestrate_data_fitness_adjudication(
                         self.db_games.conexion, 
                         candidates, 
-                        result["policy"], 
-                        result["fallback_to_eval"]
+                        policy=result["policy"],
+                        mode=result.get("mode", "MISSING_ONLY"),
+                        fallback_type=result.get("fallback_type", "LAST_MOVE")
                     )
                 self.db_games.reset_cache()
                 self.grid.refresh()
