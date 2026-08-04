@@ -149,10 +149,10 @@ def orchestrate_data_fitness_adjudication(
         if not recno_list:
             return summary
         placeholders = ",".join("?" for _ in recno_list)
-        sql = f"SELECT * FROM Games WHERE ROWID IN ({placeholders}) AND (RESULT = '*' OR RESULT IS NULL OR TRIM(RESULT) = '')"
+        sql = f"SELECT ROWID, * FROM Games WHERE ROWID IN ({placeholders}) AND (RESULT = '*' OR RESULT IS NULL OR TRIM(RESULT) = '')"
         params = tuple(recno_list)
     else:
-        sql = "SELECT * FROM Games WHERE RESULT = '*' OR RESULT IS NULL OR TRIM(RESULT) = ''"
+        sql = "SELECT ROWID, * FROM Games WHERE RESULT = '*' OR RESULT IS NULL OR TRIM(RESULT) = ''"
         params = ()
 
     cursor = connection.execute(sql, params)

@@ -1335,8 +1335,14 @@ def lipv_lipgn(lipv):
     FasterCode.set_init_fen()
     li_pgn = []
     for pv in lipv:
-        info = FasterCode.move_expv(pv[:2], pv[2:4], pv[4:])
-        li_pgn.append(info.san())
+        if not pv or len(pv) < 4:
+            li_pgn.append("")
+            continue
+        try:
+            info = FasterCode.move_expv(pv[:2], pv[2:4], pv[4:])
+            li_pgn.append(info.san() if info else "")
+        except Exception:
+            li_pgn.append("")
     return li_pgn
 
 
