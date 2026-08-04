@@ -191,7 +191,7 @@ class WPlayer(QtWidgets.QWidget):
         self.tbWork.new(_("AI Summary"), Iconos.AIChip(), self.tw_ai_summary)
 
         # Search Player Box with autocomplete
-        self.lb_player_icon = Controles.LB(self).set_imagen(Iconos.Player32())
+        self.lb_player_icon = Controles.LB(self).put_image(Iconos.Player32())
         self.ed_search = QtWidgets.QLineEdit(self)
         self.ed_search.setPlaceholderText(_("Begin Typing Name..."))
         self.ed_search.setClearButtonEnabled(True)
