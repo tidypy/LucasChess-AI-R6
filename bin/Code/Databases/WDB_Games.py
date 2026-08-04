@@ -1505,9 +1505,9 @@ class WGames(QtWidgets.QWidget):
                 f"Unrepaired: {summary['unrepaired']}"
             )
             QTMessages.message_information(self, msg)
-            if self.grid:
-                self.grid.setFocus() # Just to be safe
-                # Note: full reload is complex, users can click Refresh
+            self.db_games.reset_cache()
+            self.grid.refresh()
+            self.update_status()
 
     def tw_themes(self):
         count = self._get_missing_results_count()
@@ -1525,6 +1525,9 @@ class WGames(QtWidgets.QWidget):
                         result["policy"], 
                         result["fallback_to_eval"]
                     )
+                self.db_games.reset_cache()
+                self.grid.refresh()
+                self.update_status()
             else:
                 return # user canceled
 

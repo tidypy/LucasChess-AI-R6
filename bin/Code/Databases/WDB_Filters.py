@@ -20,22 +20,19 @@ class WFiltrar(QtWidgets.QDialog):
             | QtCore.Qt.WindowType.WindowTitleHint
         )
         self.setWindowIcon(Iconos.Filtrar())
-        self.setMinimumWidth(500)
+        self.setMinimumWidth(720)
 
         # Default dictionary structure if li_filter is not a dict (backwards compatibility)
         self.li_filter = li_filter if isinstance(li_filter, dict) else {}
         self.db_save_nom = db_save_nom
 
         f = Controles.FontType(puntos=11)
+        f_sub = Controles.FontType(puntos=9)
 
-        # UI Components
+        # UI Components — Left Column
         self.ed_white = Controles.ED(self, self.li_filter.get("white", "")).set_font(f)
         self.ed_black = Controles.ED(self, self.li_filter.get("black", "")).set_font(f)
         self.cb_ignore_color = Controles.CHB(self, _("Ignore Color (search both)"), self.li_filter.get("ignore_color", False)).set_font(f)
-
-        self.ed_event = Controles.ED(self, self.li_filter.get("event", "")).set_font(f)
-        self.ed_site = Controles.ED(self, self.li_filter.get("site", "")).set_font(f)
-        self.ed_eco = Controles.ED(self, self.li_filter.get("eco", "")).set_font(f)
 
         self.ed_min_elo = Controles.ED(self, self.li_filter.get("min_elo", "")).set_font(f)
         self.ed_min_elo.setFixedWidth(60)
@@ -45,7 +42,6 @@ class WFiltrar(QtWidgets.QDialog):
         self.ed_min_moves.setFixedWidth(60)
         self.ed_max_moves = Controles.ED(self, self.li_filter.get("max_moves", "")).set_font(f)
         self.ed_max_moves.setFixedWidth(60)
-        
         self.ed_year = Controles.ED(self, self.li_filter.get("year", "")).set_font(f)
         self.ed_year.setFixedWidth(60)
 
@@ -56,7 +52,26 @@ class WFiltrar(QtWidgets.QDialog):
         self.cb_res_12 = Controles.CHB(self, "1/2-1/2", "1/2-1/2" in res).set_font(f)
         self.cb_res_ast = Controles.CHB(self, "*", "*" in res).set_font(f)
 
-        # Layout Building
+        # UI Components — Right Column (Metrics & Advanced)
+        self.ed_min_acc = Controles.ED(self, self.li_filter.get("min_acc", "")).set_font(f)
+        self.ed_min_acc.setFixedWidth(60)
+        self.ed_max_acc = Controles.ED(self, self.li_filter.get("max_acc", "")).set_font(f)
+        self.ed_max_acc.setFixedWidth(60)
+
+        self.ed_min_acpl = Controles.ED(self, self.li_filter.get("min_acpl", "")).set_font(f)
+        self.ed_min_acpl.setFixedWidth(60)
+        self.ed_max_acpl = Controles.ED(self, self.li_filter.get("max_acpl", "")).set_font(f)
+        self.ed_max_acpl.setFixedWidth(60)
+
+        self.ed_event = Controles.ED(self, self.li_filter.get("event", "")).set_font(f)
+        self.ed_site = Controles.ED(self, self.li_filter.get("site", "")).set_font(f)
+        self.ed_eco = Controles.ED(self, self.li_filter.get("eco", "")).set_font(f)
+        self.ed_termination = Controles.ED(self, self.li_filter.get("termination", "")).set_font(f)
+        self.ed_comment = Controles.ED(self, self.li_filter.get("comment", "")).set_font(f)
+
+        # --- Layout Building ---
+        
+        # Left Column Layouts
         ly_players = Colocacion.G()
         ly_players.controlc(Controles.LB(self, _("White Player:")).set_font(f), 0, 0)
         ly_players.controlc(self.ed_white, 0, 1)
@@ -79,27 +94,51 @@ class WFiltrar(QtWidgets.QDialog):
         ly_details.controlc(self.ed_year, 2, 1)
         
         ly_res = Colocacion.H().control(Controles.LB(self, _("Result:")).set_font(f)).control(self.cb_res_10).control(self.cb_res_01).control(self.cb_res_12).control(self.cb_res_ast).relleno()
-        
-        gb_details = QtWidgets.QGroupBox(_("Game Details"))
         ly_details.otro(ly_res, 3, 0, 1, 4)
+        gb_details = QtWidgets.QGroupBox(_("Game Details"))
         gb_details.setLayout(ly_details)
+
+        # Right Column Layouts
+        ly_metrics = Colocacion.G()
+        ly_metrics.controlc(Controles.LB(self, _("Min Accuracy %:")).set_font(f), 0, 0)
+        ly_metrics.controlc(self.ed_min_acc, 0, 1)
+        ly_metrics.controlc(Controles.LB(self, _("Max Accuracy %:")).set_font(f), 0, 2)
+        ly_metrics.controlc(self.ed_max_acc, 0, 3)
+        ly_metrics.controlc(Controles.LB(self, _("Min ACPL:")).set_font(f), 1, 0)
+        ly_metrics.controlc(self.ed_min_acpl, 1, 1)
+        ly_metrics.controlc(Controles.LB(self, _("Max ACPL:")).set_font(f), 1, 2)
+        ly_metrics.controlc(self.ed_max_acpl, 1, 3)
+        gb_metrics = QtWidgets.QGroupBox(_("Performance & Quality Metrics"))
+        gb_metrics.setLayout(ly_metrics)
 
         ly_adv = Colocacion.G()
         ly_adv.controlc(Controles.LB(self, _("Event:")).set_font(f), 0, 0)
         ly_adv.controlc(self.ed_event, 0, 1)
         ly_adv.controlc(Controles.LB(self, _("Site:")).set_font(f), 1, 0)
         ly_adv.controlc(self.ed_site, 1, 1)
-        ly_adv.controlc(Controles.LB(self, _("ECO:")).set_font(f), 2, 0)
+        ly_adv.controlc(Controles.LB(self, _("ECO / Opening:")).set_font(f), 2, 0)
         ly_adv.controlc(self.ed_eco, 2, 1)
-        gb_adv = QtWidgets.QGroupBox(_("Advanced"))
+        ly_adv.controlc(Controles.LB(self, _("Termination:")).set_font(f), 3, 0)
+        ly_adv.controlc(self.ed_termination, 3, 1)
+        ly_adv.controlc(Controles.LB(self, _("Comment / Movetext:")).set_font(f), 4, 0)
+        ly_adv.controlc(self.ed_comment, 4, 1)
+        gb_adv = QtWidgets.QGroupBox(_("Advanced & Metadata Search"))
         gb_adv.setLayout(ly_adv)
 
+        # Split into 2 columns
+        ly_left = Colocacion.V().control(gb_players).control(gb_details).relleno()
+        ly_right = Colocacion.V().control(gb_metrics).control(gb_adv).relleno()
+        ly_columns = Colocacion.H().otro(ly_left).otro(ly_right)
+
+        # Top notice and toolbar
+        lb_notice = Controles.LB(self, _("ℹ Text searches perform automatic partial matching (no wildcard % needed).")).set_font(f_sub)
+        
         tb = QTDialogs.LCTB(self)
         tb.new(_("Accept"), Iconos.Aceptar(), self.aceptar)
         tb.new(_("Cancel"), Iconos.Cancelar(), self.reject)
         tb.new(_("Clear All"), Iconos.Reiniciar(), self.reiniciar)
 
-        main_layout = Colocacion.V().control(tb).control(gb_players).control(gb_details).control(gb_adv).margen(5)
+        main_layout = Colocacion.V().control(tb).control(lb_notice).otro(ly_columns).margen(8)
         self.setLayout(main_layout)
 
     def reiniciar(self):
@@ -109,10 +148,16 @@ class WFiltrar(QtWidgets.QDialog):
         self.ed_event.set_text("")
         self.ed_site.set_text("")
         self.ed_eco.set_text("")
+        self.ed_termination.set_text("")
+        self.ed_comment.set_text("")
         self.ed_min_elo.set_text("")
         self.ed_max_elo.set_text("")
         self.ed_min_moves.set_text("")
         self.ed_max_moves.set_text("")
+        self.ed_min_acc.set_text("")
+        self.ed_max_acc.set_text("")
+        self.ed_min_acpl.set_text("")
+        self.ed_max_acpl.set_text("")
         self.ed_year.set_text("")
         self.cb_res_10.set_value(False)
         self.cb_res_01.set_value(False)
@@ -133,10 +178,16 @@ class WFiltrar(QtWidgets.QDialog):
             "event": self.ed_event.texto().strip(),
             "site": self.ed_site.texto().strip(),
             "eco": self.ed_eco.texto().strip(),
+            "termination": self.ed_termination.texto().strip(),
+            "comment": self.ed_comment.texto().strip(),
             "min_elo": self.ed_min_elo.texto().strip(),
             "max_elo": self.ed_max_elo.texto().strip(),
             "min_moves": self.ed_min_moves.texto().strip(),
             "max_moves": self.ed_max_moves.texto().strip(),
+            "min_acc": self.ed_min_acc.texto().strip(),
+            "max_acc": self.ed_max_acc.texto().strip(),
+            "min_acpl": self.ed_min_acpl.texto().strip(),
+            "max_acpl": self.ed_max_acpl.texto().strip(),
             "year": self.ed_year.texto().strip(),
             "results": res
         }
@@ -179,7 +230,15 @@ class WFiltrar(QtWidgets.QDialog):
             
         eco = self.li_filter.get("eco", "")
         if eco:
-            conds.append(f"ECO LIKE '%{eco}%'")
+            conds.append(f"(ECO LIKE '%{eco}%' OR Opening LIKE '%{eco}%')")
+
+        term = self.li_filter.get("termination", "")
+        if term:
+            conds.append(f"Termination LIKE '%{term}%'")
+
+        cmt = self.li_filter.get("comment", "")
+        if cmt:
+            conds.append(f"_DATA_ LIKE '%{cmt}%'")
             
         min_elo = self.li_filter.get("min_elo", "")
         max_elo = self.li_filter.get("max_elo", "")
@@ -194,6 +253,32 @@ class WFiltrar(QtWidgets.QDialog):
             conds.append(f"(CAST(Plies AS integer)/2) >= {min_m}")
         if max_m.isdigit():
             conds.append(f"(CAST(Plies AS integer)/2) <= {max_m}")
+
+        min_acc = self.li_filter.get("min_acc", "")
+        max_acc = self.li_filter.get("max_acc", "")
+        if min_acc:
+            try:
+                val = float(min_acc)
+                conds.append(f"(CAST(WHITEACCURACY AS float) >= {val} OR CAST(BLACKACCURACY AS float) >= {val})")
+            except ValueError: pass
+        if max_acc:
+            try:
+                val = float(max_acc)
+                conds.append(f"(CAST(WHITEACCURACY AS float) <= {val} AND CAST(BLACKACCURACY AS float) <= {val})")
+            except ValueError: pass
+
+        min_acpl = self.li_filter.get("min_acpl", "")
+        max_acpl = self.li_filter.get("max_acpl", "")
+        if min_acpl:
+            try:
+                val = float(min_acpl)
+                conds.append(f"(CAST(ACPLWHITE AS float) >= {val} OR CAST(ACPLBLACK AS float) >= {val})")
+            except ValueError: pass
+        if max_acpl:
+            try:
+                val = float(max_acpl)
+                conds.append(f"(CAST(ACPLWHITE AS float) <= {val} AND CAST(ACPLBLACK AS float) <= {val})")
+            except ValueError: pass
             
         yr = self.li_filter.get("year", "")
         if yr:
