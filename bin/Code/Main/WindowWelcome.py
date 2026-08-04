@@ -180,7 +180,7 @@ class WindowWelcome(QtWidgets.QDialog):
 
     def action_trainings(self):
         self.accept()
-        from Code import Presentacion
+        from Code.Main import Presentacion
         Presentacion.ManagerChallenge101(self.procesador)
 
     def action_books(self):
