@@ -910,8 +910,3 @@ class WPlayer(QtWidgets.QWidget):
         dialog.setText(summary_txt)
         dialog.setIcon(QtWidgets.QMessageBox.Icon.Information)
         dialog.exec()
-        has_data = any(len(d) > 0 for d in data)
-        if not has_data:
-            QTMessages.message_information(self, _("Player has no games with moves."))
-
-        self.tab_changed(self.tabs.current_position())

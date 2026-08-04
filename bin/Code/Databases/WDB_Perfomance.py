@@ -508,8 +508,7 @@ class WPerfomance(QtWidgets.QWidget):
                     fields = getattr(self.db_games, "st_fields", set())
                     w_elo_expr = "TRY_CAST(WHITEELO AS INTEGER)" if "WHITEELO" in fields else "NULL"
                     b_elo_expr = "TRY_CAST(BLACKELO AS INTEGER)" if "BLACKELO" in fields else "NULL"
-                        {where_clause}
-                    """
+                    query = f"SELECT rowid, WHITE, BLACK, RESULT, {w_elo_expr} as w_elo, {b_elo_expr} as b_elo FROM db.Games {where_clause}"
                     df = con.execute(query).df()
                 finally:
                     con.close()
