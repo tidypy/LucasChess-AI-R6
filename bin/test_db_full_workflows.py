@@ -24,6 +24,7 @@ from Code.Databases.gui_integration import (
     MODE_OVERWRITE,
 )
 from Code.Databases.analytics_engine import AnalyticsEngine
+from Code.Databases.pipeline_coordinator import CleanAndGeneratePipeline
 
 # Ensure QApplication instance exists for Qt widgets
 app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
@@ -295,6 +296,28 @@ class TestUnifiedDatabaseWorkflows(unittest.TestCase):
         except Exception as e:
             log_workflow_error(self.step_history, e)
             self.fail(f"Workflow 9 failed: {e}")
+
+    def test_workflow_10_unified_clean_and_generate_pipeline(self):
+        """Simulates 14-stage 1-Click Clean & Generate Pipeline on Dirty_data-DB.pgn."""
+        try:
+            self.record_step("Step 1: Instantiate Pipeline Coordinator")
+            pipeline = CleanAndGeneratePipeline(self.db)
+
+            self.record_step("Step 2: Run 14-Stage Pipeline")
+            summary = pipeline.run()
+
+            self.record_step("Step 3: Verify Summary Structure & Zero-Move Reporting")
+            self.assertIn("games_scanned", summary)
+            self.assertIn("zero_move_detected", summary)
+            self.assertIn("zero_move_deleted", summary)
+            self.assertIn("glicko_generated", summary)
+
+            self.record_step("Step 4: Verify Idempotency (Second Execution)")
+            summary_2 = pipeline.run()
+            self.assertEqual(summary_2["zero_move_deleted"], 0)
+        except Exception as e:
+            log_workflow_error(self.step_history, e)
+            self.fail(f"Workflow 10 failed: {e}")
 
 
 if __name__ == "__main__":

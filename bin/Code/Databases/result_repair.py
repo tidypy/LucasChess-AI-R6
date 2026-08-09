@@ -24,13 +24,32 @@ from typing import Dict, List, Optional, Sequence
 
 from Code.Databases.game_validator import save_validation_result, validate_game_data
 
+from dataclasses import dataclass, field
+
 __all__ = [
     "adjudicate_results_by_eval",
     "bulk_set_game_results",
     "VALID_REPAIR_RESULTS",
+    "AdjudicationPolicy",
 ]
 
 VALID_REPAIR_RESULTS = frozenset({"1-0", "0-1", "1/2-1/2"})
+
+@dataclass
+class AdjudicationPolicy:
+    sources: List[str] = field(default_factory=lambda: [
+        "EXISTING_TAGS",
+        "TERMINATION",
+        "ACCURACY_ACPL",
+        "EMBEDDED_EVAL",
+        "STOCKFISH_FEN",
+        "LAST_MOVE",
+    ])
+    repair_missing: bool = True
+    overwrite_result: bool = False
+    preserve_analysis: bool = True
+    eval_win_threshold: float = 2.0
+    eval_draw_margin: float = 0.55
 
 _RE_EVAL_TAG = re.compile(r'\[eval\s+"([-+#]?[\d.]+)"\]', re.IGNORECASE)
 _RE_EVAL_COMMENT = re.compile(r'\[%eval\s+([-+#]?[\d.]+)', re.IGNORECASE)
@@ -114,9 +133,11 @@ def _extract_accuracy_acpl_result(raw_text: str, engine_fallback: bool = False, 
     if w_acpl is not None and b_acpl is not None:
         if w_acpl < b_acpl: return "1-0"
         if b_acpl < w_acpl: return "0-1"
+        if w_acpl == b_acpl: return "1/2-1/2"
     elif w_acc is not None and b_acc is not None:
         if w_acc > b_acc: return "1-0"
         if b_acc > w_acc: return "0-1"
+        if w_acc == b_acc: return "1/2-1/2"
         
     if engine_fallback:
         eval_score = _extract_eval_score(raw_text)
@@ -142,6 +163,26 @@ def _get_stockfish_exe() -> Optional[str]:
                 return eng.path
     except Exception:
         pass
+
+    # Prompt user to browse to Stockfish engine executable if path missing
+    try:
+        from PySide6 import QtWidgets
+        app = QtWidgets.QApplication.instance()
+        if app:
+            msg = (
+                "⚠️ Stockfish Engine Executable Not Found!\n\n"
+                "The default Stockfish path could not be located. "
+                "Please select your Stockfish executable (.exe) to proceed with FEN evaluation."
+            )
+            QtWidgets.QMessageBox.warning(None, "Stockfish Engine Missing", msg)
+            exe_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+                None, "Select Stockfish Executable", "", "Executables (*.exe);;All Files (*)"
+            )
+            if exe_path and os.path.exists(exe_path):
+                return exe_path
+    except Exception:
+        pass
+
     return None
 
 def _get_final_fen_from_xpv_or_pgn(xpv: str, parse_str: str) -> Optional[str]:
@@ -342,10 +383,12 @@ def orchestrate_data_fitness_adjudication(
                         w_v, b_v = float(w_acpl), float(b_acpl)
                         if w_v < b_v: new_res = "1-0"
                         elif b_v < w_v: new_res = "0-1"
+                        else: new_res = "1/2-1/2"
                     elif w_acc is not None and b_acc is not None:
                         w_v, b_v = float(w_acc), float(b_acc)
                         if w_v > b_v: new_res = "1-0"
                         elif b_v > w_v: new_res = "0-1"
+                        else: new_res = "1/2-1/2"
                 except (ValueError, TypeError):
                     pass
 
@@ -358,6 +401,13 @@ def orchestrate_data_fitness_adjudication(
                 elif abs(eval_score) <= eval_draw_margin: new_res = "1/2-1/2"
 
         # Queue for Stockfish Live Evaluation if still un-adjudicated
+        if new_res is None and policy != "STOCKFISH":
+            # Primary policy failed (e.g. missing Termination tag or missing ACPL tags)
+            if fallback_type == "EMBEDDED_EVAL":
+                new_res = _extract_embedded_eval_result(parse_str, eval_win_threshold, eval_draw_margin)
+            elif fallback_type == "LAST_MOVE":
+                new_res = _extract_last_move_winner(parse_str)
+
         if new_res is None and (policy == "STOCKFISH" or fallback_type == "STOCKFISH"):
             fen = _get_final_fen_from_xpv_or_pgn(xpv, parse_str)
             if fen:
