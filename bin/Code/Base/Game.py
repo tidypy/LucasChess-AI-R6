@@ -953,7 +953,7 @@ class Game:
             if self.pending_opening:
                 self.del_tag("Opening")
                 self.del_tag("ECO")
-            else:
+            elif hasattr(self, "opening") and self.opening is not None:
                 self.set_tag("Opening", self.opening.tr_name)
                 self.set_tag("ECO", self.opening.eco)
 

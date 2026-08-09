@@ -471,8 +471,9 @@ class WPerfomance(QtWidgets.QWidget):
             self.use_accuracy = True
             self.use_engine_elo = False
 
-        reccount = self.wb_games.grid.reccount()
-        li_regs = [self.wb_games.db_games.li_row_ids[r] for r in range(reccount)]
+        rowids = self.wb_games.db_games.li_row_ids
+        reccount = min(self.wb_games.grid.reccount(), len(rowids))
+        li_regs = [rowids[r] for r in range(reccount)]
         
         if not li_regs:
             self.dic_players = None

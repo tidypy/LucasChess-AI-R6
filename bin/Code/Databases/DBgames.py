@@ -2,6 +2,7 @@ import os
 import random
 import sqlite3
 import time
+from typing import Any
 
 import FasterCode
 from PySide6 import QtCore
@@ -407,7 +408,7 @@ class DBgames:
 
     @staticmethod
     def read_xpv(xpv):
-        if xpv.startswith("|"):
+        if xpv and isinstance(xpv, str) and xpv.startswith("|"):
             nada, fen, xpv = xpv.split("|")
         else:
             fen = ""
@@ -452,6 +453,8 @@ class DBgames:
         self.conexion.commit()
 
     def remove_duplicates(self):
+        if "XPV" not in self.st_fields:
+            return
         li_mirar = [field for field in self.li_fields if field.upper() not in ("_DATA_", "ECO", "XPV", "PLYCOUNT")]
         if not li_mirar:
             select = ""
@@ -523,24 +526,36 @@ class DBgames:
         reccount = self.reccount()
         if reccount:
             self.db_stat.massive_append_set(True)
+            has_xpv = "XPV" in self.st_fields
             chunk = 20000
             for offset in range(0, reccount, chunk):
                 if not dispatch(offset, reccount):
                     break
                 rowids = self.li_row_ids[offset:offset+chunk]
-                placeholders = ",".join(["?"] * len(rowids))
-                cursor = self.conexion.execute(f"SELECT XPV, RESULT FROM Games WHERE ROWID IN ({placeholders})", rowids)
-                li = cursor.fetchall()
-                for XPV, RESULT in li:
-                    if XPV.startswith("|"):
-                        continue
-                    pv = xpv_pv(XPV)
-                    self.db_stat.append(pv, RESULT)
+                if has_xpv:
+                    placeholders = ",".join(["?"] * len(rowids))
+                    cursor = self.conexion.execute(f"SELECT XPV, RESULT FROM Games WHERE ROWID IN ({placeholders})", rowids)
+                    li = cursor.fetchall()
+                    for XPV, RESULT in li:
+                        if XPV and XPV.startswith("|"):
+                            continue
+                        pv = xpv_pv(XPV) if XPV else ""
+                        self.db_stat.append(pv, RESULT)
+                else:
+                    for rowid in rowids:
+                        game = self.read_game_rowid(rowid)
+                        if game:
+                            pv = game.pv()
+                            res = game.get_tag("Result") or "*"
+                            self.db_stat.append(pv, res)
             self.db_stat.massive_append_set(False)
             self.db_stat.commit()
 
     def read_complete_recno(self, recno):
         rowid = self.li_row_ids[recno]
+        return self.read_complete_rowid(rowid)
+
+    def read_complete_rowid(self, rowid):
         cursor = self.conexion.execute(f"SELECT {self.select} FROM Games WHERE rowid = ?", (rowid,))
         return cursor.fetchone()
 
@@ -719,7 +734,13 @@ class DBgames:
         if raw is None:
             return None
         game = Game.Game()
-        fen, pv = self.read_xpv(raw["XPV"])
+        xpv = None
+        try:
+            if hasattr(raw, "keys") and "XPV" in raw.keys():
+                xpv = raw["XPV"]
+        except Exception:
+            pass
+        fen, pv = self.read_xpv(xpv)
         if fen:
             game.set_fen(fen)
         game.read_pv(pv)
@@ -758,26 +779,53 @@ class DBgames:
             return None
         return self.read_game_raw(raw)
 
+    def read_game_rowid(self, rowid):
+        raw = self.read_complete_rowid(rowid)
+        if raw is None:
+            return None
+        return self.read_game_raw(raw)
+
     def read_raw_recno(self, recno):
         return self.read_complete_recno(recno)
 
     def read_game_raw(self, raw):
         game = Game.Game()
-        xpgn = raw["_DATA_"]
+        xpgn = raw["_DATA_"] if hasattr(raw, "keys") and "_DATA_" in raw.keys() else None
         ok = False
-        fen, pv = self.read_xpv(raw["XPV"])
+        xpv = None
+        try:
+            if hasattr(raw, "keys") and "XPV" in raw.keys():
+                xpv = raw["XPV"]
+        except Exception:
+            pass
+        fen, pv = self.read_xpv(xpv)
         if xpgn:
-            if xpgn.startswith(BODY_SAVE):
-                pgn_read = xpgn[len(BODY_SAVE):].strip()
-                if fen:
-                    pgn_read = b'[FEN "%s"]\n' % fen.encode() + pgn_read
-                ok, game = Game.pgn_game(pgn_read)
+            if isinstance(xpgn, bytes):
+                body_save = BODY_SAVE if isinstance(BODY_SAVE, bytes) else BODY_SAVE.encode()
+                if xpgn.startswith(body_save):
+                    pgn_read = xpgn[len(body_save):].strip()
+                    if fen:
+                        pgn_read = b'[FEN "%s"]\n' % fen.encode() + pgn_read
+                    ok, game = Game.pgn_game(pgn_read.decode("utf-8", errors="ignore"))
+                else:
+                    try:
+                        game.restore(xpgn)
+                        ok = True
+                    except:
+                        ok = False
             else:
-                try:
-                    game.restore(xpgn)
-                    ok = True
-                except:
-                    ok = False
+                body_save = BODY_SAVE.decode("utf-8") if isinstance(BODY_SAVE, bytes) else BODY_SAVE
+                if xpgn.startswith(body_save):
+                    pgn_read = xpgn[len(body_save):].strip()
+                    if fen:
+                        pgn_read = f'[FEN "{fen}"]\n' + pgn_read
+                    ok, game = Game.pgn_game(pgn_read)
+                else:
+                    try:
+                        game.restore(xpgn)
+                        ok = True
+                    except:
+                        ok = False
 
         if not ok:
             if fen:
@@ -795,7 +843,13 @@ class DBgames:
                             v if isinstance(v, str) else str(v),
                         )
                     )
-        litags.append(("PlyCount", str(raw["PLYCOUNT"])))
+        if game.li_moves:
+            last_move = game.li_moves[-1]
+            plies = (len(game.li_moves) - 1) * 2 + (2 if hasattr(last_move, "mov_negra") and last_move.mov_negra else 1)
+            actual_plycount = str(plies)
+        else:
+            actual_plycount = str(raw["PLYCOUNT"])
+        litags.append(("PlyCount", actual_plycount))
 
         game.set_tags(litags)
         if fen and not game.get_tag("FEN"):
@@ -1091,7 +1145,11 @@ class DBgames:
                                 data = memoryview(BODY_SAVE + body)
                             reg.append(data)
                         elif campo == "PLYCOUNT":
-                            reg.append((pv.count(" ") + 1) if pv else 0)
+                            header_ply = d_cab.get("PLYCOUNT") or d_cab.get("PlyCount") or d_cab.get("plycount")
+                            if header_ply and str(header_ply).isdigit():
+                                reg.append(int(header_ply))
+                            else:
+                                reg.append((pv.count(" ") + 1) if pv else 0)
                         else:
                             reg.append(d_cab.get(campo))
                             if campo == "RESULT":
@@ -1376,6 +1434,47 @@ class DBgames:
             del self.cache[rowid]
 
         return resp
+
+    def save_game_recno(self, recno: int, game: Game.Game, with_commit: bool = True):
+        try:
+            if isinstance(recno, int) and 0 <= recno < len(self.li_row_ids):
+                return self.modify(recno, game, with_commit=with_commit)
+            # recno is actually a ROWID directly
+            if recno in self.li_row_ids:
+                idx = self.li_row_ids.index(recno)
+                return self.modify(idx, game, with_commit=with_commit)
+            # Direct ROWID fallback update
+            return self._modify_by_rowid(recno, game, with_commit=with_commit)
+        except Exception:
+            return None
+
+    def _modify_by_rowid(self, rowid: int, game_modificada: Game.Game, with_commit: bool = True):
+        for tag in game_modificada.dic_tags():
+            if tag.upper() not in self.li_fields:
+                self.add_column(tag)
+        li_data = []
+        for campo in self.li_fields:
+            if campo == "XPV":
+                dato = game_modificada.xpv()
+            elif campo == "_DATA_":
+                dato = None if game_modificada.only_has_moves() else game_modificada.save(False)
+            elif campo == "PLYCOUNT":
+                dato = len(game_modificada)
+            else:
+                dato = game_modificada.get_tag(campo)
+            li_data.append(dato)
+
+        set_clause = ",".join([f'"{field}"=?' for field in self.li_fields])
+        sql = f"UPDATE Games SET {set_clause} WHERE ROWID = ?"
+        try:
+            self.conexion.execute(sql, li_data + [rowid])
+            self._validate_and_store(rowid, game_modificada)
+            if with_commit:
+                self.conexion.commit()
+            if rowid in self.cache:
+                del self.cache[rowid]
+        except sqlite3.Error:
+            pass
 
     def insert(self, game_new, with_commit=True):
         resp = Util.Record()
