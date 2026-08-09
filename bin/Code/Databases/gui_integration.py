@@ -58,6 +58,17 @@ def show_readiness_dialog(parent: Optional[QtWidgets.QWidget], db_games: Any) ->
     btn_quick = dialog.addButton("Quick Tier 2 Generate Stats", QtWidgets.QMessageBox.ButtonRole.ActionRole)
     btn_cancel = dialog.addButton("Cancel", QtWidgets.QMessageBox.ButtonRole.RejectRole)
     
+    # Gold styling for complete mass analysis button
+    btn_mass.setStyleSheet(
+        "QPushButton { background-color: #D4AF37; color: #000000; font-weight: bold; padding: 6px 12px; border-radius: 4px; border: 1px solid #B8860B; }"
+        "QPushButton:hover { background-color: #FFD700; }"
+    )
+    # Silver styling for using existing tags button
+    btn_quick.setStyleSheet(
+        "QPushButton { background-color: #C0C0C0; color: #000000; font-weight: bold; padding: 6px 12px; border-radius: 4px; border: 1px solid #A9A9A9; }"
+        "QPushButton:hover { background-color: #E0E0E0; }"
+    )
+    
     dialog.setDefaultButton(btn_quick)
     dialog.setEscapeButton(btn_cancel)
     dialog.setWindowModality(QtCore.Qt.WindowModality.ApplicationModal)
@@ -105,16 +116,16 @@ def show_data_fitness_wizard(parent: Optional[QtWidgets.QWidget], total_count: i
     rb3 = QtWidgets.QRadioButton("3. Time Forfeit / Last Move Turn")
     rb4 = QtWidgets.QRadioButton("4. Live Stockfish Engine Evaluation (Final Position)")
 
-    rb1.setChecked(True)
+    rb4.setChecked(True)  # Default to Live Stockfish Evaluation for Data Fitness
     bg_policy.addButton(rb1, 1)
     bg_policy.addButton(rb2, 2)
     bg_policy.addButton(rb3, 3)
     bg_policy.addButton(rb4, 4)
 
+    ly_policy.addWidget(rb4)
     ly_policy.addWidget(rb1)
     ly_policy.addWidget(rb2)
     ly_policy.addWidget(rb3)
-    ly_policy.addWidget(rb4)
     layout.addWidget(gb_policy)
 
     # Group 3: Secondary Fallback
@@ -124,7 +135,6 @@ def show_data_fitness_wizard(parent: Optional[QtWidgets.QWidget], total_count: i
     cb_fallback_type.addItem("Live Stockfish Engine Evaluation (runs Stockfish analysis)", "STOCKFISH")
     cb_fallback_type.addItem("Embedded PGN Evaluation Comments ([%eval])", "EMBEDDED_EVAL")
     cb_fallback_type.addItem("Turn-based Last Move (1-0 if White moved last, 0-1 if Black)", "LAST_MOVE")
-    cb_fallback_type.addItem("None (Leave un-adjudicated)", "NONE")
     cb_fallback_type.setCurrentIndex(0)
     ly_fallback.addWidget(cb_fallback_type)
     layout.addWidget(gb_fallback)
@@ -180,12 +190,39 @@ def show_data_fitness_wizard(parent: Optional[QtWidgets.QWidget], total_count: i
     bg_policy.buttonToggled.connect(on_policy_toggled)
     cb_fallback_type.currentIndexChanged.connect(on_policy_toggled)
 
-    btn_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel)
-    btn_box.accepted.connect(dialog.accept)
-    btn_box.rejected.connect(dialog.reject)
-    layout.addWidget(btn_box)
+    btn_mass = QtWidgets.QPushButton("🏆 Run Mass Analysis (Gold Standard)", dialog)
+    btn_mass.setStyleSheet(
+        "QPushButton { background-color: #D4AF37; color: #000000; font-weight: bold; padding: 6px 14px; border-radius: 4px; border: 1px solid #B8860B; }"
+        "QPushButton:hover { background-color: #FFD700; }"
+    )
+
+    btn_ok = QtWidgets.QPushButton("Apply Adjudication", dialog)
+    btn_cancel = QtWidgets.QPushButton("Cancel", dialog)
+
+    btn_layout = QtWidgets.QHBoxLayout()
+    btn_layout.addWidget(btn_mass)
+    btn_layout.addStretch()
+    btn_layout.addWidget(btn_ok)
+    btn_layout.addWidget(btn_cancel)
+    layout.addLayout(btn_layout)
+
+    user_action = {"action": None}
+    def on_mass_clicked():
+        user_action["action"] = "MASS_ANALYSIS"
+        dialog.accept()
+
+    def on_ok_clicked():
+        user_action["action"] = "ADJUDICATE"
+        dialog.accept()
+
+    btn_mass.clicked.connect(on_mass_clicked)
+    btn_ok.clicked.connect(on_ok_clicked)
+    btn_cancel.clicked.connect(dialog.reject)
 
     if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
+        if user_action["action"] == "MASS_ANALYSIS":
+            return {"action": "MASS_ANALYSIS"}
+
         if rb_overwrite.isChecked():
             msg = (
                 "⚠️ WARNING: You have chosen to REDO / OVERWRITE all game results in the current view.\n\n"
@@ -202,6 +239,7 @@ def show_data_fitness_wizard(parent: Optional[QtWidgets.QWidget], total_count: i
         elif pol_id == 4: policy_token = "STOCKFISH"
 
         return {
+            "action": "ADJUDICATE",
             "mode": "OVERWRITE" if rb_overwrite.isChecked() else "MISSING_ONLY",
             "policy": policy_token,
             "fallback_type": cb_fallback_type.currentData() if not rb4.isChecked() else "NONE",
@@ -246,3 +284,62 @@ def create_mass_analysis_policy_widget(
 def get_selected_analysis_mode(checkbox: QtWidgets.QCheckBox) -> str:
     """Translate the policy checkbox state into an analysis-mode token."""
     return MODE_MISSING_ONLY if checkbox.isChecked() else MODE_OVERWRITE
+
+
+def show_clean_and_generate_dialog(parent: Optional[QtWidgets.QWidget], total_count: int = 0) -> Optional[dict]:
+    """Displays the consolidated 🏆 Clean & Generate Statistics primary workflow dialog."""
+    dialog = QtWidgets.QDialog(parent)
+    dialog.setWindowTitle("🏆 Clean & Generate Statistics")
+    dialog.setMinimumWidth(540)
+    layout = QtWidgets.QVBoxLayout(dialog)
+
+    lbl_header = QtWidgets.QLabel(f"<h3>🏆 Clean & Generate Statistics ({total_count} games selected)</h3>")
+    layout.addWidget(lbl_header)
+
+    gb_intent = QtWidgets.QGroupBox("Pipeline Operations (Auto-Sequenced)", dialog)
+    ly_intent = QtWidgets.QVBoxLayout(gb_intent)
+
+    cb_repair_res = QtWidgets.QCheckBox("☑ Repair missing / un-adjudicated game results", gb_intent)
+    cb_repair_res.setChecked(True)
+
+    cb_preserve = QtWidgets.QCheckBox("☑ Preserve existing engine analysis, comments, & variations", gb_intent)
+    cb_preserve.setChecked(True)
+
+    cb_derived = QtWidgets.QCheckBox("☑ Recalculate true ply counts, ACPL, and Accuracy", gb_intent)
+    cb_derived.setChecked(True)
+
+    cb_stats = QtWidgets.QCheckBox("☑ Generate Glicko-2 & Sigmoid Elo player statistics", gb_intent)
+    cb_stats.setChecked(True)
+
+    cb_sf_pass = QtWidgets.QCheckBox("☐ Enable Stockfish FEN screening pass for ambiguous positions (Depth 8)", gb_intent)
+
+    ly_intent.addWidget(cb_repair_res)
+    ly_intent.addWidget(cb_preserve)
+    ly_intent.addWidget(cb_derived)
+    ly_intent.addWidget(cb_stats)
+    ly_intent.addWidget(cb_sf_pass)
+    layout.addWidget(gb_intent)
+
+    btn_box = QtWidgets.QDialogButtonBox(dialog)
+    btn_clean = btn_box.addButton("🏆 Clean & Generate Statistics", QtWidgets.QDialogButtonBox.ButtonRole.AcceptRole)
+    btn_cancel = btn_box.addButton("Cancel", QtWidgets.QDialogButtonBox.ButtonRole.RejectRole)
+
+    btn_clean.setStyleSheet(
+        "QPushButton { background-color: #D4AF37; color: #000000; font-weight: bold; padding: 6px 16px; border-radius: 4px; border: 1px solid #B8860B; }"
+        "QPushButton:hover { background-color: #FFD700; }"
+    )
+
+    btn_box.accepted.connect(dialog.accept)
+    btn_box.rejected.connect(dialog.reject)
+    layout.addWidget(btn_box)
+
+    if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
+        return {
+            "repair_missing": cb_repair_res.isChecked(),
+            "preserve_analysis": cb_preserve.isChecked(),
+            "recalculate_derived": cb_derived.isChecked(),
+            "generate_stats": cb_stats.isChecked(),
+            "run_stockfish_pass": cb_sf_pass.isChecked(),
+            "stockfish_depth": 8,
+        }
+    return None

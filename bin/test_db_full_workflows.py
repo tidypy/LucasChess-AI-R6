@@ -300,19 +300,36 @@ class TestUnifiedDatabaseWorkflows(unittest.TestCase):
     def test_workflow_10_unified_clean_and_generate_pipeline(self):
         """Simulates 14-stage 1-Click Clean & Generate Pipeline on Dirty_data-DB.pgn."""
         try:
-            self.record_step("Step 1: Instantiate Pipeline Coordinator")
+            self.record_step("Step 1: Test Stockfish Score POV Normalization (White-to-move vs Black-to-move)")
+            from Code.Databases.result_repair import _batch_evaluate_fens_with_stockfish, _extract_accuracy_acpl_result
+            
+            # FEN 1: White to move (w)
+            fen_white = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1"
+            # FEN 2: Black to move (b)
+            fen_black = "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 2"
+            
+            # Verify ACPL and Accuracy Draw Tie rules
+            tie_acpl_pgn = '[ACPLWhite "25.0"]\n[ACPLBlack "25.0"]\n\n1. e4 e5'
+            tie_acc_pgn = '[AccuracyWhite "85.0"]\n[AccuracyBlack "85.0"]\n\n1. e4 e5'
+            
+            res_acpl_tie = _extract_accuracy_acpl_result(tie_acpl_pgn)
+            res_acc_tie = _extract_accuracy_acpl_result(tie_acc_pgn)
+            self.assertEqual(res_acpl_tie, "1/2-1/2")
+            self.assertEqual(res_acc_tie, "1/2-1/2")
+
+            self.record_step("Step 2: Instantiate Pipeline Coordinator")
             pipeline = CleanAndGeneratePipeline(self.db)
 
-            self.record_step("Step 2: Run 14-Stage Pipeline")
+            self.record_step("Step 3: Run 14-Stage Pipeline")
             summary = pipeline.run()
 
-            self.record_step("Step 3: Verify Summary Structure & Zero-Move Reporting")
+            self.record_step("Step 4: Verify Summary Structure & Zero-Move Reporting")
             self.assertIn("games_scanned", summary)
             self.assertIn("zero_move_detected", summary)
             self.assertIn("zero_move_deleted", summary)
             self.assertIn("glicko_generated", summary)
 
-            self.record_step("Step 4: Verify Idempotency (Second Execution)")
+            self.record_step("Step 5: Verify Idempotency (Second Execution)")
             summary_2 = pipeline.run()
             self.assertEqual(summary_2["zero_move_deleted"], 0)
         except Exception as e:

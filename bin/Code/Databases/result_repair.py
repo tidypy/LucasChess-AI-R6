@@ -245,10 +245,13 @@ def _batch_evaluate_fens_with_stockfish(fen_map: Dict[int, str], depth: int = 10
         proc.stdin.flush()
 
         for row_id, fen in fen_map.items():
+            parts_fen = fen.split()
+            is_black = (len(parts_fen) >= 2 and parts_fen[1].lower() == "b")
+
             proc.stdin.write(f"position fen {fen}\ngo depth {depth}\n")
             proc.stdin.flush()
 
-            cp_score = None
+            raw_score = None
             while True:
                 line = proc.stdout.readline()
                 if not line:
@@ -259,7 +262,7 @@ def _batch_evaluate_fens_with_stockfish(fen_map: Dict[int, str], depth: int = 10
                         idx = parts.index("cp")
                         if idx + 1 < len(parts):
                             try:
-                                cp_score = float(parts[idx + 1]) / 100.0
+                                raw_score = float(parts[idx + 1]) / 100.0
                             except ValueError:
                                 pass
                 elif "score mate" in line:
@@ -269,14 +272,15 @@ def _batch_evaluate_fens_with_stockfish(fen_map: Dict[int, str], depth: int = 10
                         if idx + 1 < len(parts):
                             try:
                                 m = int(parts[idx + 1])
-                                cp_score = 999.0 if m > 0 else -999.0
+                                raw_score = 999.0 if m > 0 else -999.0
                             except ValueError:
                                 pass
                 if line.startswith("bestmove"):
                     break
 
-            if cp_score is not None:
-                results[row_id] = cp_score
+            if raw_score is not None:
+                white_score = -raw_score if is_black else raw_score
+                results[row_id] = white_score
 
         proc.stdin.write("quit\n")
         proc.stdin.flush()
@@ -476,7 +480,34 @@ def orchestrate_data_fitness_adjudication(
         for row_id, res_obj in validation_tasks:
             save_validation_result(connection, row_id, res_obj)
 
-    return summary
+def _adjudicate_row_by_policy(raw_str: str, xpv: str, d_row: dict, policy: AdjudicationPolicy) -> Optional[str]:
+    for src in policy.sources:
+        if src == "EXISTING_TAGS":
+            res = d_row.get("RESULT")
+            if res and res in VALID_REPAIR_RESULTS and not policy.overwrite_result:
+                return res
+        elif src == "TERMINATION":
+            res = _extract_termination_result(raw_str)
+            if res:
+                return res
+        elif src == "ACCURACY_ACPL":
+            res = _extract_accuracy_acpl_result(raw_str, engine_fallback=False, eval_win_threshold=policy.eval_win_threshold, eval_draw_margin=policy.eval_draw_margin)
+            if res:
+                return res
+        elif src == "EMBEDDED_EVAL":
+            eval_score = _extract_eval_score(raw_str)
+            if eval_score is not None:
+                if eval_score >= policy.eval_win_threshold:
+                    return "1-0"
+                elif eval_score <= -policy.eval_win_threshold:
+                    return "0-1"
+                elif abs(eval_score) <= policy.eval_draw_margin:
+                    return "1/2-1/2"
+        elif src == "LAST_MOVE":
+            res = _extract_last_move_winner(raw_str)
+            if res:
+                return res
+    return None
 
 
 def adjudicate_results_by_eval(
@@ -484,20 +515,17 @@ def adjudicate_results_by_eval(
     recnos: Optional[Sequence[int]] = None,
     eval_win_threshold: float = 2.0,
     eval_draw_margin: float = 0.55,
+    policy: Optional[AdjudicationPolicy] = None,
 ) -> Dict[str, int]:
     """
-    Policy 1: Adjudicates game results based on centipawn evaluations.
-
-    - eval >= eval_win_threshold -> "1-0" (White Win)
-    - eval <= -eval_win_threshold -> "0-1" (Black Win)
-    - abs(eval) <= eval_draw_margin -> "1/2-1/2" (Draw)
-
-    Updates the Games table and re-validates GameQuality records.
+    Policy 1 & Cascade: Adjudicates game results based on centipawn evaluations and policy cascade.
     """
     connection.execute("PRAGMA foreign_keys = ON")
+    pol = policy or AdjudicationPolicy(eval_win_threshold=eval_win_threshold, eval_draw_margin=eval_draw_margin)
 
     summary = {
         "total_scanned": 0,
+        "total_repaired": 0,
         "repaired_wins": 0,
         "repaired_draws": 0,
         "repaired_losses": 0,
@@ -531,20 +559,13 @@ def adjudicate_results_by_eval(
         if isinstance(raw_str, bytes):
             raw_str = raw_str.decode("utf-8", errors="replace")
 
-        eval_score = _extract_eval_score(raw_str)
-        if eval_score is None:
-            summary["unrepaired"] += 1
-            continue
-
-        new_res = None
-        if eval_score >= eval_win_threshold:
-            new_res = "1-0"
+        d_row = {"ROWID": row_id, "RESULT": current_res}
+        new_res = _adjudicate_row_by_policy(raw_str, "", d_row, pol)
+        if new_res == "1-0":
             summary["repaired_wins"] += 1
-        elif eval_score <= -eval_win_threshold:
-            new_res = "0-1"
+        elif new_res == "0-1":
             summary["repaired_losses"] += 1
-        elif abs(eval_score) <= eval_draw_margin:
-            new_res = "1/2-1/2"
+        elif new_res == "1/2-1/2":
             summary["repaired_draws"] += 1
         else:
             summary["unrepaired"] += 1
