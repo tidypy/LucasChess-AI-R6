@@ -5,7 +5,12 @@
 # Blog : https://lucaschess.blogspot.com
 # Licence : GPL 3.0
 # ==============================================================================
+import os
 import sys
+
+# Convert script path to absolute path to prevent path duplication after os.chdir()
+if sys.argv and sys.argv[0]:
+    sys.argv[0] = os.path.abspath(sys.argv[0])
 
 import warnings
 
