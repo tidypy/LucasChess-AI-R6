@@ -329,6 +329,201 @@ def show_clean_and_generate_dialog(parent: Optional[QtWidgets.QWidget], total_co
         user_choice["mass"] = True
         dialog.accept()
 
+    cb_fallback_type.addItem("Turn-based Last Move (1-0 if White moved last, 0-1 if Black)", "LAST_MOVE")
+    cb_fallback_type.setCurrentIndex(0)
+    ly_fallback.addWidget(cb_fallback_type)
+    layout.addWidget(gb_fallback)
+
+    # Group 4: Engine & Threshold Settings
+    import os
+    gb_engine = QtWidgets.QGroupBox("Engine Evaluation & Threshold Settings", dialog)
+    ly_engine = QtWidgets.QGridLayout(gb_engine)
+
+    sp_win_thresh = QtWidgets.QDoubleSpinBox(gb_engine)
+    sp_win_thresh.setRange(0.5, 10.0)
+    sp_win_thresh.setValue(2.0)
+    sp_win_thresh.setSingleStep(0.1)
+    sp_win_thresh.setSuffix(" pawns")
+
+    sp_draw_margin = QtWidgets.QDoubleSpinBox(gb_engine)
+    sp_draw_margin.setRange(0.0, 2.0)
+    sp_draw_margin.setValue(0.50)
+    sp_draw_margin.setSingleStep(0.05)
+    sp_draw_margin.setSuffix(" pawns")
+
+    cb_depth = QtWidgets.QComboBox(gb_engine)
+    cb_depth.addItem("Ultra Fast (Depth 6 ~ 10ms per game)", 6)
+    cb_depth.addItem("Fast (Depth 10 ~ 30ms per game)", 10)
+    cb_depth.addItem("Medium (Depth 14 ~ 100ms per game)", 14)
+    cb_depth.addItem("Deep (Depth 18 ~ 300ms per game)", 18)
+    cb_depth.setCurrentIndex(1) # Fast (Depth 10)
+
+    max_cpus = os.cpu_count() or 4
+    safe_cpus = max(1, max_cpus - 1)
+    sp_cpus = QtWidgets.QSpinBox(gb_engine)
+    sp_cpus.setRange(1, max_cpus)
+    sp_cpus.setValue(safe_cpus)
+    sp_cpus.setSuffix(f" / {max_cpus} cores")
+
+    ly_engine.addWidget(QtWidgets.QLabel("Win Threshold:"), 0, 0)
+    ly_engine.addWidget(sp_win_thresh, 0, 1)
+    ly_engine.addWidget(QtWidgets.QLabel("Draw Margin (±):"), 0, 2)
+    ly_engine.addWidget(sp_draw_margin, 0, 3)
+
+    ly_engine.addWidget(QtWidgets.QLabel("Engine Depth:"), 1, 0)
+    ly_engine.addWidget(cb_depth, 1, 1)
+    ly_engine.addWidget(QtWidgets.QLabel("CPU Threads:"), 1, 2)
+    ly_engine.addWidget(sp_cpus, 1, 3)
+
+    layout.addWidget(gb_engine)
+
+    def on_policy_toggled():
+        needs_engine = rb4.isChecked() or (cb_fallback_type.currentData() == "STOCKFISH" and not rb4.isChecked())
+        gb_fallback.setEnabled(not rb4.isChecked())
+        gb_engine.setEnabled(needs_engine or rb2.isChecked())
+
+    bg_policy.buttonToggled.connect(on_policy_toggled)
+    cb_fallback_type.currentIndexChanged.connect(on_policy_toggled)
+
+    btn_mass = QtWidgets.QPushButton("🏆 Clean & Generate Statistics", dialog)
+    btn_mass.setStyleSheet(
+        "QPushButton { background-color: #D4AF37; color: #000000; font-weight: bold; padding: 6px 14px; border-radius: 4px; border: 1px solid #B8860B; }"
+        "QPushButton:hover { background-color: #FFD700; }"
+    )
+
+    btn_ok = QtWidgets.QPushButton("Apply Adjudication & Stats", dialog)
+    btn_cancel = QtWidgets.QPushButton("Cancel", dialog)
+
+    btn_layout = QtWidgets.QHBoxLayout()
+    btn_layout.addWidget(btn_mass)
+    btn_layout.addStretch()
+    btn_layout.addWidget(btn_ok)
+    btn_layout.addWidget(btn_cancel)
+    layout.addLayout(btn_layout)
+
+    user_action = {"action": None}
+    def on_mass_clicked():
+        user_action["action"] = "CLEAN_AND_GENERATE"
+        dialog.accept()
+
+    def on_ok_clicked():
+        user_action["action"] = "CLEAN_AND_GENERATE"
+        dialog.accept()
+
+    btn_mass.clicked.connect(on_mass_clicked)
+    btn_ok.clicked.connect(on_ok_clicked)
+    btn_cancel.clicked.connect(dialog.reject)
+
+    if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
+        pol_id = bg_policy.checkedId()
+        policy_token = "TERMINATION"
+        if pol_id == 2: policy_token = "ACCURACY_ACPL"
+        elif pol_id == 3: policy_token = "LAST_MOVE"
+        elif pol_id == 4: policy_token = "STOCKFISH"
+
+        return {
+            "action": "CLEAN_AND_GENERATE",
+            "run_stockfish_pass": rb4.isChecked() or cb_fallback_type.currentData() == "STOCKFISH",
+            "mode": "OVERWRITE" if rb_overwrite.isChecked() else "MISSING_ONLY",
+            "policy": policy_token,
+            "fallback_type": cb_fallback_type.currentData() if not rb4.isChecked() else "NONE",
+            "eval_win_threshold": sp_win_thresh.value(),
+            "eval_draw_margin": sp_draw_margin.value(),
+            "stockfish_depth": cb_depth.currentData(),
+            "cpu_threads": sp_cpus.value()
+        }
+    return None
+
+def create_mass_analysis_policy_widget(
+    parent: Optional[QtWidgets.QWidget] = None,
+    default_missing_only: bool = True,
+) -> tuple[QtWidgets.QGroupBox, QtWidgets.QCheckBox]:
+    """Build the "Mass Analysis Policy" group box and its policy checkbox."""
+    group_box = QtWidgets.QGroupBox("Mass Analysis Policy", parent)
+    group_box.setObjectName("massAnalysisPolicyGroupBox")
+
+    checkbox = QtWidgets.QCheckBox(
+        "Analyze Missing Data Only (Skip Tier 3 Gold Standard games)",
+        group_box,
+    )
+    checkbox.setObjectName("massAnalysisMissingOnlyCheckBox")
+    checkbox.setChecked(default_missing_only)
+
+    tooltip = (
+        "When checked, games that already contain Tier 3 (Gold Standard) "
+        "analysis data are skipped during mass analysis, avoiding redundant "
+        "engine computation and preserving validated annotations.\n\n"
+        "Uncheck to re-analyze every game and overwrite all existing "
+        "analysis data (OVERWRITE mode)."
+    )
+    checkbox.setToolTip(tooltip)
+    group_box.setToolTip(tooltip)
+
+    layout = QtWidgets.QVBoxLayout(group_box)
+    layout.addWidget(checkbox)
+
+    return group_box, checkbox
+
+
+def get_selected_analysis_mode(checkbox: QtWidgets.QCheckBox) -> str:
+    """Translate the policy checkbox state into an analysis-mode token."""
+    return MODE_MISSING_ONLY if checkbox.isChecked() else MODE_OVERWRITE
+
+
+def show_clean_and_generate_dialog(parent: Optional[QtWidgets.QWidget], total_count: int = 0) -> Optional[dict]:
+    """Displays the consolidated 🏆 Clean & Generate Statistics primary workflow dialog."""
+    dialog = QtWidgets.QDialog(parent)
+    dialog.setWindowTitle("🏆 Clean & Generate Statistics")
+    dialog.setMinimumWidth(540)
+    layout = QtWidgets.QVBoxLayout(dialog)
+
+    lbl_header = QtWidgets.QLabel(f"<h3>🏆 Clean & Generate Statistics ({total_count} games selected)</h3>")
+    layout.addWidget(lbl_header)
+
+    gb_intent = QtWidgets.QGroupBox("Pipeline Operations (Auto-Sequenced)", dialog)
+    ly_intent = QtWidgets.QVBoxLayout(gb_intent)
+
+    cb_repair_res = QtWidgets.QCheckBox("☑ Repair missing / un-adjudicated game results", gb_intent)
+    cb_repair_res.setChecked(True)
+
+    cb_preserve = QtWidgets.QCheckBox("☑ Preserve existing engine analysis, comments, & variations", gb_intent)
+    cb_preserve.setChecked(True)
+
+    cb_derived = QtWidgets.QCheckBox("☑ Recalculate true ply counts, ACPL, and Accuracy", gb_intent)
+    cb_derived.setChecked(True)
+
+    cb_stats = QtWidgets.QCheckBox("☑ Generate Glicko-2 & Sigmoid Elo player statistics", gb_intent)
+    cb_stats.setChecked(True)
+
+    cb_sf_pass = QtWidgets.QCheckBox("☑ Run Stockfish Mass Analysis for games lacking evaluation data (Depth 8)", gb_intent)
+    cb_sf_pass.setChecked(False)
+
+    ly_intent.addWidget(cb_repair_res)
+    ly_intent.addWidget(cb_preserve)
+    ly_intent.addWidget(cb_derived)
+    ly_intent.addWidget(cb_stats)
+    ly_intent.addWidget(cb_sf_pass)
+    layout.addWidget(gb_intent)
+
+    btn_box = QtWidgets.QDialogButtonBox(dialog)
+    btn_clean = btn_box.addButton("🏆 Clean & Generate Statistics", QtWidgets.QDialogButtonBox.ButtonRole.AcceptRole)
+    btn_sf_mass = btn_box.addButton("🏆 Run Stockfish Mass Analysis + Stats", QtWidgets.QDialogButtonBox.ButtonRole.ActionRole)
+    btn_cancel = btn_box.addButton("Cancel", QtWidgets.QDialogButtonBox.ButtonRole.RejectRole)
+
+    btn_clean.setStyleSheet(
+        "QPushButton { background-color: #D4AF37; color: #000000; font-weight: bold; padding: 6px 16px; border-radius: 4px; border: 1px solid #B8860B; }"
+        "QPushButton:hover { background-color: #FFD700; }"
+    )
+    btn_sf_mass.setStyleSheet(
+        "QPushButton { background-color: #4682B4; color: #FFFFFF; font-weight: bold; padding: 6px 16px; border-radius: 4px; border: 1px solid #2E5B82; }"
+        "QPushButton:hover { background-color: #5A9BD4; }"
+    )
+
+    user_choice = {"mass": False}
+    def on_sf_mass():
+        user_choice["mass"] = True
+        dialog.accept()
+
     btn_sf_mass.clicked.connect(on_sf_mass)
     btn_clean.clicked.connect(dialog.accept)
     btn_cancel.clicked.connect(dialog.reject)
@@ -341,6 +536,7 @@ def show_clean_and_generate_dialog(parent: Optional[QtWidgets.QWidget], total_co
             "recalculate_derived": cb_derived.isChecked(),
             "generate_stats": cb_stats.isChecked(),
             "run_stockfish_pass": cb_sf_pass.isChecked() or user_choice["mass"],
+            "launch_mass_analysis": user_choice["mass"],
             "stockfish_depth": 8,
         }
     return None

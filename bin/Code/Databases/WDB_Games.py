@@ -1503,6 +1503,9 @@ class WGames(QtWidgets.QWidget):
         if not opts:
             return
 
+        if opts.get("launch_mass_analysis"):
+            self.tw_massive_analysis()
+
         from Code.Databases.pipeline_coordinator import CleanAndGeneratePipeline
         import Code.QT.QTMessages as QTMessages
 
