@@ -88,6 +88,8 @@ bin_internal = os.path.join(bin_dir, "_internal")
 bin_exe = os.path.join(bin_dir, "LucasR.exe")
 
 if os.path.exists(dist_exe):
+    os.system('taskkill /f /im LucasR.exe >nul 2>&1')
+    os.system('taskkill /f /im Launch_LucasR.exe >nul 2>&1')
     shutil.copy2(dist_exe, root_exe)
     shutil.copy2(dist_exe, bin_exe)
     if os.path.exists(dist_internal):
