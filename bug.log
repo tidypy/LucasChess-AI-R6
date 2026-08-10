@@ -11100,3 +11100,10 @@ invalid san: '*' while parsing <Game at 0x15afff53320 ('?' vs. '?', '????.??.??'
 invalid san: '*' while parsing <Game at 0x15afff53320 ('?' vs. '?', '????.??.??' at '?', 2 errors)>
 illegal san: 'e5B' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15afff52e10 ('?' vs. '?', '????.??.??' at '?')>
 illegal san: 'd1' in rnbqkbnr/pppppppp/8/8/7P/8/PPPPPPP1/RNBQKBNR b KQkq - 0 1 while parsing <Game at 0x15afff50b60 ('?' vs. '?', '????.??.??' at '?')>
+2026-08-09 20:13:44.132755
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Games.py", line 1254, in tw_utilities
+  File "Code\Databases\WDB_Games.py", line 1453, in tw_massive_analysis
+  File "Code\Analysis\RunAnalysisControl.py", line 853, in lanzar_analisis_masivo
+  File "Code\Analysis\RunAnalysisControl.py", line 595, in __init__
+NameError: name 'time' is not defined. Did you forget to import 'time'?

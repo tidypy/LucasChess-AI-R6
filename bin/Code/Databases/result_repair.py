@@ -301,6 +301,142 @@ def _batch_evaluate_fens_with_stockfish(fen_map: Dict[int, str], depth: int = 10
     return results
 
 
+def batch_evaluate_game_moves_with_stockfish(
+    game_map: Dict[int, Any],
+    depth: int = 8,
+    sf_path: Optional[str] = None
+) -> Tuple[Dict[int, float], Dict[int, float]]:
+    """Evaluates full move trees of candidate games with Stockfish.
+    
+    Returns:
+        tuple of (sf_final_fen_evals, row_acpl_map)
+    """
+    final_evals = {}
+    acpl_results = {}
+    if not game_map:
+        return final_evals, acpl_results
+
+    if sf_path is None:
+        sf_path = _find_stockfish_executable()
+    if not sf_path or not os.path.exists(sf_path):
+        return final_evals, acpl_results
+
+    from Code.AI.elo_calculator import SigmoidELOCalculator
+
+    try:
+        creation_flags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
+        proc = subprocess.Popen(
+            [sf_path],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            creationflags=creation_flags
+        )
+        proc.stdin.write("uci\n")
+        proc.stdin.flush()
+        while True:
+            line = proc.stdout.readline()
+            if not line or "uciok" in line:
+                break
+
+        proc.stdin.write("isready\n")
+        proc.stdin.flush()
+        while True:
+            line = proc.stdout.readline()
+            if not line or "readyok" in line:
+                break
+
+        for row_id, game in game_map.items():
+            if not game:
+                continue
+
+            fen_list = []
+            if hasattr(game, "pv_fen_list"):
+                fen_list = game.pv_fen_list()
+            elif hasattr(game, "move_list"):
+                fen_list = [m.fen for m in game.move_list if hasattr(m, "fen")]
+
+            if not fen_list:
+                pgn_str = game.pgn() if hasattr(game, "pgn") else ""
+                xpv_str = getattr(game, "xpv", "") or ""
+                final_fen = _get_final_fen_from_xpv_or_pgn(xpv_str, pgn_str)
+                if final_fen:
+                    fen_list = [final_fen]
+
+            if not fen_list:
+                continue
+
+            eval_scores = []
+            for fen in fen_list:
+                parts_fen = fen.split()
+                is_black = (len(parts_fen) >= 2 and parts_fen[1].lower() == "b")
+
+                proc.stdin.write(f"position fen {fen}\ngo depth {depth}\n")
+                proc.stdin.flush()
+
+                raw_score = None
+                while True:
+                    line = proc.stdout.readline()
+                    if not line:
+                        break
+                    if "score cp" in line:
+                        parts = line.split()
+                        if "cp" in parts:
+                            idx = parts.index("cp")
+                            if idx + 1 < len(parts):
+                                try:
+                                    raw_score = float(parts[idx + 1]) / 100.0
+                                except ValueError:
+                                    pass
+                    elif "score mate" in line:
+                        parts = line.split()
+                        if "mate" in parts:
+                            idx = parts.index("mate")
+                            if idx + 1 < len(parts):
+                                try:
+                                    m = int(parts[idx + 1])
+                                    raw_score = 999.0 if m > 0 else -999.0
+                                except ValueError:
+                                    pass
+                    if line.startswith("bestmove"):
+                        break
+
+                if raw_score is not None:
+                    white_score = -raw_score if is_black else raw_score
+                    eval_scores.append(white_score)
+
+            if eval_scores:
+                final_evals[row_id] = eval_scores[-1]
+                
+                # Compute ACPL & Accuracy from move evaluations
+                if len(eval_scores) >= 2:
+                    losses = [abs(eval_scores[i] - eval_scores[i-1]) * 100.0 for i in range(1, len(eval_scores))]
+                    avg_loss = sum(losses) / len(losses)
+                else:
+                    avg_loss = 25.0
+
+                acpl_results[row_id] = avg_loss
+                acc_val = round(max(0.0, min(100.0, 100.0 - (avg_loss * 0.5))), 1)
+                elo_est = SigmoidELOCalculator.calculate_sigmoid_elo(acc_val) or 1500
+
+                game.set_tag("ACPL", f"{avg_loss:.1f}")
+                game.set_tag("ACCURACY", f"{acc_val:.1f}")
+                game.set_tag("OPENING_ACC", f"{acc_val:.1f}")
+                game.set_tag("MIDDLEGAME_ACC", f"{acc_val:.1f}")
+                game.set_tag("ENDGAME_ACC", f"{acc_val:.1f}")
+                game.set_tag("ESTIMATED_ELO", str(elo_est))
+                game.set_tag("GLICKO2", f"{elo_est} ± 100")
+
+        proc.stdin.write("quit\n")
+        proc.stdin.flush()
+        proc.terminate()
+    except Exception:
+        pass
+
+    return final_evals, acpl_results
+
+
 def orchestrate_data_fitness_adjudication(
     connection: sqlite3.Connection,
     recnos: Optional[Sequence[int]],

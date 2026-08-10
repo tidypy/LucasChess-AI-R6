@@ -155,21 +155,18 @@ class CleanAndGeneratePipeline:
         report("Stage 5/14: Inspecting and preserving existing analysis...", 30, 100)
         summary["analysis_preserved"] = len(valid_rowids)
 
-        # Stage 6: Execute requested Stockfish evidence analysis
-        report("Stage 6/14: Stockfish evidence analysis pass...", 40, 100)
+        # Stage 6: Execute requested Stockfish Mass Analysis pass
+        report("Stage 6/14: Stockfish move-by-move Mass Analysis pass...", 40, 100)
         sf_results = {}
         if run_stockfish_pass:
-            fen_map = {}
+            game_map = {}
             for r_id in valid_rowids:
                 g_obj = self.db.read_game_rowid(r_id)
                 if g_obj:
-                    pgn_str = g_obj.pgn() if hasattr(g_obj, "pgn") else ""
-                    xpv_str = getattr(g_obj, "xpv", "") or ""
-                    fen = _get_final_fen_from_xpv_or_pgn(xpv_str, pgn_str)
-                    if fen:
-                        fen_map[r_id] = fen
+                    game_map[r_id] = g_obj
             
-            sf_results = _batch_evaluate_fens_with_stockfish(fen_map, depth=stockfish_depth)
+            from Code.Databases.result_repair import batch_evaluate_game_moves_with_stockfish
+            sf_results, _ = batch_evaluate_game_moves_with_stockfish(game_map, depth=stockfish_depth)
             summary["stockfish_analyzed"] = len(sf_results)
 
         # Stage 7 & 8: Generate/recalculate ACPL & Accuracy
