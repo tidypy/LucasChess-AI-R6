@@ -190,13 +190,13 @@ def show_data_fitness_wizard(parent: Optional[QtWidgets.QWidget], total_count: i
     bg_policy.buttonToggled.connect(on_policy_toggled)
     cb_fallback_type.currentIndexChanged.connect(on_policy_toggled)
 
-    btn_mass = QtWidgets.QPushButton("🏆 Run Mass Analysis (Gold Standard)", dialog)
+    btn_mass = QtWidgets.QPushButton("🏆 Clean & Generate Statistics", dialog)
     btn_mass.setStyleSheet(
         "QPushButton { background-color: #D4AF37; color: #000000; font-weight: bold; padding: 6px 14px; border-radius: 4px; border: 1px solid #B8860B; }"
         "QPushButton:hover { background-color: #FFD700; }"
     )
 
-    btn_ok = QtWidgets.QPushButton("Apply Adjudication", dialog)
+    btn_ok = QtWidgets.QPushButton("Apply Adjudication & Stats", dialog)
     btn_cancel = QtWidgets.QPushButton("Cancel", dialog)
 
     btn_layout = QtWidgets.QHBoxLayout()
@@ -208,11 +208,11 @@ def show_data_fitness_wizard(parent: Optional[QtWidgets.QWidget], total_count: i
 
     user_action = {"action": None}
     def on_mass_clicked():
-        user_action["action"] = "MASS_ANALYSIS"
+        user_action["action"] = "CLEAN_AND_GENERATE"
         dialog.accept()
 
     def on_ok_clicked():
-        user_action["action"] = "ADJUDICATE"
+        user_action["action"] = "CLEAN_AND_GENERATE"
         dialog.accept()
 
     btn_mass.clicked.connect(on_mass_clicked)
@@ -220,18 +220,6 @@ def show_data_fitness_wizard(parent: Optional[QtWidgets.QWidget], total_count: i
     btn_cancel.clicked.connect(dialog.reject)
 
     if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
-        if user_action["action"] == "MASS_ANALYSIS":
-            return {"action": "MASS_ANALYSIS"}
-
-        if rb_overwrite.isChecked():
-            msg = (
-                "⚠️ WARNING: You have chosen to REDO / OVERWRITE all game results in the current view.\n\n"
-                "Existing results will be updated according to your selected policy.\n\n"
-                "Are you sure you want to proceed?"
-            )
-            if not QtWidgets.QMessageBox.warning(dialog, "Confirm Re-adjudication", msg, QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No) == QtWidgets.QMessageBox.StandardButton.Yes:
-                return None
-
         pol_id = bg_policy.checkedId()
         policy_token = "TERMINATION"
         if pol_id == 2: policy_token = "ACCURACY_ACPL"
@@ -239,13 +227,14 @@ def show_data_fitness_wizard(parent: Optional[QtWidgets.QWidget], total_count: i
         elif pol_id == 4: policy_token = "STOCKFISH"
 
         return {
-            "action": "ADJUDICATE",
+            "action": "CLEAN_AND_GENERATE",
+            "run_stockfish_pass": rb4.isChecked() or cb_fallback_type.currentData() == "STOCKFISH",
             "mode": "OVERWRITE" if rb_overwrite.isChecked() else "MISSING_ONLY",
             "policy": policy_token,
             "fallback_type": cb_fallback_type.currentData() if not rb4.isChecked() else "NONE",
             "eval_win_threshold": sp_win_thresh.value(),
             "eval_draw_margin": sp_draw_margin.value(),
-            "engine_depth": cb_depth.currentData(),
+            "stockfish_depth": cb_depth.currentData(),
             "cpu_threads": sp_cpus.value()
         }
     return None
