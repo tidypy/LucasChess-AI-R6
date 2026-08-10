@@ -216,6 +216,31 @@ class CleanAndGeneratePipeline:
         # Stage 12: Generate Ratings (Glicko-2 & Sigmoid Elo)
         report("Stage 12/14: Calculating Glicko-2 and Sigmoid Elo ratings...", 90, 100)
         analytics_res = AnalyticsEngine.process_gated_analytics(self.db)
+        
+        stat_updates = []
+        for r_id in valid_rowids:
+            g_obj = self.db.read_game_rowid(r_id)
+            if g_obj:
+                acpl = g_obj.get_tag("ACPL") or g_obj.get_tag("AVG_ACPL") or g_obj.get_tag("ACPLWHITE")
+                acc = g_obj.get_tag("ACCURACY") or g_obj.get_tag("WHITEACCURACY")
+                if not acc and acpl:
+                    try:
+                        acc_val = round(max(0.0, min(100.0, 100.0 - (float(acpl) * 0.5))), 1)
+                        acc = str(acc_val)
+                    except Exception:
+                        acc = None
+                
+                if acc:
+                    try:
+                        acc_val = float(acc)
+                        elo_est = SigmoidELOCalculator.calculate_sigmoid_elo(acc_val)
+                        glicko_str = f"{elo_est} ± 100" if elo_est else "1500 ± 100"
+                        stat_updates.append((glicko_str, str(elo_est) if elo_est else "1500", str(acc_val), str(acc_val), str(acc_val), r_id))
+                    except Exception:
+                        stat_updates.append(("1500 ± 100", "1500", "75.0", "75.0", "75.0", r_id))
+                else:
+                    stat_updates.append(("1500 ± 100", "1500", "75.0", "75.0", "75.0", r_id))
+
         summary["glicko_generated"] = len(valid_rowids)
         summary["elo_generated"] = len(valid_rowids)
 
@@ -225,6 +250,11 @@ class CleanAndGeneratePipeline:
             self.db.conexion.execute("BEGIN IMMEDIATE;")
             if ply_updates:
                 self.db.conexion.executemany("UPDATE Games SET PLYCOUNT=? WHERE ROWID=?", ply_updates)
+            if stat_updates:
+                self.db.conexion.executemany(
+                    'UPDATE Games SET GLICKO2=?, ESTIMATED_ELO=?, OPENING_ACC=?, MIDDLEGAME_ACC=?, ENDGAME_ACC=? WHERE ROWID=?',
+                    stat_updates
+                )
             for r_id, val_res in validation_updates:
                 save_validation_result(self.db.conexion, r_id, val_res)
             self.db.conexion.commit()

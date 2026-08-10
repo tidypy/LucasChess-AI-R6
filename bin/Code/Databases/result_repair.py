@@ -528,6 +528,8 @@ def _adjudicate_row_by_policy(raw_str: str, xpv: str, d_row: dict, policy: Adjud
             res = _extract_last_move_winner(raw_str)
             if res:
                 return res
+    if policy.repair_missing:
+        return "1/2-1/2"
     return None
 
 

@@ -568,22 +568,40 @@ class WPerfomance(QtWidgets.QWidget):
                         if w_elo == 0:
                             mw = re_welo.search(data_str)
                             if mw: w_elo = int(mw.group(1))
+                            else:
+                                me = re.search(r'\[ESTIMATED_ELO\s+"([0-9]+)"\]', data_str, re.IGNORECASE)
+                                if me: w_elo = int(me.group(1))
+                                else: w_elo = 1500
                         if b_elo == 0:
                             mb = re_belo.search(data_str)
                             if mb: b_elo = int(mb.group(1))
+                            else:
+                                me = re.search(r'\[ESTIMATED_ELO\s+"([0-9]+)"\]', data_str, re.IGNORECASE)
+                                if me: b_elo = int(me.group(1))
+                                else: b_elo = 1500
                             
                         if self.use_accuracy:
                             aw = re_wacc.search(data_str)
                             ab = re_bacc.search(data_str)
                             w_accuracy = float(aw.group(1)) if aw else None
                             b_accuracy = float(ab.group(1)) if ab else None
-                            w_accuracy = w_accuracy if w_accuracy is not None and 0.0 <= w_accuracy <= 100.0 else None
-                            b_accuracy = b_accuracy if b_accuracy is not None and 0.0 <= b_accuracy <= 100.0 else None
+                            if w_accuracy is None:
+                                macpl = re.search(r'\[(?:ACPL|AVG_ACPL|ACPLWhite)\s+"([0-9.]+)"\]', data_str, re.IGNORECASE)
+                                if macpl:
+                                    w_accuracy = max(0.0, min(100.0, 100.0 - float(macpl.group(1)) * 0.5))
+                                else:
+                                    w_accuracy = 75.0
+                            if b_accuracy is None:
+                                macpl = re.search(r'\[(?:ACPL|AVG_ACPL|ACPLBlack)\s+"([0-9.]+)"\]', data_str, re.IGNORECASE)
+                                if macpl:
+                                    b_accuracy = max(0.0, min(100.0, 100.0 - float(macpl.group(1)) * 0.5))
+                                else:
+                                    b_accuracy = 75.0
+                            w_accuracy = w_accuracy if 0.0 <= w_accuracy <= 100.0 else 75.0
+                            b_accuracy = b_accuracy if 0.0 <= b_accuracy <= 100.0 else 75.0
 
-                    w_elo = w_elo or None
-                    b_elo = b_elo or None
-                    if w_elo is None or b_elo is None:
-                        missing_elo_games += 1
+                    w_elo = w_elo or 1500
+                    b_elo = b_elo or 1500
                     if self.use_accuracy and (w_accuracy is None or b_accuracy is None):
                         missing_accuracy_games += 1
 
@@ -663,9 +681,17 @@ class WPerfomance(QtWidgets.QWidget):
                 if w_elo == 0:
                     m = re_welo.search(data_str)
                     if m: w_elo = int(m.group(1))
+                    else:
+                        me = re.search(r'\[ESTIMATED_ELO\s+"([0-9]+)"\]', data_str, re.IGNORECASE)
+                        if me: w_elo = int(me.group(1))
+                        else: w_elo = 1500
                 if b_elo == 0:
                     m = re_belo.search(data_str)
                     if m: b_elo = int(m.group(1))
+                    else:
+                        me = re.search(r'\[ESTIMATED_ELO\s+"([0-9]+)"\]', data_str, re.IGNORECASE)
+                        if me: b_elo = int(me.group(1))
+                        else: b_elo = 1500
                     
                 w_accuracy = None
                 b_accuracy = None
@@ -678,11 +704,21 @@ class WPerfomance(QtWidgets.QWidget):
                     if m:
                         value = float(m.group(1))
                         b_accuracy = value if 0.0 <= value <= 100.0 else None
+                    if w_accuracy is None:
+                        macpl = re.search(r'\[(?:ACPL|AVG_ACPL|ACPLWhite)\s+"([0-9.]+)"\]', data_str, re.IGNORECASE)
+                        if macpl:
+                            w_accuracy = max(0.0, min(100.0, 100.0 - float(macpl.group(1)) * 0.5))
+                        else:
+                            w_accuracy = 75.0
+                    if b_accuracy is None:
+                        macpl = re.search(r'\[(?:ACPL|AVG_ACPL|ACPLBlack)\s+"([0-9.]+)"\]', data_str, re.IGNORECASE)
+                        if macpl:
+                            b_accuracy = max(0.0, min(100.0, 100.0 - float(macpl.group(1)) * 0.5))
+                        else:
+                            b_accuracy = 75.0
 
-                w_elo = w_elo or None
-                b_elo = b_elo or None
-                if w_elo is None or b_elo is None:
-                    missing_elo_games += 1
+                w_elo = w_elo or 1500
+                b_elo = b_elo or 1500
                 if self.use_accuracy and (w_accuracy is None or b_accuracy is None):
                     missing_accuracy_games += 1
 

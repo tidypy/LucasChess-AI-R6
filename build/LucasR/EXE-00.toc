@@ -73,8 +73,8 @@
  [],
  False,
  False,
- 1785788987,
+ 1786321505,
  [('run.exe',
    'C:\\Users\\Dev\\Documents\\APPS\\lucaschessR6-main\\.venv\\Lib\\site-packages\\PyInstaller\\bootloader\\Windows-64bit-intel\\run.exe',
    'EXECUTABLE')],
- 'C:\\Users\\Dev\\AppData\\Local\\Python\\pythoncore-3.14-64\\python314.dll')
+ 'C:\\Program Files\\Python312\\python312.dll')

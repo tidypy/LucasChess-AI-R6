@@ -48,7 +48,7 @@
   ('LucasR',
    'C:\\Users\\Dev\\Documents\\APPS\\lucaschessR6-main\\bin\\LucasR.py',
    'PYSOURCE')],
- 'python314.dll',
+ 'python312.dll',
  True,
  False,
  False,
