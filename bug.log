@@ -11107,3 +11107,9 @@ Traceback (most recent call last):
   File "Code\Analysis\RunAnalysisControl.py", line 853, in lanzar_analisis_masivo
   File "Code\Analysis\RunAnalysisControl.py", line 595, in __init__
 NameError: name 'time' is not defined. Did you forget to import 'time'?
+2026-08-09 21:08:56.299009
+Traceback (most recent call last):
+  File "Code\Databases\WDB_Games.py", line 1512, in tw_generate_statistics
+  File "Code\Databases\pipeline_coordinator.py", line 169, in run
+  File "Code\Databases\result_repair.py", line 320, in batch_evaluate_game_moves_with_stockfish
+NameError: name '_find_stockfish_executable' is not defined

@@ -317,7 +317,7 @@ def batch_evaluate_game_moves_with_stockfish(
         return final_evals, acpl_results
 
     if sf_path is None:
-        sf_path = _find_stockfish_executable()
+        sf_path = _get_stockfish_exe()
     if not sf_path or not os.path.exists(sf_path):
         return final_evals, acpl_results
 
