@@ -87,18 +87,33 @@ root_internal = os.path.join(root_dir, "_internal")
 bin_internal = os.path.join(bin_dir, "_internal")
 bin_exe = os.path.join(bin_dir, "LucasR.exe")
 
+import time
+
+def safe_copy(src, dst):
+    for attempt in range(5):
+        try:
+            os.system('taskkill /f /im LucasR.exe >nul 2>&1')
+            os.system('taskkill /f /im Launch_LucasR.exe >nul 2>&1')
+            time.sleep(0.3)
+            shutil.copy2(src, dst)
+            return
+        except Exception as e:
+            if attempt == 4:
+                print(f"Warning: Failed to copy {src} to {dst}: {e}")
+
 if os.path.exists(dist_exe):
-    os.system('taskkill /f /im LucasR.exe >nul 2>&1')
-    os.system('taskkill /f /im Launch_LucasR.exe >nul 2>&1')
-    shutil.copy2(dist_exe, root_exe)
-    shutil.copy2(dist_exe, bin_exe)
+    safe_copy(dist_exe, root_exe)
+    safe_copy(dist_exe, bin_exe)
     if os.path.exists(dist_internal):
         if os.path.exists(root_internal):
             shutil.rmtree(root_internal, ignore_errors=True)
         if os.path.exists(bin_internal):
             shutil.rmtree(bin_internal, ignore_errors=True)
-        shutil.copytree(dist_internal, root_internal, dirs_exist_ok=True)
-        shutil.copytree(dist_internal, bin_internal, dirs_exist_ok=True)
+        try:
+            shutil.copytree(dist_internal, root_internal, dirs_exist_ok=True)
+            shutil.copytree(dist_internal, bin_internal, dirs_exist_ok=True)
+        except Exception as e:
+            print(f"Warning copying internal dir: {e}")
     print(f"Copied Launch_LucasR.exe & _internal to root: {root_exe}")
 
 print("Build finished successfully!")
