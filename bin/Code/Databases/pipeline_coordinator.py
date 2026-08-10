@@ -114,25 +114,26 @@ class CleanAndGeneratePipeline:
         self.db.conexion.execute("PRAGMA foreign_keys = ON;")
 
         # Stage 2 & 3: Identify & Remove zero-move games
-        report("Stage 2-3/14: Identifying and removing zero-move games...", 10, 100)
+        report("Stage 2-3/14: Identifying zero-move games...", 10, 100)
         valid_rowids = []
         zero_move_rowids = []
 
-        for r_id in rowids:
-            raw = self.db.read_game_rowid(r_id)
-            if raw is None:
-                continue
+        placeholders = ",".join(["?"] * len(rowids))
+        cursor = self.db.conexion.execute(f"SELECT ROWID, XPV, _DATA_, PLYCOUNT FROM Games WHERE ROWID IN ({placeholders})", rowids)
+        for r_id, xpv, data, plyc in cursor.fetchall():
+            has_xpv = bool(xpv and str(xpv).strip())
+            has_data = bool(data and (isinstance(data, bytes) or str(data).strip()))
+            has_ply = bool(plyc and int(plyc) > 0)
             
-            pv = raw.pv() if hasattr(raw, "pv") else ""
-            if not pv or not pv.strip():
+            if not has_xpv and not has_data and not has_ply:
                 zero_move_rowids.append(r_id)
             else:
                 valid_rowids.append(r_id)
 
         summary["zero_move_detected"] = len(zero_move_rowids)
         if zero_move_rowids:
-            placeholders = ",".join(["?"] * len(zero_move_rowids))
-            self.db.conexion.execute(f"DELETE FROM Games WHERE ROWID IN ({placeholders})", zero_move_rowids)
+            del_placeholders = ",".join(["?"] * len(zero_move_rowids))
+            self.db.conexion.execute(f"DELETE FROM Games WHERE ROWID IN ({del_placeholders})", zero_move_rowids)
             summary["zero_move_deleted"] = len(zero_move_rowids)
 
         summary["games_remaining"] = len(valid_rowids)

@@ -11046,3 +11046,57 @@ Traceback (most recent call last):
   File "Code\Databases\WDB_Perfomance.py", line 612, in actualiza
   File "Code\Databases\WDB_Perfomance.py", line 612, in <genexpr>
 IndexError: list index out of range
+illegal san: '1h3' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15ae1570e00 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'd8' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15affef5c70 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'g7' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15affef62a0 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'f7' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15affef7f50 ('?' vs. '?', '????.??.??' at '?')>
+invalid san: '*' while parsing <Game at 0x15affef5b20 ('?' vs. '?', '????.??.??' at '?')>
+invalid san: '*' while parsing <Game at 0x15affef5b20 ('?' vs. '?', '????.??.??' at '?', 1 errors)>
+illegal san: 'Kc8' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15affef75f0 ('?' vs. '?', '????.??.??' at '?')>
+invalid san: '*' while parsing <Game at 0x15afffb0410 ('?' vs. '?', '????.??.??' at '?')>
+invalid san: '*' while parsing <Game at 0x15afffb0410 ('?' vs. '?', '????.??.??' at '?', 1 errors)>
+illegal san: 'a8k' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15afffb1820 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'g8N' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15afffb11f0 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'f7' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15afffb1a30 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'g2' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15afffb2090 ('?' vs. '?', '????.??.??' at '?')>
+invalid san: '*' while parsing <Game at 0x15afffb3ad0 ('?' vs. '?', '????.??.??' at '?')>
+invalid san: '*' while parsing <Game at 0x15afffb3ad0 ('?' vs. '?', '????.??.??' at '?', 1 errors)>
+illegal san: 'h5' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15afffb3ad0 ('?' vs. '?', '????.??.??' at '?', 2 errors)>
+illegal san: 'f3' in rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq - 0 1 while parsing <Game at 0x15afff53f80 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'e1' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15afff51a60 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'a2' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15afff53560 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'b1' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15afff53ad0 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'c5' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15afff52720 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'e2' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15afffb1400 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'd5' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15afffb24e0 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'f2' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15affef7fe0 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'f5' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15affef5e50 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'Ne4' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15afff53e00 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'a1' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15afff53e30 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'd7' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15afff50f20 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: '5h1' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15afff52420 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'h1' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15afff52240 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'b2' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15afff528d0 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'h1' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15afff52b70 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'a8' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15afff53020 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'e6' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15afff53200 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'g8' in rnbqkbnr/pppppppp/8/8/8/6P1/PPPPPP1P/RNBQKBNR b KQkq - 0 1 while parsing <Game at 0x15afff53c80 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'db6' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15afff50590 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'b8' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15afff50590 ('?' vs. '?', '????.??.??' at '?', 1 errors)>
+invalid san: '*' while parsing <Game at 0x15afff508f0 ('?' vs. '?', '????.??.??' at '?')>
+invalid san: '*' while parsing <Game at 0x15afff508f0 ('?' vs. '?', '????.??.??' at '?', 1 errors)>
+invalid san: '*' while parsing <Game at 0x15afff51af0 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'g1' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15affed0740 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'a7' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15affed11c0 ('?' vs. '?', '????.??.??' at '?')>
+invalid san: '*' while parsing <Game at 0x15affed1b80 ('?' vs. '?', '????.??.??' at '?')>
+invalid san: '*' while parsing <Game at 0x15affed1b80 ('?' vs. '?', '????.??.??' at '?', 1 errors)>
+invalid san: '*' while parsing <Game at 0x15affed1b80 ('?' vs. '?', '????.??.??' at '?', 2 errors)>
+illegal san: 'b1' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15affed17c0 ('?' vs. '?', '????.??.??' at '?')>
+invalid san: '*' while parsing <Game at 0x15affed1be0 ('?' vs. '?', '????.??.??' at '?')>
+invalid san: '*' while parsing <Game at 0x15afff51d90 ('?' vs. '?', '????.??.??' at '?')>
+invalid san: '*' while parsing <Game at 0x15afff51d90 ('?' vs. '?', '????.??.??' at '?', 1 errors)>
+illegal san: 'g5' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15afff53320 ('?' vs. '?', '????.??.??' at '?')>
+invalid san: '*' while parsing <Game at 0x15afff53320 ('?' vs. '?', '????.??.??' at '?', 1 errors)>
+invalid san: '*' while parsing <Game at 0x15afff53320 ('?' vs. '?', '????.??.??' at '?', 2 errors)>
+illegal san: 'e5B' in rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 while parsing <Game at 0x15afff52e10 ('?' vs. '?', '????.??.??' at '?')>
+illegal san: 'd1' in rnbqkbnr/pppppppp/8/8/7P/8/PPPPPPP1/RNBQKBNR b KQkq - 0 1 while parsing <Game at 0x15afff50b60 ('?' vs. '?', '????.??.??' at '?')>

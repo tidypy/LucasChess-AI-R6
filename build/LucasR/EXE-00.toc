@@ -73,7 +73,7 @@
  [],
  False,
  False,
- 1786322354,
+ 1786322484,
  [('run.exe',
    'C:\\Users\\Dev\\Documents\\APPS\\lucaschessR6-main\\.venv\\Lib\\site-packages\\PyInstaller\\bootloader\\Windows-64bit-intel\\run.exe',
    'EXECUTABLE')],
