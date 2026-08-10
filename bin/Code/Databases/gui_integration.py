@@ -300,7 +300,8 @@ def show_clean_and_generate_dialog(parent: Optional[QtWidgets.QWidget], total_co
     cb_stats = QtWidgets.QCheckBox("☑ Generate Glicko-2 & Sigmoid Elo player statistics", gb_intent)
     cb_stats.setChecked(True)
 
-    cb_sf_pass = QtWidgets.QCheckBox("☐ Enable Stockfish FEN screening pass for ambiguous positions (Depth 8)", gb_intent)
+    cb_sf_pass = QtWidgets.QCheckBox("☑ Run Stockfish Mass Analysis for games lacking evaluation data (Depth 8)", gb_intent)
+    cb_sf_pass.setChecked(False)
 
     ly_intent.addWidget(cb_repair_res)
     ly_intent.addWidget(cb_preserve)
@@ -311,15 +312,26 @@ def show_clean_and_generate_dialog(parent: Optional[QtWidgets.QWidget], total_co
 
     btn_box = QtWidgets.QDialogButtonBox(dialog)
     btn_clean = btn_box.addButton("🏆 Clean & Generate Statistics", QtWidgets.QDialogButtonBox.ButtonRole.AcceptRole)
+    btn_sf_mass = btn_box.addButton("🏆 Run Stockfish Mass Analysis + Stats", QtWidgets.QDialogButtonBox.ButtonRole.ActionRole)
     btn_cancel = btn_box.addButton("Cancel", QtWidgets.QDialogButtonBox.ButtonRole.RejectRole)
 
     btn_clean.setStyleSheet(
         "QPushButton { background-color: #D4AF37; color: #000000; font-weight: bold; padding: 6px 16px; border-radius: 4px; border: 1px solid #B8860B; }"
         "QPushButton:hover { background-color: #FFD700; }"
     )
+    btn_sf_mass.setStyleSheet(
+        "QPushButton { background-color: #4682B4; color: #FFFFFF; font-weight: bold; padding: 6px 16px; border-radius: 4px; border: 1px solid #2E5B82; }"
+        "QPushButton:hover { background-color: #5A9BD4; }"
+    )
 
-    btn_box.accepted.connect(dialog.accept)
-    btn_box.rejected.connect(dialog.reject)
+    user_choice = {"mass": False}
+    def on_sf_mass():
+        user_choice["mass"] = True
+        dialog.accept()
+
+    btn_sf_mass.clicked.connect(on_sf_mass)
+    btn_clean.clicked.connect(dialog.accept)
+    btn_cancel.clicked.connect(dialog.reject)
     layout.addWidget(btn_box)
 
     if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
@@ -328,7 +340,7 @@ def show_clean_and_generate_dialog(parent: Optional[QtWidgets.QWidget], total_co
             "preserve_analysis": cb_preserve.isChecked(),
             "recalculate_derived": cb_derived.isChecked(),
             "generate_stats": cb_stats.isChecked(),
-            "run_stockfish_pass": cb_sf_pass.isChecked(),
+            "run_stockfish_pass": cb_sf_pass.isChecked() or user_choice["mass"],
             "stockfish_depth": 8,
         }
     return None

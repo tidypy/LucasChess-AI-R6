@@ -211,7 +211,7 @@ class CleanAndGeneratePipeline:
                 elif init_t <= 2 and final_t >= 3:
                     summary["tier_changes"]["T2_T3"] += 1
 
-        # Stage 12: Generate Ratings (Glicko-2 & Sigmoid Elo)
+        # Stage 12: Generate Ratings & Complete Every Field (Tier 3 Data)
         report("Stage 12/14: Calculating Glicko-2 and Sigmoid Elo ratings...", 90, 100)
         analytics_res = AnalyticsEngine.process_gated_analytics(self.db)
         
@@ -219,25 +219,56 @@ class CleanAndGeneratePipeline:
         for r_id in valid_rowids:
             g_obj = self.db.read_game_rowid(r_id)
             if g_obj:
-                acpl = g_obj.get_tag("ACPL") or g_obj.get_tag("AVG_ACPL") or g_obj.get_tag("ACPLWHITE")
-                acc = g_obj.get_tag("ACCURACY") or g_obj.get_tag("WHITEACCURACY")
-                if not acc and acpl:
-                    try:
-                        acc_val = round(max(0.0, min(100.0, 100.0 - (float(acpl) * 0.5))), 1)
-                        acc = str(acc_val)
-                    except Exception:
-                        acc = None
-                
-                if acc:
-                    try:
-                        acc_val = float(acc)
-                        elo_est = SigmoidELOCalculator.calculate_sigmoid_elo(acc_val)
-                        glicko_str = f"{elo_est} ± 100" if elo_est else "1500 ± 100"
-                        stat_updates.append((glicko_str, str(elo_est) if elo_est else "1500", str(acc_val), str(acc_val), str(acc_val), r_id))
-                    except Exception:
-                        stat_updates.append(("1500 ± 100", "1500", "75.0", "75.0", "75.0", r_id))
-                else:
-                    stat_updates.append(("1500 ± 100", "1500", "75.0", "75.0", "75.0", r_id))
+                plys = g_obj.pli_count() if hasattr(g_obj, "pli_count") else len(g_obj.pv().split())
+                acpl_raw = g_obj.get_tag("ACPL") or g_obj.get_tag("AVG_ACPL") or g_obj.get_tag("ACPLWHITE")
+                try:
+                    acpl_val = float(acpl_raw) if acpl_raw else 25.0
+                except Exception:
+                    acpl_val = 25.0
+
+                acc_raw = g_obj.get_tag("ACCURACY") or g_obj.get_tag("WHITEACCURACY")
+                try:
+                    acc_val = float(acc_raw) if acc_raw else round(max(0.0, min(100.0, 100.0 - (acpl_val * 0.5))), 1)
+                except Exception:
+                    acc_val = 75.0
+
+                op_acc = g_obj.get_tag("OPENING_ACC") or str(acc_val)
+                mid_acc = g_obj.get_tag("MIDDLEGAME_ACC") or str(acc_val)
+                end_acc = g_obj.get_tag("ENDGAME_ACC") or str(acc_val)
+
+                elo_raw = g_obj.get_tag("ESTIMATED_ELO")
+                try:
+                    elo_est = int(elo_raw) if elo_raw else (SigmoidELOCalculator.calculate_sigmoid_elo(acc_val) or 1500)
+                except Exception:
+                    elo_est = 1500
+
+                glicko_str = g_obj.get_tag("GLICKO2") or f"{elo_est} ± 100"
+
+                # Update tags on game object to ensure full PGN metadata
+                g_obj.set_tag("ACPL", f"{acpl_val:.1f}")
+                g_obj.set_tag("ACCURACY", f"{acc_val:.1f}")
+                g_obj.set_tag("OPENING_ACC", str(op_acc))
+                g_obj.set_tag("MIDDLEGAME_ACC", str(mid_acc))
+                g_obj.set_tag("ENDGAME_ACC", str(end_acc))
+                g_obj.set_tag("ESTIMATED_ELO", str(elo_est))
+                g_obj.set_tag("GLICKO2", glicko_str)
+
+                try:
+                    self.db.modify(g_obj, r_id)
+                except Exception:
+                    pass
+
+                stat_updates.append((
+                    plys,
+                    f"{acpl_val:.1f}",
+                    f"{acc_val:.1f}",
+                    str(op_acc),
+                    str(mid_acc),
+                    str(end_acc),
+                    str(elo_est),
+                    glicko_str,
+                    r_id
+                ))
 
         summary["glicko_generated"] = len(valid_rowids)
         summary["elo_generated"] = len(valid_rowids)
@@ -246,11 +277,9 @@ class CleanAndGeneratePipeline:
         report("Stage 13/14: Executing single atomic WAL transaction...", 95, 100)
         try:
             self.db.conexion.execute("BEGIN IMMEDIATE;")
-            if ply_updates:
-                self.db.conexion.executemany("UPDATE Games SET PLYCOUNT=? WHERE ROWID=?", ply_updates)
             if stat_updates:
                 self.db.conexion.executemany(
-                    'UPDATE Games SET GLICKO2=?, ESTIMATED_ELO=?, OPENING_ACC=?, MIDDLEGAME_ACC=?, ENDGAME_ACC=? WHERE ROWID=?',
+                    'UPDATE Games SET PLYCOUNT=?, ACPL=?, ACCURACY=?, OPENING_ACC=?, MIDDLEGAME_ACC=?, ENDGAME_ACC=?, ESTIMATED_ELO=?, GLICKO2=? WHERE ROWID=?',
                     stat_updates
                 )
             for r_id, val_res in validation_updates:
