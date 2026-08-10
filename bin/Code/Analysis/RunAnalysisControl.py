@@ -229,7 +229,10 @@ class GamePrefetcher(QtCore.QThread):
                     break
 
                 try:
-                    rowid = li_row_ids[recno]
+                    if isinstance(recno, int) and recno < len(li_row_ids):
+                        rowid = li_row_ids[recno]
+                    else:
+                        rowid = recno
                     cursor = conexion.execute(f"SELECT {select_sql} FROM Games WHERE rowid = ?", (rowid,))
                     raw = cursor.fetchone()
                     if raw is not None:
@@ -343,10 +346,13 @@ class AnalysisMassiveWithWorkers(QtCore.QThread):
                     worker.send_terminate()
                     return False
                 try:
-                    game = self.db_games.read_game_recno(recno)
-                except sqlite3.ProgrammingError:  # si dos threads lo intentan a la vez
-                    worker.send_terminate()
-                    return False
+                    if recno < len(self.db_games.li_row_ids):
+                        game = self.db_games.read_game_recno(recno)
+                    else:
+                        rowid = self.list_regs.li_recnos_raw[recno] if hasattr(self.list_regs, 'li_recnos_raw') else recno
+                        game = self.db_games.read_game_rowid(rowid)
+                except Exception:
+                    game = None
                 if game is None:
                     if hasattr(self.list_regs, 'game_finished'):
                         self.list_regs.game_finished(recno, None)
@@ -494,6 +500,46 @@ class AnalysisMassiveWithWorkers(QtCore.QThread):
                 bmt.cerrar()
 
 
+MASS_ANALYSIS_DB_BATCH_TIMEOUT = 1.0
+
+
+def get_dynamic_batch_size(num_workers: int) -> int:
+    """
+    Calculates batch size based on worker concurrency:
+    1 worker   -> 3
+    2          -> 3
+    4          -> 6
+    6          -> 9
+    8          -> 12
+    10         -> 15
+    12         -> 18
+    16         -> 24
+    20         -> 30
+    24         -> 36
+    30+        -> 40
+    """
+    if num_workers <= 2:
+        return 3
+    elif num_workers <= 4:
+        return 6
+    elif num_workers <= 6:
+        return 9
+    elif num_workers <= 8:
+        return 12
+    elif num_workers <= 10:
+        return 15
+    elif num_workers <= 12:
+        return 18
+    elif num_workers <= 16:
+        return 24
+    elif num_workers <= 20:
+        return 30
+    elif num_workers <= 24:
+        return 36
+    else:
+        return 40
+
+
 class WProgress(LCDialog.LCDialog):
     def __init__(self, w_parent, amww: AnalysisMassiveWithWorkers, nregs: int):
         LCDialog.LCDialog.__init__(self, w_parent, _("Analyzing"), Iconos.Analizar(), "massive_progress")
@@ -543,6 +589,11 @@ class WProgress(LCDialog.LCDialog):
         self._is_canceled = False
         self._is_closed = False
         self._estimator = Util.SmoothedEstimator(total=self.pb_moves.maximum())
+
+        # Persistence Batch State
+        self._uncommitted_count = 0
+        self._last_commit_time = time.time()
+        self._committed_pos = 0
 
         # CONEXIONES DE SEÑALES
         self.amww.game_analyzed.connect(self.set_pos)
@@ -654,10 +705,65 @@ class WProgress(LCDialog.LCDialog):
                 widget["progress_bar"].setRange(0, total_moves)
                 widget["progress_bar"].setValue(current_move)
 
+    def flush_pending_transaction(self) -> bool:
+        if self._uncommitted_count == 0:
+            return True
+        if not (hasattr(self.amww.db_games, "conexion") and self.amww.db_games.conexion):
+            return False
+
+        max_retries = 3
+        err_msg = ""
+        for attempt in range(max_retries):
+            try:
+                self.amww.db_games.conexion.commit()
+                self._committed_pos += self._uncommitted_count
+                self._uncommitted_count = 0
+                self._last_commit_time = time.time()
+                self.pb_moves.setValue(self._committed_pos)
+                str_estimate = self._estimator.estimated(self._committed_pos)
+                if str_estimate is not None:
+                    self.lb_time.set_text(f"{_('Pending time')}: {str_estimate}")
+                else:
+                    self.lb_time.set_text("")
+                return True
+            except sqlite3.OperationalError as e:
+                err_msg = str(e)
+                if "locked" in err_msg.lower() and attempt < max_retries - 1:
+                    time.sleep(0.1 * (attempt + 1))
+                    continue
+                break
+            except Exception as e:
+                err_msg = str(e)
+                break
+
+        # On COMMIT failure after retries:
+        # 1. Rollback the failed transaction batch so uncommitted games are reverted
+        with contextlib.suppress(Exception):
+            self.amww.db_games.conexion.rollback()
+
+        # 2. DO NOT count those uncommitted games as persisted in _committed_pos
+        failed_count = self._uncommitted_count
+        self._uncommitted_count = 0
+
+        # 3. Present explicit failure dialog state to the user
+        from Code.QT import QTMessages
+        QTMessages.message_error(
+            self,
+            f"{_('Database persistence failed during mass analysis.')}\n"
+            f"{failed_count} {_('game(s) could not be saved to disk.')}\n\n"
+            f"{_('Error details')}: {err_msg}"
+        )
+        return False
+
+    def check_timeout_flush(self):
+        if self._uncommitted_count > 0 and (time.time() - self._last_commit_time) >= MASS_ANALYSIS_DB_BATCH_TIMEOUT:
+            self.flush_pending_transaction()
+
     def xcancel(self):
         self._is_canceled = True
         self.amww.cancel_process()
         self.amww.wait()
+        self.flush_pending_transaction()
         self.xclose()
 
     def pause_resume(self):
@@ -702,23 +808,42 @@ class WProgress(LCDialog.LCDialog):
             except Exception:
                 pass
 
-            self.amww.db_games.save_game_recno(recno, game)
+            # Update Annotator / Annotator Engine tag
+            engine_name = "Stockfish 18"
+            try:
+                if hasattr(self.alm, "engine") and self.alm.engine:
+                    engine_name = str(self.alm.engine)
+                elif hasattr(Code, "configuration") and Code.configuration:
+                    eng = Code.configuration.engines.search("stockfish")
+                    if eng and hasattr(eng, "name"):
+                        engine_name = eng.name
+            except Exception:
+                pass
 
-            self.pb_moves.setValue(pos)
-            str_estimate = self._estimator.estimated(pos)
-            if str_estimate is not None:
-                self.lb_time.set_text(f"{_('Pending time')}: {str_estimate}")
-            else:
-                self.lb_time.set_text("")
+            game.set_tag("Annotator", engine_name)
+            game.set_tag("ANNOTATOR", engine_name)
+
+            self.amww.db_games.save_game_recno(recno, game, with_commit=False)
+            self._uncommitted_count += 1
+
+            num_workers = len(self.amww.li_workers) if hasattr(self.amww, "li_workers") and self.amww.li_workers else 1
+            batch_size = get_dynamic_batch_size(num_workers)
+
+            now = time.time()
+            if (self._uncommitted_count >= batch_size or
+                    (now - self._last_commit_time) >= MASS_ANALYSIS_DB_BATCH_TIMEOUT):
+                self.flush_pending_transaction()
 
     def xfinished(self):
         self.amww.wait()
+        self.flush_pending_transaction()
         self.amww.save_bmt_data()
         self.xclose()
 
     def xclose(self):
         if not self._is_closed:
             self._is_closed = True
+            self.flush_pending_transaction()
             self.accept()
 
 
@@ -733,3 +858,4 @@ def lanzar_analisis_masivo(wowner, alm, nregs, li_seleccionadas):
     ventana.setMinimumWidth(360)
     ScreenUtils.shrink(ventana)
     ventana.exec()
+

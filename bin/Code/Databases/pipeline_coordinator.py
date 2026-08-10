@@ -156,6 +156,7 @@ class CleanAndGeneratePipeline:
 
         # Stage 6: Execute requested Stockfish evidence analysis
         report("Stage 6/14: Stockfish evidence analysis pass...", 40, 100)
+        sf_results = {}
         if run_stockfish_pass:
             fen_map = {}
             for r_id in valid_rowids:
@@ -190,7 +191,7 @@ class CleanAndGeneratePipeline:
 
         # Stage 10: LATE RESULT ADJUDICATION CASCADE (Runs AFTER evidence generation)
         report("Stage 10/14: Executing late result adjudication cascade...", 75, 100)
-        repair_summary = adjudicate_results_by_eval(self.db.conexion, recnos=valid_rowids, policy=self.adj_policy)
+        repair_summary = adjudicate_results_by_eval(self.db.conexion, recnos=valid_rowids, policy=self.adj_policy, sf_eval_results=sf_results)
         summary["results_repaired"] = repair_summary.get("repaired_wins", 0) + repair_summary.get("repaired_losses", 0) + repair_summary.get("repaired_draws", 0)
 
         # Stage 11: Final T0-T3 validation & tier persistence

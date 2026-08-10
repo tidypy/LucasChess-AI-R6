@@ -1210,7 +1210,7 @@ class WGames(QtWidgets.QWidget):
             menu.separador()
             menu.opcion(self.tw_polyglot, _("Create a polyglot book"), Iconos.Book())
             menu.separador()
-            menu.opcion(self.tw_themes, _("Generate Statistics"), Iconos.Tacticas())
+            menu.opcion(self.tw_generate_statistics, _("Generate Statistics"), Iconos.Tacticas())
             menu.separador()
             menu.opcion(self.tw_remove_duplicates, _("Remove duplicates"), Iconos.Remove1())
             menu.separador()
@@ -1435,8 +1435,9 @@ class WGames(QtWidgets.QWidget):
             return
 
         from Code.Databases.analysis_provenance import filter_recnos_for_analysis
-        filtered_recnos, counts = filter_recnos_for_analysis(self.db_games.conexion, candidates, mode="MISSING_ONLY")
-        if counts["skipped_already_tier3"] > 0:
+        mode = "OVERWRITE" if getattr(alm, "delete_previous", False) else "MISSING_ONLY"
+        filtered_recnos, counts = filter_recnos_for_analysis(self.db_games.conexion, candidates, mode=mode)
+        if mode == "MISSING_ONLY" and counts["skipped_already_tier3"] > 0:
             QTMessages.message_information(
                 self,
                 f"{_('Mass Analysis Filter')}\n\n"
@@ -1463,7 +1464,7 @@ class WGames(QtWidgets.QWidget):
 
         if getattr(alm, "auto_update_stats", False):
             try:
-                self.tw_themes()
+                self.tw_generate_statistics()
             except Exception:
                 pass
 
@@ -1497,51 +1498,55 @@ class WGames(QtWidgets.QWidget):
             QTMessages.message_information(self, "No games found in the current view.")
             return
 
-        count = self._get_missing_results_count()
-        if count > 0:
-            from Code.Databases.gui_integration import show_data_fitness_wizard
-            result = show_data_fitness_wizard(self, total_count=total_count, is_filtered=is_filtered)
-            if result:
-                from Code.Databases.result_repair import orchestrate_data_fitness_adjudication
-                import Code.QT.QTMessages as QTMessages
-                candidates = [self.db_games.li_row_ids[r] for r in range(self.grid.reccount())]
-                with QTMessages.one_moment_please(self.wb_database):
-                    orchestrate_data_fitness_adjudication(
-                        self.db_games.conexion, 
-                        candidates, 
-                        policy=result["policy"],
-                        mode=result.get("mode", "MISSING_ONLY"),
-                        fallback_type=result.get("fallback_type", "LAST_MOVE"),
-                        eval_win_threshold=result.get("eval_win_threshold", 2.0),
-                        eval_draw_margin=result.get("eval_draw_margin", 0.55),
-                        engine_depth=result.get("engine_depth", 10),
-                        cpu_threads=result.get("cpu_threads", 1)
-                    )
-                self.db_games.reset_cache()
-                self.grid.refresh()
-                self.update_status()
-            else:
-                return # user canceled
-
-        from Code.Databases.gui_integration import show_readiness_dialog
-        action = show_readiness_dialog(self, self.db_games)
-        
-        if action == "MASS_ANALYSIS":
-            self.tw_massive_analysis()
+        from Code.Databases.gui_integration import show_clean_and_generate_dialog
+        opts = show_clean_and_generate_dialog(self, total_count=total_count)
+        if not opts:
             return
-        elif action == "QUICK_STATS":
+
+        from Code.Databases.pipeline_coordinator import CleanAndGeneratePipeline
+        import Code.QT.QTMessages as QTMessages
+
+        candidates = [self.db_games.li_row_ids[r] for r in range(self.grid.reccount()) if r < len(self.db_games.li_row_ids)]
+        with QTMessages.one_moment_please(self.wb_database, "Executing Clean & Generate Statistics..."):
+            pipeline = CleanAndGeneratePipeline(self.db_games)
+            summary = pipeline.run(
+                rowids=candidates,
+                run_stockfish_pass=opts.get("run_stockfish_pass", False),
+                stockfish_depth=opts.get("stockfish_depth", 8),
+            )
+
+        self.db_games.reset_cache()
+        self.rehaz_columnas()
+        self.grid.refresh()
+        self.update_status()
+
+        purged_cnt = summary.get("zero_move_deleted", 0)
+        repaired_cnt = summary.get("results_repaired", 0)
+        msg = (
+            f"🏆 Clean & Generate Statistics Complete!\n\n"
+            f"• Games Scanned: {summary.get('games_scanned', 0)}\n"
+            f"• Zero-Move Pruned: {purged_cnt}\n"
+            f"• Results Repaired: {repaired_cnt}\n"
+            f"• Analysis Preserved: {summary.get('analysis_preserved', 0)}\n"
+            f"• Ratings Generated: {summary.get('glicko_generated', 0)}"
+        )
+        QTMessages.message_information(self, msg)
+        try:
+            self.auto_update_positions()
+        except Exception:
+            pass
             self.tw_quick_tier2_stats()
             return
 
     def tw_quick_tier2_stats(self):
         import Code.QT.QTMessages as QTMessages
-        candidates = [self.db_games.li_row_ids[r] for r in range(self.grid.reccount())]
+        candidates = self.db_games.li_row_ids[:self.grid.reccount()]
         if not candidates:
             return
 
         with QTMessages.one_moment_please(self.wb_database, _("Generating Quick Tier 2 Statistics...")):
             for rowid in candidates:
-                game = self.db_games.read_game_recno(rowid)
+                game = self.db_games.read_game_rowid(rowid)
                 if not game:
                     continue
                 acpl = game.get_tag("ACPL") or game.get_tag("AVG_ACPL")

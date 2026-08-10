@@ -321,7 +321,7 @@ def _form_general_options(analysis_params, multiple_selected, is_massive):
 
     list_books = Books.ListBooks()
     li = [("--", None)]
-    defecto = list_books.lista[0] if analysis_params.book_name else None
+    defecto = None
     for book in list_books.lista:
         if analysis_params.book_name == book.name:
             defecto = book
@@ -367,16 +367,24 @@ def _create_dispatch():
         if reg.form is None:
             if isinstance(valor, FormLayout.FormTabWidget):
                 reg.form = valor
-                reg.cb_variations = valor.get_widget(2, 0)
-                reg.cb_add_variations = valor.get_widget(2, 1)
-                reg.cb_variations_checked = reg.cb_variations.isChecked()
-                reg.cb_add_variations_checked = reg.cb_add_variations.isChecked()
-                if reg.cb_variations_checked and reg.cb_add_variations_checked:
-                    reg.cb_add_variations.setChecked(False)
+                try:
+                    cb_v = valor.get_widget(2, 0)
+                    cb_av = valor.get_widget(2, 1)
+                    if cb_v and hasattr(cb_v, 'isChecked') and cb_av and hasattr(cb_av, 'isChecked'):
+                        reg.cb_variations = cb_v
+                        reg.cb_add_variations = cb_av
+                        reg.cb_variations_checked = reg.cb_variations.isChecked()
+                        reg.cb_add_variations_checked = reg.cb_add_variations.isChecked()
+                        if reg.cb_variations_checked and reg.cb_add_variations_checked:
+                            reg.cb_add_variations.setChecked(False)
+                except Exception:
+                    pass
         else:
             if (
                     reg.cb_variations
                     and reg.cb_add_variations
+                    and hasattr(reg.cb_variations, 'isChecked')
+                    and hasattr(reg.cb_add_variations, 'isChecked')
                     and reg.cb_variations.isChecked()
                     and reg.cb_add_variations.isChecked()
             ):
@@ -420,7 +428,7 @@ def _apply_general_params(analysis_params, li_gen, multiple_selected=None):
     analysis_params.li_players = cjug.split(";") if cjug else None
     analysis_params.num_moves = li_gen[2]
     analysis_params.book = li_gen[3]
-    analysis_params.book_name = analysis_params.book.name if analysis_params.book else None
+    analysis_params.book_name = analysis_params.book.name if (analysis_params.book and hasattr(analysis_params.book, "name")) else None
     analysis_params.standard_openings = li_gen[4]
     analysis_params.accuracy_tags = li_gen[5]
     analysis_params.auto_update_stats = li_gen[6]
@@ -554,9 +562,37 @@ def massive_analysis_parameters(parent, configuration, multiple_selected, is_dat
     li_themes = _form_themes(analysis_params)
     li_mates = _form_mates(analysis_params)
 
+    # Fallback Adjudication Policy tab options
+    li_adj_policies = [
+        (_("Live Stockfish Engine Evaluation"), "STOCKFISH"),
+        (_("Extract from [Termination] PGN Tag"), "TERMINATION"),
+        (_("Highest Move Accuracy / Lowest ACPL Matchup"), "ACCURACY_ACPL"),
+        (_("Time Forfeit / Last Move Turn"), "LAST_MOVE"),
+    ]
+    cb_adj_policy = FormLayout.Combobox(_("Adjudication Policy for missing results ('*')"), li_adj_policies)
+
+    li_adj_fallbacks = [
+        (_("Live Stockfish Engine Evaluation"), "STOCKFISH"),
+        (_("Embedded PGN Evaluation Comments ([%eval])"), "EMBEDDED_EVAL"),
+        (_("Turn-based Last Move"), "LAST_MOVE"),
+    ]
+    cb_adj_fallback = FormLayout.Combobox(_("Secondary Fallback Policy"), li_adj_fallbacks)
+
+    li_adjudication = [
+        SEPARADOR,
+        (cb_adj_policy, getattr(analysis_params, "adj_policy", "STOCKFISH")),
+        SEPARADOR,
+        (cb_adj_fallback, getattr(analysis_params, "adj_fallback", "LAST_MOVE")),
+        SEPARADOR,
+        (FormLayout.Spinbox(_("Win Eval Threshold (Pawns)"), 50, 1000, 200), int(getattr(analysis_params, "adj_win_threshold", 2.0) * 100)),
+        (FormLayout.Spinbox(_("Draw Eval Margin (Pawns)"), 0, 500, 55), int(getattr(analysis_params, "adj_draw_margin", 0.55) * 100)),
+        SEPARADOR,
+    ]
+
     lista = [
         (li_gen, _("General options"), ""),
         (li_engine, _("Engine"), ""),
+        (li_adjudication, _("Adjudication Policy"), ""),
         (li_var, _("Variations"), ""),
         (li_blunders, _("Wrong moves"), ""),
         (li_brilliancies, _("Brilliancies"), ""),
@@ -579,7 +615,12 @@ def massive_analysis_parameters(parent, configuration, multiple_selected, is_dat
     if resultado:
         accion, li_resp = resultado
 
-        li_gen, li_engine, li_var, li_blunders, li_brilliancies, li_mates, li_themes = li_resp
+        li_gen, li_engine, li_adjudication, li_var, li_blunders, li_brilliancies, li_mates, li_themes = li_resp
+
+        analysis_params.adj_policy = li_adjudication[0]
+        analysis_params.adj_fallback = li_adjudication[1]
+        analysis_params.adj_win_threshold = li_adjudication[2] / 100.0
+        analysis_params.adj_draw_margin = li_adjudication[3] / 100.0
 
         _apply_general_params(analysis_params, li_gen, multiple_selected)
         _apply_engine_params(analysis_params, li_engine)

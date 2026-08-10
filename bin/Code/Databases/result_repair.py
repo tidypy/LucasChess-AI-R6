@@ -243,6 +243,17 @@ def _batch_evaluate_fens_with_stockfish(fen_map: Dict[int, str], depth: int = 10
         )
         proc.stdin.write("uci\n")
         proc.stdin.flush()
+        while True:
+            line = proc.stdout.readline()
+            if not line or "uciok" in line:
+                break
+
+        proc.stdin.write("isready\n")
+        proc.stdin.flush()
+        while True:
+            line = proc.stdout.readline()
+            if not line or "readyok" in line:
+                break
 
         for row_id, fen in fen_map.items():
             parts_fen = fen.split()
@@ -480,7 +491,7 @@ def orchestrate_data_fitness_adjudication(
         for row_id, res_obj in validation_tasks:
             save_validation_result(connection, row_id, res_obj)
 
-def _adjudicate_row_by_policy(raw_str: str, xpv: str, d_row: dict, policy: AdjudicationPolicy) -> Optional[str]:
+def _adjudicate_row_by_policy(raw_str: str, xpv: str, d_row: dict, policy: AdjudicationPolicy, sf_eval_results: Optional[Dict[int, float]] = None) -> Optional[str]:
     for src in policy.sources:
         if src == "EXISTING_TAGS":
             res = d_row.get("RESULT")
@@ -503,6 +514,16 @@ def _adjudicate_row_by_policy(raw_str: str, xpv: str, d_row: dict, policy: Adjud
                     return "0-1"
                 elif abs(eval_score) <= policy.eval_draw_margin:
                     return "1/2-1/2"
+        elif src == "STOCKFISH_FEN":
+            row_id = d_row.get("ROWID")
+            score = sf_eval_results.get(row_id) if sf_eval_results and row_id is not None else None
+            if score is not None:
+                if score >= policy.eval_win_threshold:
+                    return "1-0"
+                elif score <= -policy.eval_win_threshold:
+                    return "0-1"
+                elif abs(score) <= policy.eval_draw_margin:
+                    return "1/2-1/2"
         elif src == "LAST_MOVE":
             res = _extract_last_move_winner(raw_str)
             if res:
@@ -516,6 +537,7 @@ def adjudicate_results_by_eval(
     eval_win_threshold: float = 2.0,
     eval_draw_margin: float = 0.55,
     policy: Optional[AdjudicationPolicy] = None,
+    sf_eval_results: Optional[Dict[int, float]] = None,
 ) -> Dict[str, int]:
     """
     Policy 1 & Cascade: Adjudicates game results based on centipawn evaluations and policy cascade.
@@ -560,7 +582,7 @@ def adjudicate_results_by_eval(
             raw_str = raw_str.decode("utf-8", errors="replace")
 
         d_row = {"ROWID": row_id, "RESULT": current_res}
-        new_res = _adjudicate_row_by_policy(raw_str, "", d_row, pol)
+        new_res = _adjudicate_row_by_policy(raw_str, "", d_row, pol, sf_eval_results=sf_eval_results)
         if new_res == "1-0":
             summary["repaired_wins"] += 1
         elif new_res == "0-1":

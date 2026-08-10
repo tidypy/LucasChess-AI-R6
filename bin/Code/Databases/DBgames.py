@@ -94,6 +94,12 @@ class DBgames:
         self.conexion = sqlite3.connect(self.path_file)
         self.conexion.row_factory = sqlite3.Row
         try:
+            self.conexion.execute("PRAGMA journal_mode = WAL;")
+            self.conexion.execute("PRAGMA synchronous = NORMAL;")
+            self.conexion.execute("PRAGMA busy_timeout = 5000;")
+        except Exception:
+            pass
+        try:
             apply_phase2_schema(self.conexion)
         except Exception:
             pass

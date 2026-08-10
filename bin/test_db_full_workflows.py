@@ -298,7 +298,7 @@ class TestUnifiedDatabaseWorkflows(unittest.TestCase):
             self.fail(f"Workflow 9 failed: {e}")
 
     def test_workflow_10_unified_clean_and_generate_pipeline(self):
-        """Simulates 14-stage 1-Click Clean & Generate Pipeline on Dirty_data-DB.pgn."""
+        """Simulates 14-stage 1-Click Clean & Generate Pipeline with live Stockfish pass on Dirty_data-DB.pgn."""
         try:
             self.record_step("Step 1: Test Stockfish Score POV Normalization (White-to-move vs Black-to-move)")
             from Code.Databases.result_repair import _batch_evaluate_fens_with_stockfish, _extract_accuracy_acpl_result
@@ -306,7 +306,7 @@ class TestUnifiedDatabaseWorkflows(unittest.TestCase):
             # FEN 1: White to move (w)
             fen_white = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1"
             # FEN 2: Black to move (b)
-            fen_black = "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 2"
+            fen_black = "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2"
             
             # Verify ACPL and Accuracy Draw Tie rules
             tie_acpl_pgn = '[ACPLWhite "25.0"]\n[ACPLBlack "25.0"]\n\n1. e4 e5'
@@ -317,11 +317,15 @@ class TestUnifiedDatabaseWorkflows(unittest.TestCase):
             self.assertEqual(res_acpl_tie, "1/2-1/2")
             self.assertEqual(res_acc_tie, "1/2-1/2")
 
+            # Run live Stockfish evaluation on FEN map to test White POV score conversion
+            sf_ev = _batch_evaluate_fens_with_stockfish({1: fen_white, 2: fen_black}, depth=6)
+            self.assertIsInstance(sf_ev, dict)
+
             self.record_step("Step 2: Instantiate Pipeline Coordinator")
             pipeline = CleanAndGeneratePipeline(self.db)
 
-            self.record_step("Step 3: Run 14-Stage Pipeline")
-            summary = pipeline.run()
+            self.record_step("Step 3: Run 14-Stage Pipeline with Live Stockfish Pass")
+            summary = pipeline.run(run_stockfish_pass=True, stockfish_depth=6)
 
             self.record_step("Step 4: Verify Summary Structure & Zero-Move Reporting")
             self.assertIn("games_scanned", summary)
@@ -329,8 +333,15 @@ class TestUnifiedDatabaseWorkflows(unittest.TestCase):
             self.assertIn("zero_move_deleted", summary)
             self.assertIn("glicko_generated", summary)
 
-            self.record_step("Step 5: Verify Idempotency (Second Execution)")
-            summary_2 = pipeline.run()
+            self.record_step("Step 5: Close and Reopen Database to Verify Persistence")
+            self.db.close()
+            self.db = DBgames(self.sandbox_db_path)
+            reccount_after = self.db.all_reccount()
+            self.assertGreater(reccount_after, 0)
+
+            self.record_step("Step 6: Verify Idempotency (Second Execution)")
+            pipeline_2 = CleanAndGeneratePipeline(self.db)
+            summary_2 = pipeline_2.run(run_stockfish_pass=False)
             self.assertEqual(summary_2["zero_move_deleted"], 0)
         except Exception as e:
             log_workflow_error(self.step_history, e)
