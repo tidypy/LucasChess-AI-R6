@@ -18,8 +18,8 @@ line_length = 120
 combine_as_imports = true
 
 [project]
-name = "Lucas Chess"
-version = "R6.0.0"
+name = "lucaschess"
+version = "0.0.1"
 description = "Chess GUI"
 requires-python = ">=3.12"
 readme = "README.md"
