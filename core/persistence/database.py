@@ -46,6 +46,8 @@ class GameRepository:
         try:
             conn.execute("PRAGMA journal_mode = WAL;")
             conn.execute("PRAGMA synchronous = NORMAL;")
+            conn.create_function("LOWER", 1, lambda s: str(s).lower() if s is not None else None)
+            conn.create_function("UPPER", 1, lambda s: str(s).upper() if s is not None else None)
         except Exception:
             pass
         return conn
@@ -151,27 +153,27 @@ class GameRepository:
         params = []
 
         if search:
-            search_pattern = f"%{search.strip()}%"
+            search_pattern = f"%{search.strip().lower()}%"
             where_clauses.append(
-                "(WHITE LIKE ? OR BLACK LIKE ? OR EVENT LIKE ? OR OPENING LIKE ?)"
+                "(LOWER(WHITE) LIKE ? OR LOWER(BLACK) LIKE ? OR LOWER(EVENT) LIKE ? OR LOWER(OPENING) LIKE ?)"
             )
             params.extend([search_pattern, search_pattern, search_pattern, search_pattern])
 
         if white:
-            where_clauses.append("WHITE LIKE ?")
-            params.append(f"%{white.strip()}%")
+            where_clauses.append("LOWER(WHITE) LIKE ?")
+            params.append(f"%{white.strip().lower()}%")
 
         if black:
-            where_clauses.append("BLACK LIKE ?")
-            params.append(f"%{black.strip()}%")
+            where_clauses.append("LOWER(BLACK) LIKE ?")
+            params.append(f"%{black.strip().lower()}%")
 
         if result:
             where_clauses.append("RESULT = ?")
             params.append(result.strip())
 
         if eco:
-            where_clauses.append("ECO LIKE ?")
-            params.append(f"{eco.strip()}%")
+            where_clauses.append("UPPER(ECO) LIKE ?")
+            params.append(f"{eco.strip().upper()}%")
 
         where_sql = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
 
@@ -221,8 +223,8 @@ class GameRepository:
         """
         params = []
         if search:
-            sql += " WHERE player LIKE ?"
-            params.append(f"%{search.strip()}%")
+            sql += " WHERE LOWER(player) LIKE ?"
+            params.append(f"%{search.strip().lower()}%")
 
         sql += " GROUP BY player ORDER BY games_count DESC, UPPER(player) ASC LIMIT ?"
         params.append(limit)

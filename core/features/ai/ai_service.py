@@ -120,8 +120,12 @@ def _mask_key(key: str) -> str:
     return f"{key[:4]}••••••••{key[-4:]}"
 
 class AIService:
-    def __init__(self):
-        os.makedirs(MEMORY_DIR, exist_ok=True)
+    def __init__(self, root_dir: Optional[str] = None):
+        self.root_dir = root_dir or ROOT_DIR
+        self.memory_dir = os.path.join(self.root_dir, "AI_Memory")
+        self.profile_path = os.path.join(self.memory_dir, "AI_Player_Profile.md")
+        self.config_path = os.path.join(self.root_dir, "ai_config.json")
+        os.makedirs(self.memory_dir, exist_ok=True)
         self._ensure_profile_exists()
 
     def _ensure_profile_exists(self):

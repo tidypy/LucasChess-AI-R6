@@ -150,7 +150,10 @@ class UCIEngineService:
         """Validates standard UCI handshake for a binary."""
         clean_path = os.path.expanduser(executable_path.strip().strip('"').strip("'"))
         if not os.path.exists(clean_path):
-            raise FileNotFoundError(f"Executable not found at path: {clean_path}")
+            return {
+                "success": False,
+                "error": f"Executable not found at path: {clean_path}",
+            }
 
         try:
             engine = chess.engine.SimpleEngine.popen_uci(clean_path, timeout=5)
