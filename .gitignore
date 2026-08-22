@@ -7,6 +7,7 @@ dist-ssr/
 # Tauri / Rust
 src-tauri/target/
 src-tauri/gen/
+rustup-init.exe
 
 # Python Virtualenv & Cache
 .venv/
@@ -14,12 +15,12 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.spec
 
 # User Data & Logs
 UserData/
 AI_Memory/Archives/
 *.log
-core/lucas_debug_trace.log
 
 # Security & Secrets (BYOK Keys)
 ai_config.json
@@ -31,5 +32,5 @@ ai_config.json
 # SQLite temporary WAL/SHM
 *.sqlite-wal
 *.sqlite-shm
-*.lcdb-wal
-*.lcdb-shm
+*.db-wal
+*.db-shm

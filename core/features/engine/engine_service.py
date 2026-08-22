@@ -71,7 +71,12 @@ class UCIEngineService:
         """Scans engine directories for native executables."""
         is_windows = platform.system() == "Windows"
         os_subpath = "win32" if is_windows else "linux"
-        engines_base = os.path.join(self.root_dir, "bin", "OS", os_subpath, "Engines")
+        candidates_bases = [
+            os.path.join(self.root_dir, "engines", os_subpath, "Engines"),
+            os.path.join(self.root_dir, "engines", "Engines"),
+            os.path.join(self.root_dir, "engines"),
+        ]
+        engines_base = next((b for b in candidates_bases if os.path.exists(b)), candidates_bases[0])
 
         # 1. Stockfish 18
         sf_dir = os.path.join(engines_base, "stockfish")
