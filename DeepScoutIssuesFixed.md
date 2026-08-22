@@ -126,3 +126,19 @@ Tested against the live SQLite tournament database (`patriciaTourny.lcdb`):
 
 - **TypeScript / Vite Build**: `tsc && vite build` passed with **0 errors**.
 - **Rust / Tauri Build**: `cargo check` passed with **0 errors**.
+
+---
+
+## 5. Karpathy Verification Loop (Issues #36 & #37)
+
+### Issue #36: Port 8000 Conflict & Backend Sidecar Disconnection
+- **Problem**: Running `Launch_App.bat` spawned a manual sidecar while Tauri's `src-tauri/src/lib.rs` also spawned an automated sidecar, triggering `[Errno 10048] address already in use` and disconnecting the frontend.
+- **Fix**: Added socket port-detection in `core/sidecar.py` to gracefully reuse existing active ports and streamlined `Launch_App.bat` to launch `npm run tauri dev` directly.
+
+### Issue #37: Unicode Case-Insensitivity & Engine Validation Graceful Recovery
+- **Problem**: SQLite standard `LOWER()` function failed on Cyrillic/Unicode names in player/game searches; `test_uci_engine` raised unhandled `FileNotFoundError` when invalid paths were supplied.
+- **Fix**:
+  1. Registered native Python Unicode `LOWER` and `UPPER` handlers on `sqlite3.Connection` in `core/persistence/database.py`.
+  2. Made `test_uci_engine` return `{"success": False, "error": ...}` instead of throwing an unhandled 500 error.
+  3. Added `get_game` alias on `GameRepository` to eliminate `AttributeError`.
+
