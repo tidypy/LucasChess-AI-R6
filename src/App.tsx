@@ -9,6 +9,7 @@ import { ConsolidatorView } from "./features/database/consolidator/ConsolidatorV
 import { DatabaseBrowserView } from "./features/database/browser/DatabaseBrowserView";
 import { DataFitnessView } from "./features/database/data_fitness/DataFitnessView";
 import { AIGrandmasterView } from "./features/ai_grandmaster/AIGrandmasterView";
+import { AskGrandmasterAction } from "./features/ai_grandmaster/AskGrandmasterAction";
 import { ThemeCustomizer } from "./components/theme/ThemeCustomizer";
 import { ClickLogConsole } from "./components/debug/ClickLogConsole";
 import { Tooltip } from "./components/common/Tooltip";
@@ -244,6 +245,16 @@ function MainApp() {
                         <span className="text-[10px] opacity-70 block font-medium">Avg ACPL</span>
                         <span className="text-sm font-black text-cyan-500 font-mono">14.2</span>
                       </div>
+                    </div>
+
+                    <div className="pt-2">
+                      <AskGrandmasterAction
+                        fen="r2q1rk1/ppp2ppp/2n1pn2/3p1b2/P2P4/2P2NP1/1P1NPPP1/R2QKB1R w KQ - 1 9"
+                        evalStr="+0.10 pawns"
+                        mainLine="a4a5 d8e7 d1a4 e6e5"
+                        contextNotes={`Game #${gameId} (Analysis Board)`}
+                        variant="banner"
+                      />
                     </div>
                   </div>
                 </div>

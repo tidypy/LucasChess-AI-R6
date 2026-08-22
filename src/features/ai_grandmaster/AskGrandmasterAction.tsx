@@ -1,0 +1,212 @@
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { fetchAIConfig, fetchAIPersonas, generateAICommentary } from "../../lib/api";
+import { useClickLogger } from "../../lib/clickLogger";
+import { Send, RefreshCw, Sparkles, X, Copy, Check, MessageSquare } from "lucide-react";
+import { Tooltip } from "../../components/common/Tooltip";
+
+export interface AskGrandmasterActionProps {
+  fen: string;
+  evalStr?: string;
+  mainLine?: string;
+  contextNotes?: string;
+  variant?: "button" | "compact" | "banner";
+  className?: string;
+}
+
+export function AskGrandmasterAction({
+  fen,
+  evalStr = "Even position (+0.00)",
+  mainLine = "",
+  contextNotes = "",
+  variant = "button",
+  className = "",
+}: AskGrandmasterActionProps) {
+  const { logAction } = useClickLogger();
+  const [isOpen, setIsOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [commentary, setCommentary] = useState<string | null>(null);
+
+  const { data: config } = useQuery({
+    queryKey: ["ai_config"],
+    queryFn: fetchAIConfig,
+  });
+
+  const { data: personas } = useQuery({
+    queryKey: ["ai_personas"],
+    queryFn: fetchAIPersonas,
+  });
+
+  const activePersona =
+    personas?.find((p) => p.id === (config?.active_persona || "tal")) ||
+    personas?.[0] || {
+      id: "tal",
+      name: "Mikhail Tal",
+      title: "The Magician from Riga",
+      avatar: "🔥",
+    };
+
+  const commentaryMutation = useMutation({
+    mutationFn: generateAICommentary,
+    onSuccess: (data) => {
+      setCommentary(data.commentary);
+      setIsOpen(true);
+      logAction("API", `Ask ${activePersona.name} Generated Insight`, `FEN: ${fen.slice(0, 25)}...`);
+    },
+  });
+
+  const handleAsk = () => {
+    logAction("CLICK", `Triggered 'Ask ${activePersona.name}' action`);
+    commentaryMutation.mutate({
+      fen,
+      eval_str: evalStr,
+      main_line: mainLine,
+      persona_id: activePersona.id,
+      context_notes: contextNotes,
+    });
+  };
+
+  const handleCopy = async () => {
+    if (commentary) {
+      await navigator.clipboard.writeText(`[${activePersona.name}]: ${commentary}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      logAction("CLICK", "Copied GM commentary to clipboard");
+    }
+  };
+
+  return (
+    <>
+      {variant === "compact" ? (
+        <Tooltip content={`Ask ${activePersona.name}`} description="Get natural language GM insight on current position">
+          <button
+            onClick={handleAsk}
+            disabled={commentaryMutation.isPending}
+            className={`px-3 py-1.5 bg-fuchsia-600/90 hover:bg-fuchsia-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer ${className}`}
+          >
+            {commentaryMutation.isPending ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="w-3.5 h-3.5 text-fuchsia-200" />
+            )}
+            <span>{activePersona.name.split(" ")[0]}</span>
+          </button>
+        </Tooltip>
+      ) : variant === "banner" ? (
+        <div className={`p-3 rounded-2xl bg-fuchsia-950/20 border border-fuchsia-500/30 flex items-center justify-between gap-3 ${className}`}>
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl">{activePersona.avatar}</span>
+            <div>
+              <span className="text-xs font-bold text-white block">Ask {activePersona.name}</span>
+              <span className="text-[10px] text-fuchsia-300/70 font-mono">Stockfish-to-GM natural language commentary</span>
+            </div>
+          </div>
+          <button
+            onClick={handleAsk}
+            disabled={commentaryMutation.isPending}
+            className="px-4 py-1.5 bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+          >
+            {commentaryMutation.isPending ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                Thinking...
+              </>
+            ) : (
+              <>
+                <Send className="w-3.5 h-3.5" />
+                Ask Coach
+              </>
+            )}
+          </button>
+        </div>
+      ) : (
+        /* Standard Universal Button */
+        <button
+          onClick={handleAsk}
+          disabled={commentaryMutation.isPending}
+          className={`px-6 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold text-xs rounded-2xl shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer select-none ${className}`}
+        >
+          {commentaryMutation.isPending ? (
+            <>
+              <RefreshCw className="w-4 h-4 animate-spin" />
+              <span>{activePersona.name} is thinking...</span>
+            </>
+          ) : (
+            <>
+              <Send className="w-4 h-4" />
+              <span>Ask {activePersona.name}</span>
+            </>
+          )}
+        </button>
+      )}
+
+      {/* Floating Modal / Popout for GM Commentary */}
+      {isOpen && commentary && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150 select-none">
+          <div className="bg-slate-900 border border-fuchsia-500/40 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden text-slate-100 flex flex-col">
+            {/* Header */}
+            <div className="px-5 py-3.5 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl">{activePersona.avatar}</span>
+                <div>
+                  <h3 className="font-bold text-sm text-white flex items-center gap-2">
+                    {activePersona.name}
+                    <span className="text-[10px] font-mono px-2 py-0.2 rounded bg-fuchsia-500/20 text-fuchsia-300 font-normal">
+                      {activePersona.title}
+                    </span>
+                  </h3>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <Tooltip content="Copy GM Commentary">
+                  <button
+                    onClick={handleCopy}
+                    className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                  >
+                    {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </Tooltip>
+
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Position Context Tag */}
+            <div className="px-5 py-2 bg-black/30 border-b border-white/5 flex items-center justify-between text-[10px] font-mono text-slate-400">
+              <span>Eval: <strong className="text-emerald-400">{evalStr}</strong></span>
+              {mainLine && <span className="truncate max-w-[240px]">Line: {mainLine}</span>}
+            </div>
+
+            {/* Commentary Body */}
+            <div className="p-6 overflow-y-auto max-h-80 font-sans text-xs text-slate-200 leading-relaxed space-y-3">
+              <div className="p-4 rounded-2xl bg-black/40 border border-white/5 italic">
+                "{commentary}"
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 py-3 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between">
+              <span className="text-[11px] text-slate-500 font-mono flex items-center gap-1">
+                <MessageSquare className="w-3 h-3 text-fuchsia-400" />
+                BYOK Grandmaster Engine
+              </span>
+
+              <button
+                onClick={() => setIsOpen(false)}
+                className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl transition-all"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

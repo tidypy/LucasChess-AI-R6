@@ -83,6 +83,42 @@ PRESET_PERSONAS = [
     }
 ]
 
+def _obfuscate_key(key: str) -> str:
+    """Lightweight local obfuscation to prevent casual plaintext inspection on shared/work drives."""
+    if not key:
+        return ""
+    import base64
+    # Simple reversible XOR cipher with host-specific signature
+    salt = os.environ.get("USERNAME", "LucasChessUser") + "_DSC_SALT_2026"
+    encoded_chars = []
+    for i, c in enumerate(key):
+        key_c = salt[i % len(salt)]
+        encoded_chars.append(chr(ord(c) ^ ord(key_c)))
+    return "ENC:" + base64.b64encode("".join(encoded_chars).encode("latin1")).decode("ascii")
+
+def _deobfuscate_key(stored: str) -> str:
+    if not stored:
+        return ""
+    if not stored.startswith("ENC:"):
+        return stored  # Legacy plain text backward compatibility
+    import base64
+    salt = os.environ.get("USERNAME", "LucasChessUser") + "_DSC_SALT_2026"
+    try:
+        raw_b64 = stored[4:]
+        decoded_str = base64.b64decode(raw_b64.encode("ascii")).decode("latin1")
+        plain_chars = []
+        for i, c in enumerate(decoded_str):
+            key_c = salt[i % len(salt)]
+            plain_chars.append(chr(ord(c) ^ ord(key_c)))
+        return "".join(plain_chars)
+    except Exception:
+        return ""
+
+def _mask_key(key: str) -> str:
+    if not key or len(key) < 8:
+        return "••••••••" if key else ""
+    return f"{key[:4]}••••••••{key[-4:]}"
+
 class AIService:
     def __init__(self):
         os.makedirs(MEMORY_DIR, exist_ok=True)
@@ -103,7 +139,7 @@ class AIService:
             with open(PROFILE_PATH, "w", encoding="utf-8") as f:
                 f.write(default_content)
 
-    def get_config(self) -> Dict[str, Any]:
+    def _get_raw_config(self) -> Dict[str, Any]:
         if os.path.exists(CONFIG_PATH):
             try:
                 with open(CONFIG_PATH, "r", encoding="utf-8") as f:
@@ -121,10 +157,52 @@ class AIService:
             "temperature": 0.7,
         }
 
+    def get_config(self) -> Dict[str, Any]:
+        raw = self._get_raw_config()
+        stored_key = _deobfuscate_key(raw.get("byok_key", ""))
+        # Return sanitized config with masked key for frontend display
+        return {
+            "backend_type": raw.get("backend_type", "lm_studio"),
+            "lm_url": raw.get("lm_url", "http://localhost:1234/v1"),
+            "byok_url": raw.get("byok_url", "https://api.openai.com/v1"),
+            "byok_key": _mask_key(stored_key),
+            "has_byok_key": bool(stored_key),
+            "model_name": raw.get("model_name", "gpt-4o-mini"),
+            "verbosity": raw.get("verbosity", "concise"),
+            "active_persona": raw.get("active_persona", "tal"),
+            "temperature": raw.get("temperature", 0.7),
+        }
+
     def save_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        existing_raw = self._get_raw_config()
+        existing_key = _deobfuscate_key(existing_raw.get("byok_key", ""))
+
+        incoming_key = config.get("byok_key", "")
+        # If user did not change the masked key (or left it masked/placeholder), retain existing
+        if "••••" in incoming_key or incoming_key == "" and config.get("has_byok_key"):
+            final_key = existing_key
+        elif incoming_key:
+            final_key = incoming_key.strip()
+        else:
+            final_key = ""
+
+        to_store = {
+            "backend_type": config.get("backend_type", "lm_studio"),
+            "lm_url": config.get("lm_url", "http://localhost:1234/v1"),
+            "byok_url": config.get("byok_url", "https://api.openai.com/v1"),
+            "byok_key": _obfuscate_key(final_key),
+            "model_name": config.get("model_name", "gpt-4o-mini"),
+            "verbosity": config.get("verbosity", "concise"),
+            "active_persona": config.get("active_persona", "tal"),
+            "temperature": config.get("temperature", 0.7),
+        }
         with open(CONFIG_PATH, "w", encoding="utf-8") as f:
-            json.dump(config, f, indent=2)
-        return config
+            json.dump(to_store, f, indent=2)
+        return self.get_config()
+
+    def get_raw_key(self) -> str:
+        raw = self._get_raw_config()
+        return _deobfuscate_key(raw.get("byok_key", ""))
 
     def get_personas(self) -> List[Dict[str, Any]]:
         return PRESET_PERSONAS
@@ -149,8 +227,9 @@ class AIService:
             "Content-Type": "application/json",
             "User-Agent": "DeepScout-Chess/1.0",
         }
-        if api_key and api_key.strip():
-            headers["Authorization"] = f"Bearer {api_key.strip()}"
+        effective_key = api_key if (api_key and "••••" not in api_key) else self.get_raw_key()
+        if effective_key and effective_key.strip():
+            headers["Authorization"] = f"Bearer {effective_key.strip()}"
         elif backend_type == "lm_studio":
             headers["Authorization"] = "Bearer lm-studio"
 
@@ -192,7 +271,7 @@ class AIService:
         config = self.get_config()
         backend_type = config.get("backend_type", "lm_studio")
         base_url = config.get("byok_url") if backend_type == "byok" else config.get("lm_url", "http://localhost:1234/v1")
-        api_key = config.get("byok_key", "") if backend_type == "byok" else "lm-studio"
+        api_key = self.get_raw_key() if backend_type == "byok" else "lm-studio"
         model_name = config.get("model_name") or ("gpt-4o-mini" if backend_type == "byok" else "local-model")
         verbosity = config.get("verbosity", "concise")
 

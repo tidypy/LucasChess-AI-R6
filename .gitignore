@@ -1,2 +1,35 @@
-UserData/
+# Node / Vite
+node_modules/
+dist/
+dist-ssr/
+*.local
 
+# Tauri / Rust
+src-tauri/target/
+src-tauri/gen/
+
+# Python Virtualenv & Cache
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# User Data & Logs
+UserData/
+AI_Memory/Archives/
+*.log
+core/lucas_debug_trace.log
+
+# Security & Secrets (BYOK Keys)
+ai_config.json
+*.env
+*.env.*
+*.key
+*.pem
+
+# SQLite temporary WAL/SHM
+*.sqlite-wal
+*.sqlite-shm
+*.lcdb-wal
+*.lcdb-shm
