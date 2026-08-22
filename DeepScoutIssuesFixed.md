@@ -142,3 +142,11 @@ Tested against the live SQLite tournament database (`patriciaTourny.lcdb`):
   2. Made `test_uci_engine` return `{"success": False, "error": ...}` instead of throwing an unhandled 500 error.
   3. Added `get_game` alias on `GameRepository` to eliminate `AttributeError`.
 
+### Issue #38: Polyglot Opening Book Service & UCI Engine Book Obedience
+- **Problem**: UCI engines previously recalculated positions from scratch even during standard opening phases and had no mechanism to import or probe Polyglot `.bin` opening books.
+- **Fix**:
+  1. Implemented [`OpeningBookService`](file:///c:/Users/Dev/Documents/APPS/lucaschessR6-main%20-%20TAURI/core/features/openings/opening_book_service.py) with discovery, user import, weighted branch choice, and persistence.
+  2. Updated [`UCIEngineService.play_move`](file:///c:/Users/Dev/Documents/APPS/lucaschessR6-main%20-%20TAURI/core/features/engine/engine_service.py) to probe the active Polyglot opening book first, playing opening book moves with metadata (`is_book_move: true`, `book_name`, `book_weight`, `candidates`) and falling back to Stockfish 18 / UCI engine only when out-of-book.
+  3. Added REST endpoints: `GET /api/v1/openings/books/list`, `GET /api/v1/openings/books/active`, `POST /api/v1/openings/books/active`, `POST /api/v1/openings/books/import`, and `GET /api/v1/openings/books/probe`.
+
+
