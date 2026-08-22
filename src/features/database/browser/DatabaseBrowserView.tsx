@@ -7,7 +7,11 @@ import {
   fetchDatabases,
   fetchGamesList,
   fetchGame,
-  deleteDatabase,
+  fetchStorageTelemetry,
+  fetchTrash,
+  trashDatabase,
+  restoreDatabase,
+  purgeTrash,
   exportFilteredDatabase,
   GameSummary,
 } from "../../../lib/api";
@@ -39,6 +43,8 @@ import {
   Trash2,
   Download,
   RefreshCw,
+  HardDrive,
+  RotateCcw,
 } from "lucide-react";
 
 interface DatabaseBrowserViewProps {
@@ -74,19 +80,58 @@ export function DatabaseBrowserView({
   const [searchGameText, setSearchGameText] = useState("");
   const [isPreviewOpen, setIsPreviewOpen] = useState(true);
 
-  // Delete and Export Modals State
-  const [dbToDelete, setDbToDelete] = useState<string | null>(null);
+  // Modals State
+  const [isPurgeModalOpen, setIsPurgeModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportTargetName, setExportTargetName] = useState("");
   const [exportStatus, setExportStatus] = useState<string | null>(null);
 
-  const deleteMutation = useMutation({
-    mutationFn: deleteDatabase,
+  // Queries
+  const { data: databases } = useQuery({
+    queryKey: ["databases"],
+    queryFn: fetchDatabases,
+  });
+
+  const { data: storageTelemetry } = useQuery({
+    queryKey: ["storageTelemetry"],
+    queryFn: fetchStorageTelemetry,
+  });
+
+  const { data: trashDbs } = useQuery({
+    queryKey: ["trashDbs"],
+    queryFn: fetchTrash,
+  });
+
+  // Mutations
+  const trashMutation = useMutation({
+    mutationFn: trashDatabase,
     onSuccess: (data) => {
-      logAction("API", `Successfully deleted database: ${data.deleted}`);
-      setDbToDelete(null);
-      setSelectedDb(null);
+      logAction("API", `Moved database to trash: ${data.trashed}`);
+      if (selectedDb === data.trashed) setSelectedDb(null);
       queryClient.invalidateQueries({ queryKey: ["databases"] });
+      queryClient.invalidateQueries({ queryKey: ["storageTelemetry"] });
+      queryClient.invalidateQueries({ queryKey: ["trashDbs"] });
+    },
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: restoreDatabase,
+    onSuccess: (data) => {
+      logAction("API", `Restored database from trash: ${data.restored}`);
+      queryClient.invalidateQueries({ queryKey: ["databases"] });
+      queryClient.invalidateQueries({ queryKey: ["storageTelemetry"] });
+      queryClient.invalidateQueries({ queryKey: ["trashDbs"] });
+    },
+  });
+
+  const purgeMutation = useMutation({
+    mutationFn: purgeTrash,
+    onSuccess: (data) => {
+      logAction("API", `Purged trash: freed ${data.freed_mb} MB across ${data.purged_count} databases`);
+      setIsPurgeModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["databases"] });
+      queryClient.invalidateQueries({ queryKey: ["storageTelemetry"] });
+      queryClient.invalidateQueries({ queryKey: ["trashDbs"] });
     },
   });
 
@@ -96,6 +141,7 @@ export function DatabaseBrowserView({
       logAction("API", `Exported sub-database: ${data.target_db}`, `${data.exported_games} games`);
       setExportStatus(`Exported ${data.exported_games} games into ${data.target_db}`);
       queryClient.invalidateQueries({ queryKey: ["databases"] });
+      queryClient.invalidateQueries({ queryKey: ["storageTelemetry"] });
       setTimeout(() => {
         setIsExportModalOpen(false);
         setExportStatus(null);
@@ -113,12 +159,6 @@ export function DatabaseBrowserView({
       e.target.value = "";
     }
   };
-
-  // Queries
-  const { data: databases } = useQuery({
-    queryKey: ["databases"],
-    queryFn: fetchDatabases,
-  });
 
   // Automatically select first database when loaded if none selected
   const activeDbName = selectedDb || (databases && databases.length > 0 ? databases[0].name : null);
@@ -269,6 +309,35 @@ export function DatabaseBrowserView({
             </button>
           </Tooltip>
 
+          {/* Vault Storage Footprint Badge */}
+          {storageTelemetry && (
+            <div className="hidden xl:flex items-center gap-2 px-2.5 py-1 bg-[#14171c] border border-slate-800 rounded text-[11px] font-mono text-slate-300">
+              <HardDrive className="w-3.5 h-3.5 text-emerald-400" />
+              <span>
+                Vault: <strong className="text-white">{storageTelemetry.total_size_mb >= 1024 ? `${storageTelemetry.total_size_gb} GB` : `${storageTelemetry.total_size_mb} MB`}</strong>
+              </span>
+              <span className="text-[10px] text-slate-500">
+                ({storageTelemetry.active_count} active{storageTelemetry.trash_count > 0 ? ` · ${storageTelemetry.trash_count} trash` : ""})
+              </span>
+            </div>
+          )}
+
+          {/* Purge Button (Active when trash contains databases) */}
+          {trashDbs && trashDbs.length > 0 && (
+            <Tooltip content="Purge Marked Databases" description={`Permanently delete and free up ${storageTelemetry?.trash_size_mb || 0} MB from disk`}>
+              <button
+                onClick={() => {
+                  logAction("CLICK", "Opened Purge Trash Modal");
+                  setIsPurgeModalOpen(true);
+                }}
+                className="px-2.5 py-1 bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white text-xs font-bold rounded shadow-md transition-all flex items-center gap-1.5 cursor-pointer animate-pulse"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Purge ({storageTelemetry?.trash_size_mb || 0} MB)
+              </button>
+            </Tooltip>
+          )}
+
           {/* Hidden File Input for Native OS Browser Dialog */}
           <input
             type="file"
@@ -371,6 +440,25 @@ export function DatabaseBrowserView({
               <History className="w-3.5 h-3.5 opacity-80" />
               Recent Files
             </div>
+            <div
+              onClick={() => {
+                setSelectedFolder("Trash");
+                logAction("NAV", "Selected folder: Trash / Pending Purge");
+              }}
+              className={`flex items-center gap-2 px-4 py-1.5 text-xs cursor-pointer transition-all ${
+                selectedFolder === "Trash"
+                  ? "bg-rose-500/15 text-rose-400 font-semibold border-r-2 border-rose-500"
+                  : "text-[#8b949e] hover:bg-[#181d24] hover:text-[#e2e8f0]"
+              }`}
+            >
+              <Trash2 className="w-3.5 h-3.5 opacity-80 text-rose-400" />
+              Trash
+              {trashDbs && trashDbs.length > 0 && (
+                <span className="ml-auto text-[10px] bg-rose-500/20 text-rose-400 font-bold px-1.5 py-0.5 rounded-full border border-rose-500/30">
+                  {trashDbs.length}
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="pt-3 pb-2">
@@ -423,13 +511,13 @@ export function DatabaseBrowserView({
               }`}
             >
               <Folder className="w-3.5 h-3.5 opacity-80" />
-              Tactics & Studies
+              Tactics &amp; Studies
             </div>
           </div>
 
           <div className="pt-3 pb-2">
             <div className="text-[10px] font-bold text-[#64748b] uppercase tracking-wider px-4 pb-2">
-              Cloud & Sync
+              Cloud &amp; Sync
             </div>
             <div
               onClick={() => {
@@ -449,175 +537,244 @@ export function DatabaseBrowserView({
 
         {/* 3. Main Center Content */}
         <main className="flex-1 flex flex-col min-w-0 bg-[#080a0c] overflow-hidden">
-          {/* Database Grid Container */}
-          <div className="flex-1 overflow-y-auto p-6 flex flex-col">
-            <div className="flex justify-between items-end mb-4">
-              <div>
-                <h1 className="text-lg font-bold tracking-tight text-white m-0">
-                  {selectedFolder}
-                </h1>
-                <span className="text-xs text-[#64748b]">
-                  {filteredDbs.length} Standard SQLite databases available
-                </span>
+          {/* Trash Vault Dedicated View */}
+          {selectedFolder === "Trash" ? (
+            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-4">
+                <div>
+                  <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                    <Trash2 className="w-5 h-5 text-rose-400" />
+                    Trash &amp; Pending Purge
+                  </h1>
+                  <span className="text-xs text-slate-400 font-mono">
+                    Databases moved here are hidden from your shelf. You can restore them or purge to permanently reclaim disk space.
+                  </span>
+                </div>
+
+                {trashDbs && trashDbs.length > 0 && (
+                  <button
+                    onClick={() => setIsPurgeModalOpen(true)}
+                    className="px-4 py-2 bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Purge All ({storageTelemetry?.trash_size_mb || 0} MB)
+                  </button>
+                )}
               </div>
 
-              {/* View toggle (Grid / List) */}
-              <div className="flex gap-1 bg-[#111418] border border-[#262c36] p-0.5 rounded">
-                <button
-                  onClick={() => setViewMode("grid")}
-                  className={`p-1 rounded ${
-                    viewMode === "grid"
-                      ? "bg-[#080a0c] text-white shadow"
-                      : "text-[#64748b] hover:text-white"
-                  }`}
-                >
-                  <Grid className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => setViewMode("list")}
-                  className={`p-1 rounded ${
-                    viewMode === "list"
-                      ? "bg-[#080a0c] text-white shadow"
-                      : "text-[#64748b] hover:text-white"
-                  }`}
-                >
-                  <List className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Grid vs List of Database Cards */}
-            {viewMode === "grid" ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filteredDbs.map((db) => {
-                  const isSelected = activeDbName === db.name;
-                  const isTournament = db.name.toLowerCase().includes("tourny") || db.name.toLowerCase().includes("master");
-                  const isRepertoire = db.name.toLowerCase().includes("repertoire");
-
-                  return (
+              {!trashDbs || trashDbs.length === 0 ? (
+                <div className="p-12 text-center rounded-3xl bg-[#111418] border border-slate-800 text-slate-400 space-y-2">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
+                  <h3 className="text-sm font-bold text-white">Trash is Empty</h3>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                    When you delete a database from the shelf, it will be safely placed here before being permanently purged.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {trashDbs.map((item) => (
                     <div
-                      key={db.name}
-                      onClick={() => handleSelectDb(db.name)}
-                      className={`bg-[#15181e] border rounded-lg p-4 cursor-pointer transition-all duration-150 flex flex-col gap-3 relative overflow-hidden ${
-                        isSelected
-                          ? "border-[#3b82f6] bg-[#3b82f6]/5 shadow-[0_0_0_1px_#3b82f6]"
-                          : "border-[#262c36] hover:border-[#64748b] hover:-translate-y-0.5 hover:shadow-lg"
-                      }`}
+                      key={item.name}
+                      className="bg-[#15181e] border border-rose-500/20 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-lg"
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-3 min-w-0">
-                          <div
-                            className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm shadow-md flex-shrink-0 ${
-                              isTournament
-                                ? "bg-gradient-to-br from-blue-900 to-slate-900 text-blue-400 border border-blue-800"
-                                : isRepertoire
-                                ? "bg-gradient-to-br from-emerald-900 to-slate-900 text-emerald-400 border border-emerald-800"
-                                : "bg-gradient-to-br from-purple-900 to-slate-900 text-purple-400 border border-purple-800"
-                            }`}
-                          >
-                            ♞
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-sm text-[#e2e8f0] truncate">
-                              {db.name.replace(/\.(lcdb|sqlite|db)$/, "")}
-                            </div>
-                            <div className="text-[10px] font-bold text-[#64748b] uppercase tracking-wider">
-                              {isTournament ? "Tournament Master" : isRepertoire ? "Repertoire DB" : "Archive DB"}
-                            </div>
-                          </div>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="font-semibold text-sm text-white font-mono truncate">{item.name}</div>
+                          <span className="text-[11px] text-slate-400 font-mono">Size: {item.size_mb} MB</span>
                         </div>
+                        <span className="text-[10px] bg-rose-500/10 text-rose-400 font-bold px-2 py-0.5 rounded-full border border-rose-500/20">
+                          Trashed
+                        </span>
+                      </div>
 
+                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/5">
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDbToDelete(db.name);
-                            logAction("CLICK", `Prompted Delete Database: ${db.name}`);
-                          }}
-                          className="p-1 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded transition-colors"
-                          title="Delete Database"
+                          onClick={() => restoreMutation.mutate(item.name)}
+                          disabled={restoreMutation.isPending}
+                          className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-semibold rounded-lg border border-white/10 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <RotateCcw className="w-3.5 h-3.5 text-emerald-400" />
+                          Restore
                         </button>
                       </div>
-
-                      <div className="grid grid-cols-2 gap-2 mt-auto pt-3 border-t border-[#262c36] text-xs">
-                        <div>
-                          <span className="text-[10px] text-[#64748b] block">File Size</span>
-                          <span className="font-mono text-xs font-medium text-[#e2e8f0]">
-                            {db.size_mb} MB
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-[#64748b] block">Status</span>
-                          <span className="font-mono text-[11px] text-emerald-400 flex items-center gap-1 font-semibold">
-                            <CheckCircle2 className="w-3 h-3" /> Ready
-                          </span>
-                        </div>
-                      </div>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Standard Shelf Container */
+            <div className="flex-1 overflow-y-auto p-6 flex flex-col">
+              <div className="flex justify-between items-end mb-4">
+                <div>
+                  <h1 className="text-lg font-bold tracking-tight text-white m-0">
+                    {selectedFolder}
+                  </h1>
+                  <span className="text-xs text-[#64748b]">
+                    {filteredDbs.length} Standard SQLite databases available
+                  </span>
+                </div>
+
+                {/* View toggle (Grid / List) */}
+                <div className="flex gap-1 bg-[#111418] border border-[#262c36] p-0.5 rounded">
+                  <button
+                    onClick={() => setViewMode("grid")}
+                    className={`p-1 rounded ${
+                      viewMode === "grid"
+                        ? "bg-[#080a0c] text-white shadow"
+                        : "text-[#64748b] hover:text-white"
+                    }`}
+                  >
+                    <Grid className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode("list")}
+                    className={`p-1 rounded ${
+                      viewMode === "list"
+                        ? "bg-[#080a0c] text-white shadow"
+                        : "text-[#64748b] hover:text-white"
+                    }`}
+                  >
+                    <List className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
-            ) : (
-              /* List Table View */
-              <div className="bg-[#15181e] border border-[#262c36] rounded-xl overflow-hidden shadow-lg">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead className="bg-[#0d1014] text-[#8b949e] text-[10px] font-semibold uppercase tracking-wider border-b border-[#262c36]">
-                    <tr>
-                      <th className="py-2.5 px-4">Database Name</th>
-                      <th className="py-2.5 px-4">Type</th>
-                      <th className="py-2.5 px-4 text-right">Size</th>
-                      <th className="py-2.5 px-4 text-center">Status</th>
-                      <th className="py-2.5 px-3 text-center">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/[0.03]">
-                    {filteredDbs.map((db) => {
-                      const isSelected = activeDbName === db.name;
-                      return (
-                        <tr
-                          key={db.name}
-                          onClick={() => handleSelectDb(db.name)}
-                          className={`cursor-pointer transition-colors ${
-                            isSelected
-                              ? "bg-[#3b82f6]/15 text-white font-semibold"
-                              : "hover:bg-white/5 text-[#8b949e] hover:text-white"
-                          }`}
-                        >
-                          <td className="py-2 px-4 font-mono font-medium text-white flex items-center gap-2">
-                            <Database className="w-3.5 h-3.5 text-[#3b82f6]" />
-                            {db.name}
-                          </td>
-                          <td className="py-2 px-4 text-[11px] text-[#64748b]">
-                            Standard SQLite (.sqlite)
-                          </td>
-                          <td className="py-2 px-4 text-right font-mono text-[11px]">
-                            {db.size_mb} MB
-                          </td>
-                          <td className="py-2 px-4 text-center font-mono text-[11px] text-emerald-400 font-bold">
-                            Active
-                          </td>
-                          <td className="py-2 px-3 text-center">
+
+              {/* Grid vs List of Database Cards */}
+              {viewMode === "grid" ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {filteredDbs.map((db) => {
+                    const isSelected = activeDbName === db.name;
+                    const isTournament = db.name.toLowerCase().includes("tourny") || db.name.toLowerCase().includes("master");
+                    const isRepertoire = db.name.toLowerCase().includes("repertoire");
+
+                    return (
+                      <div
+                        key={db.name}
+                        onClick={() => handleSelectDb(db.name)}
+                        className={`bg-[#15181e] border rounded-lg p-4 cursor-pointer transition-all duration-150 flex flex-col gap-3 relative overflow-hidden ${
+                          isSelected
+                            ? "border-[#3b82f6] bg-[#3b82f6]/5 shadow-[0_0_0_1px_#3b82f6]"
+                            : "border-[#262c36] hover:border-[#64748b] hover:-translate-y-0.5 hover:shadow-lg"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-3 min-w-0">
+                            <div
+                              className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm shadow-md flex-shrink-0 ${
+                                isTournament
+                                  ? "bg-gradient-to-br from-blue-900 to-slate-900 text-blue-400 border border-blue-800"
+                                  : isRepertoire
+                                  ? "bg-gradient-to-br from-emerald-900 to-slate-900 text-emerald-400 border border-emerald-800"
+                                  : "bg-gradient-to-br from-purple-900 to-slate-900 text-purple-400 border border-purple-800"
+                              }`}
+                            >
+                              ♞
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-semibold text-sm text-[#e2e8f0] truncate">
+                                {db.name.replace(/\.(lcdb|sqlite|db)$/, "")}
+                              </div>
+                              <div className="text-[10px] font-bold text-[#64748b] uppercase tracking-wider">
+                                {isTournament ? "Tournament Master" : isRepertoire ? "Repertoire DB" : "Archive DB"}
+                              </div>
+                            </div>
+                          </div>
+
+                          <Tooltip content="Move to Trash" description="Soft-delete without immediate data loss">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setDbToDelete(db.name);
-                                logAction("CLICK", `Prompted Delete Database: ${db.name}`);
+                                trashMutation.mutate(db.name);
+                                logAction("CLICK", `Moved Database to Trash: ${db.name}`);
                               }}
                               className="p-1 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded transition-colors"
-                              title="Delete Database"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+                          </Tooltip>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 mt-auto pt-3 border-t border-[#262c36] text-xs">
+                          <div>
+                            <span className="text-[10px] text-[#64748b] block">File Size</span>
+                            <span className="font-mono text-xs font-medium text-[#e2e8f0]">
+                              {db.size_mb} MB
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-[#64748b] block">Status</span>
+                            <span className="font-mono text-[11px] text-emerald-400 flex items-center gap-1 font-semibold">
+                              <CheckCircle2 className="w-3 h-3" /> Ready
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                /* List Table View */
+                <div className="bg-[#15181e] border border-[#262c36] rounded-xl overflow-hidden shadow-lg">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead className="bg-[#0d1014] text-[#8b949e] text-[10px] font-semibold uppercase tracking-wider border-b border-[#262c36]">
+                      <tr>
+                        <th className="py-2.5 px-4">Database Name</th>
+                        <th className="py-2.5 px-4">Type</th>
+                        <th className="py-2.5 px-4 text-right">Size</th>
+                        <th className="py-2.5 px-4 text-center">Status</th>
+                        <th className="py-2.5 px-3 text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.03]">
+                      {filteredDbs.map((db) => {
+                        const isSelected = activeDbName === db.name;
+                        return (
+                          <tr
+                            key={db.name}
+                            onClick={() => handleSelectDb(db.name)}
+                            className={`cursor-pointer transition-colors ${
+                              isSelected
+                                ? "bg-[#3b82f6]/15 text-white font-semibold"
+                                : "hover:bg-white/5 text-[#8b949e] hover:text-white"
+                            }`}
+                          >
+                            <td className="py-2 px-4 font-mono font-medium text-white flex items-center gap-2">
+                              <Database className="w-3.5 h-3.5 text-[#3b82f6]" />
+                              {db.name}
+                            </td>
+                            <td className="py-2 px-4 text-[11px] text-[#64748b]">
+                              Standard SQLite (.sqlite)
+                            </td>
+                            <td className="py-2 px-4 text-right font-mono text-[11px]">
+                              {db.size_mb} MB
+                            </td>
+                            <td className="py-2 px-4 text-center font-mono text-[11px] text-emerald-400 font-bold">
+                              Active
+                            </td>
+                            <td className="py-2 px-3 text-center">
+                              <Tooltip content="Move to Trash">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    trashMutation.mutate(db.name);
+                                    logAction("CLICK", `Moved Database to Trash: ${db.name}`);
+                                  }}
+                                  className="p-1 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded transition-colors"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </Tooltip>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* 4. Preview Split Pane (Bottom) */}
           {isPreviewOpen && activeDbName && (
@@ -804,39 +961,91 @@ export function DatabaseBrowserView({
         <div className="opacity-80 font-mono">SQLite WAL · DuckDB Vector Ready</div>
       </footer>
 
-      {/* 6. Delete Database Confirmation Modal */}
-      {dbToDelete && (
+      {/* 6. Purge Databases Disk Reclaim Modal */}
+      {isPurgeModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-slate-900 border border-rose-500/40 rounded-3xl p-6 shadow-2xl max-w-md w-full text-slate-100 space-y-4">
-            <div className="flex items-center gap-3 text-rose-400">
-              <div className="p-2.5 rounded-2xl bg-rose-500/20 border border-rose-500/30">
-                <Trash2 className="w-5 h-5" />
+          <div className="bg-slate-900 border border-rose-500/40 rounded-3xl p-6 shadow-2xl max-w-lg w-full text-slate-100 space-y-4">
+            <div className="flex items-center justify-between border-b border-white/5 pb-3">
+              <div className="flex items-center gap-3 text-rose-400">
+                <div className="p-2.5 rounded-2xl bg-rose-500/20 border border-rose-500/30">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-white">Purge Trashed Databases</h3>
+                  <span className="text-[11px] text-slate-400 font-mono">
+                    Permanently delete and reclaim storage space
+                  </span>
+                </div>
               </div>
-              <div>
-                <h3 className="font-bold text-sm text-white">Delete Database</h3>
-                <span className="text-[11px] text-slate-400 font-mono">Permanent database removal</span>
+              <button
+                onClick={() => setIsPurgeModalOpen(false)}
+                className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-xs space-y-1">
+                <div className="font-bold text-rose-300 flex items-center gap-1.5">
+                  <HardDrive className="w-4 h-4" />
+                  Disk Space to be Reclaimed: <span className="text-white font-mono text-sm">{storageTelemetry?.trash_size_mb || 0} MB</span>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Purging will permanently delete {trashDbs?.length || 0} database(s) from your disk.
+                </p>
+              </div>
+
+              {/* List of Trashed Databases */}
+              <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
+                {trashDbs?.map((db) => (
+                  <div
+                    key={db.name}
+                    className="p-2.5 bg-black/40 border border-white/5 rounded-xl flex items-center justify-between text-xs"
+                  >
+                    <div>
+                      <div className="font-mono text-white font-semibold truncate max-w-[240px]">{db.name}</div>
+                      <div className="text-[10px] text-slate-500 font-mono">{db.size_mb} MB</div>
+                    </div>
+                    <button
+                      onClick={() => restoreMutation.mutate(db.name)}
+                      disabled={restoreMutation.isPending}
+                      className="px-2.5 py-1 text-[11px] font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                    >
+                      <RotateCcw className="w-3 h-3 text-emerald-400" />
+                      Restore
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <p className="text-xs text-slate-300 leading-relaxed font-sans">
-              Are you sure you want to delete <strong className="text-white font-mono">{dbToDelete}</strong>? This will detach the database and remove its local SQLite file.
-            </p>
-
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex items-center justify-between gap-2 pt-3 border-t border-white/5">
               <button
-                onClick={() => setDbToDelete(null)}
+                onClick={() => setIsPurgeModalOpen(false)}
                 className="px-4 py-1.5 text-xs text-slate-300 hover:text-white bg-slate-800 rounded-xl hover:bg-slate-700 transition-colors"
               >
                 Cancel
               </button>
-              <button
-                onClick={() => deleteMutation.mutate(dbToDelete)}
-                disabled={deleteMutation.isPending}
-                className="px-4 py-1.5 text-xs font-bold text-white bg-rose-600 rounded-xl hover:bg-rose-500 transition-all flex items-center gap-1.5 disabled:opacity-50"
-              >
-                {deleteMutation.isPending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                Delete Database
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => purgeMutation.mutate(undefined)}
+                  disabled={purgeMutation.isPending || !trashDbs || trashDbs.length === 0}
+                  className="px-5 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 rounded-xl shadow-lg transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                >
+                  {purgeMutation.isPending ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      Purging Files...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Purge All ({storageTelemetry?.trash_size_mb || 0} MB)
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>

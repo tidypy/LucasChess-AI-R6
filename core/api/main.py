@@ -72,12 +72,60 @@ async def list_databases():
         raise HTTPException(status_code=500, detail="GameService not initialized.")
     return game_service.list_available_databases()
 
+@app.get("/api/v1/databases/storage")
+async def get_storage_telemetry():
+    if not game_service:
+        raise HTTPException(status_code=500, detail="GameService not initialized.")
+    return game_service.get_storage_telemetry()
+
+@app.post("/api/v1/databases/trash/{db_name}")
+async def trash_database(db_name: str):
+    if not game_service:
+        raise HTTPException(status_code=500, detail="GameService not initialized.")
+    try:
+        return game_service.trash_database(db_name)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Database '{db_name}' not found.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/databases/trash")
+async def list_trash():
+    if not game_service:
+        raise HTTPException(status_code=500, detail="GameService not initialized.")
+    return game_service.list_trash()
+
+@app.post("/api/v1/databases/restore/{db_name}")
+async def restore_database(db_name: str):
+    if not game_service:
+        raise HTTPException(status_code=500, detail="GameService not initialized.")
+    try:
+        return game_service.restore_database(db_name)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Database '{db_name}' not found in trash.")
+    except FileExistsError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class PurgeTrashRequest(BaseModel):
+    db_names: Optional[List[str]] = None
+
+@app.post("/api/v1/databases/purge")
+async def purge_trash(req: PurgeTrashRequest = PurgeTrashRequest()):
+    if not game_service:
+        raise HTTPException(status_code=500, detail="GameService not initialized.")
+    try:
+        return game_service.purge_trash(req.db_names)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.delete("/api/v1/databases/{db_name}")
 async def delete_database(db_name: str):
     if not game_service:
         raise HTTPException(status_code=500, detail="GameService not initialized.")
     try:
-        return game_service.delete_database(db_name)
+        return game_service.trash_database(db_name)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail=f"Database '{db_name}' not found.")
     except Exception as e:

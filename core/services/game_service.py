@@ -113,7 +113,47 @@ class GameService:
         repo = self._get_or_create_repo(db_name) if db_name else self.repo
         return repo.import_pgn(pgn_content)
 
-    def delete_database(self, db_name: str) -> Dict[str, Any]:
+    @property
+    def trash_dir(self) -> str:
+        t_dir = os.path.join(self.root_dir, "UserData", "Trash")
+        os.makedirs(t_dir, exist_ok=True)
+        return t_dir
+
+    def list_trash(self) -> List[Dict[str, Any]]:
+        results = []
+        db_exts = (".lcdb", ".sqlite", ".db")
+        if os.path.exists(self.trash_dir):
+            for f in os.listdir(self.trash_dir):
+                if f.endswith(db_exts) and not f.startswith("."):
+                    path = os.path.join(self.trash_dir, f)
+                    if os.path.isfile(path):
+                        results.append({
+                            "name": f,
+                            "path": path,
+                            "size_mb": round(os.path.getsize(path) / (1024 * 1024), 2),
+                        })
+        return results
+
+    def get_storage_telemetry(self) -> Dict[str, Any]:
+        active_dbs = self.list_available_databases()
+        trash_dbs = self.list_trash()
+
+        active_mb = sum(d["size_mb"] for d in active_dbs)
+        trash_mb = sum(d["size_mb"] for d in trash_dbs)
+        total_mb = active_mb + trash_mb
+
+        return {
+            "total_size_mb": round(total_mb, 2),
+            "total_size_gb": round(total_mb / 1024, 2),
+            "active_size_mb": round(active_mb, 2),
+            "active_size_gb": round(active_mb / 1024, 2),
+            "trash_size_mb": round(trash_mb, 2),
+            "active_count": len(active_dbs),
+            "trash_count": len(trash_dbs),
+        }
+
+    def trash_database(self, db_name: str) -> Dict[str, Any]:
+        """Soft-deletes a database by moving it into UserData/Trash/ without popup disruption."""
         target_path = None
         candidates = [
             os.path.join(self.root_dir, db_name),
@@ -131,7 +171,7 @@ class GameService:
         if db_name in self._repositories:
             del self._repositories[db_name]
 
-        # Reset active database if deleting currently active
+        # Reset active database if trashing currently active
         if self.active_db_path == target_path:
             avail = [c for c in self.list_available_databases() if c["name"] != db_name]
             if avail:
@@ -139,18 +179,88 @@ class GameService:
             else:
                 self.active_db_path = ""
 
-        # Remove file and auxiliary WAL/SHM
-        try:
-            os.remove(target_path)
-            for aux in [target_path + "-wal", target_path + "-shm"]:
-                if os.path.exists(aux):
-                    try:
-                        os.remove(aux)
-                    except Exception:
-                        pass
-            return {"success": True, "deleted": db_name}
-        except Exception as e:
-            raise RuntimeError(f"Could not delete database file: {e}")
+        # Move to trash directory
+        dest_path = os.path.join(self.trash_dir, db_name)
+        if os.path.exists(dest_path):
+            os.remove(dest_path)
+
+        import shutil
+        shutil.move(target_path, dest_path)
+
+        # Move any auxiliary WAL/SHM
+        for aux_ext in ["-wal", "-shm"]:
+            aux_src = target_path + aux_ext
+            aux_dst = dest_path + aux_ext
+            if os.path.exists(aux_src):
+                try:
+                    if os.path.exists(aux_dst):
+                        os.remove(aux_dst)
+                    shutil.move(aux_src, aux_dst)
+                except Exception:
+                    pass
+
+        size_mb = round(os.path.getsize(dest_path) / (1024 * 1024), 2)
+        return {"success": True, "trashed": db_name, "size_mb": size_mb}
+
+    def restore_database(self, db_name: str) -> Dict[str, Any]:
+        """Restores a database from UserData/Trash/ back into the active database shelf."""
+        trash_path = os.path.join(self.trash_dir, db_name)
+        if not os.path.exists(trash_path):
+            raise FileNotFoundError(f"Database '{db_name}' not found in trash.")
+
+        dest_path = os.path.join(self.root_dir, db_name)
+        if os.path.exists(dest_path):
+            raise FileExistsError(f"Cannot restore '{db_name}' because a database with that name already exists in shelf.")
+
+        import shutil
+        shutil.move(trash_path, dest_path)
+
+        for aux_ext in ["-wal", "-shm"]:
+            aux_src = trash_path + aux_ext
+            aux_dst = dest_path + aux_ext
+            if os.path.exists(aux_src):
+                try:
+                    shutil.move(aux_src, aux_dst)
+                except Exception:
+                    pass
+
+        return {"success": True, "restored": db_name}
+
+    def purge_trash(self, db_names: Optional[List[str]] = None) -> Dict[str, Any]:
+        """Permanently hard-deletes databases marked for deletion in UserData/Trash/."""
+        trashed = self.list_trash()
+        to_purge = [d for d in trashed if (not db_names or d["name"] in db_names)]
+
+        freed_mb = 0.0
+        purged_names = []
+
+        for item in to_purge:
+            p = item["path"]
+            f_size = item["size_mb"]
+            try:
+                if os.path.exists(p):
+                    os.remove(p)
+                for aux in [p + "-wal", p + "-shm"]:
+                    if os.path.exists(aux):
+                        try:
+                            os.remove(aux)
+                        except Exception:
+                            pass
+                freed_mb += f_size
+                purged_names.append(item["name"])
+            except Exception as e:
+                print(f"Error purging {item['name']}: {e}")
+
+        return {
+            "success": True,
+            "purged_count": len(purged_names),
+            "purged_databases": purged_names,
+            "freed_mb": round(freed_mb, 2),
+        }
+
+    def delete_database(self, db_name: str) -> Dict[str, Any]:
+        """Legacy direct deletion; delegates to trash_database for safety."""
+        return self.trash_database(db_name)
 
     def export_filtered_database(
         self,

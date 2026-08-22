@@ -56,15 +56,68 @@ export const fetchDatabases = async (): Promise<DatabaseInfo[]> => {
   return res.json();
 };
 
-export const deleteDatabase = async (dbName: string): Promise<{ success: boolean; deleted: string }> => {
-  const res = await fetch(`${API_BASE}/databases/${encodeURIComponent(dbName)}`, {
-    method: "DELETE",
+export interface StorageTelemetry {
+  total_size_mb: number;
+  total_size_gb: number;
+  active_size_mb: number;
+  active_size_gb: number;
+  trash_size_mb: number;
+  active_count: number;
+  trash_count: number;
+}
+
+export const fetchStorageTelemetry = async (): Promise<StorageTelemetry> => {
+  const res = await fetch(`${API_BASE}/databases/storage`);
+  if (!res.ok) throw new Error("Failed to fetch storage telemetry");
+  return res.json();
+};
+
+export const fetchTrash = async (): Promise<Array<{ name: string; path: string; size_mb: number }>> => {
+  const res = await fetch(`${API_BASE}/databases/trash`);
+  if (!res.ok) throw new Error("Failed to fetch trash databases");
+  return res.json();
+};
+
+export const trashDatabase = async (dbName: string): Promise<{ success: boolean; trashed: string; size_mb: number }> => {
+  const res = await fetch(`${API_BASE}/databases/trash/${encodeURIComponent(dbName)}`, {
+    method: "POST",
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: "Failed to delete database" }));
-    throw new Error(err.detail || "Failed to delete database");
+    const err = await res.json().catch(() => ({ detail: "Failed to move database to trash" }));
+    throw new Error(err.detail || "Failed to move database to trash");
   }
   return res.json();
+};
+
+export const restoreDatabase = async (dbName: string): Promise<{ success: boolean; restored: string }> => {
+  const res = await fetch(`${API_BASE}/databases/restore/${encodeURIComponent(dbName)}`, {
+    method: "POST",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to restore database" }));
+    throw new Error(err.detail || "Failed to restore database");
+  }
+  return res.json();
+};
+
+export const purgeTrash = async (
+  dbNames?: string[]
+): Promise<{ success: boolean; purged_count: number; purged_databases: string[]; freed_mb: number }> => {
+  const res = await fetch(`${API_BASE}/databases/purge`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ db_names: dbNames || null }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to purge trash" }));
+    throw new Error(err.detail || "Failed to purge trash");
+  }
+  return res.json();
+};
+
+export const deleteDatabase = async (dbName: string): Promise<{ success: boolean; deleted: string }> => {
+  const res = await trashDatabase(dbName);
+  return { success: res.success, deleted: res.trashed };
 };
 
 export interface ExportFilteredPayload {
