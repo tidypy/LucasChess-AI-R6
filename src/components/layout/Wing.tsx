@@ -11,6 +11,8 @@ import {
   TrendingUp,
   Layers,
   ShieldCheck,
+  Swords,
+  BookOpen,
 } from "lucide-react";
 import { useClickLogger } from "../../lib/clickLogger";
 import { Tooltip } from "../common/Tooltip";
@@ -74,6 +76,36 @@ export function Wing({
           }`}
         >
           <Compass className="w-5 h-5" />
+        </button>
+      </Tooltip>
+
+      <Tooltip content="Spar Against Engine" description="Spar with neural bots & Elo-rated opponents" position="right">
+        <button
+          onClick={() => handleNav("Spar")}
+          className={`p-2.5 rounded-2xl transition-all ${
+            activeView === "Spar"
+              ? "bg-rose-500/20 text-rose-400 shadow-md border border-rose-500/30"
+              : isLight
+              ? "hover:text-slate-900 hover:bg-slate-100"
+              : "hover:text-slate-100 hover:bg-slate-800/60"
+          }`}
+        >
+          <Swords className="w-5 h-5" />
+        </button>
+      </Tooltip>
+
+      <Tooltip content="Opening Book Builder" description="Polyglot repertoire generator & tree explorer" position="right">
+        <button
+          onClick={() => handleNav("BookBuilder")}
+          className={`p-2.5 rounded-2xl transition-all ${
+            activeView === "BookBuilder"
+              ? "bg-purple-500/20 text-purple-400 shadow-md border border-purple-500/30"
+              : isLight
+              ? "hover:text-slate-900 hover:bg-slate-100"
+              : "hover:text-slate-100 hover:bg-slate-800/60"
+          }`}
+        >
+          <BookOpen className="w-5 h-5" />
         </button>
       </Tooltip>
 

@@ -10,6 +10,8 @@ import { DatabaseBrowserView } from "./features/database/browser/DatabaseBrowser
 import { DataFitnessView } from "./features/database/data_fitness/DataFitnessView";
 import { AIGrandmasterView } from "./features/ai_grandmaster/AIGrandmasterView";
 import { AskGrandmasterAction } from "./features/ai_grandmaster/AskGrandmasterAction";
+import { SparView } from "./features/sparring/SparView";
+import { BookBuilderView } from "./features/book_builder/BookBuilderView";
 import { ThemeCustomizer } from "./components/theme/ThemeCustomizer";
 import { ClickLogConsole } from "./components/debug/ClickLogConsole";
 import { Tooltip } from "./components/common/Tooltip";
@@ -364,18 +366,38 @@ function MainApp() {
                     logAction("NAV", `Loaded Game #${id} into Analysis Workspace`);
                   }}
                   onOpenBookBuilder={() => {
-                    setActiveView("Fashion");
-                    logAction("NAV", "Navigated to Book Builder / Opening Pioneer");
+                    setActiveView("BookBuilder");
+                    logAction("NAV", "Navigated to Book Builder / Opening Repertoire Factory");
                   }}
                   onOpenSparring={() => {
-                    setActiveView("Analysis");
-                    logAction("NAV", "Navigated to Sparring & Analysis");
+                    setActiveView("Spar");
+                    logAction("NAV", "Navigated to Sparring Arena");
                   }}
                   onOpenDataFitness={() => {
                     setActiveView("Fitness");
                     logAction("NAV", "Navigated to Data Fitness Pipeline");
                   }}
                 />
+              </div>
+            </ErrorBoundary>
+          ) : activeView === "Spar" ? (
+            /* Engine Sparring Arena & Elo Practice */
+            <ErrorBoundary
+              fallbackTitle="Sparring Arena Error"
+              onError={(err) => logAction("ERROR", "Sparring View Error", err.message)}
+            >
+              <div className="flex-grow overflow-y-auto min-h-0">
+                <SparView uxTheme={currentUXTheme} boardTheme={currentBoardTheme} />
+              </div>
+            </ErrorBoundary>
+          ) : activeView === "BookBuilder" ? (
+            /* Polyglot Opening Book Builder & Repertoire Factory */
+            <ErrorBoundary
+              fallbackTitle="Book Builder Error"
+              onError={(err) => logAction("ERROR", "Book Builder View Error", err.message)}
+            >
+              <div className="flex-grow overflow-y-auto min-h-0">
+                <BookBuilderView uxTheme={currentUXTheme} />
               </div>
             </ErrorBoundary>
           ) : activeView === "Fitness" ? (
