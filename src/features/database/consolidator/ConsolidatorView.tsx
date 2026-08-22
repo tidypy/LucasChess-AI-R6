@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { UXTheme } from "../../../lib/theme";
 import { useClickLogger } from "../../../lib/clickLogger";
-import { fetchDatabases } from "../../../lib/api";
+import { fetchDatabases, mergeDatabases } from "../../../lib/api";
 import {
   Layers,
   CheckSquare,
@@ -48,22 +48,12 @@ export function ConsolidatorView({ }: ConsolidatorViewProps) {
   }, [databases]);
 
   const mergeMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch("http://127.0.0.1:8000/api/v1/consolidator/merge", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          source_dbs: selectedDbs,
-          target_db_name: targetName,
-          deduplicate,
-        }),
-      });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.detail || "Consolidation merge failed");
-      }
-      return res.json() as Promise<MergeResult>;
-    },
+    mutationFn: () =>
+      mergeDatabases({
+        source_dbs: selectedDbs,
+        target_db_name: targetName,
+        deduplicate,
+      }),
     onSuccess: (data: MergeResult) => {
       logAction("API", `Consolidated ${data.total_imported} games into ${data.target_database}`);
       setResultSummary(data);

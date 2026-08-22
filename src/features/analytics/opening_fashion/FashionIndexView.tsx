@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { UXTheme } from "../../../lib/theme";
 import { useClickLogger } from "../../../lib/clickLogger";
+import { fetchOpeningFashion, fetchOpeningPioneers } from "../../../lib/api";
 import {
   Compass,
   RefreshCw,
@@ -20,24 +21,12 @@ export function FashionIndexView({ uxTheme: _uxTheme }: FashionIndexViewProps) {
 
   const { data: fashionData, isLoading } = useQuery({
     queryKey: ["fashionIndex", selectedEco, timeRange],
-    queryFn: async () => {
-      const res = await fetch(
-        `http://127.0.0.1:8000/api/v1/openings/fashion?eco=${encodeURIComponent(
-          selectedEco
-        )}&time_range=${encodeURIComponent(timeRange)}`
-      );
-      if (!res.ok) throw new Error("Failed to load fashion index");
-      return res.json();
-    },
+    queryFn: () => fetchOpeningFashion(selectedEco, { time_range: timeRange }),
   });
 
   const { data: pioneerMoves } = useQuery({
     queryKey: ["openingPioneer"],
-    queryFn: async () => {
-      const res = await fetch("http://127.0.0.1:8000/api/v1/openings/pioneer");
-      if (!res.ok) throw new Error("Failed to load pioneer moves");
-      return res.json();
-    },
+    queryFn: fetchOpeningPioneers,
   });
 
   if (isLoading || !fashionData) {

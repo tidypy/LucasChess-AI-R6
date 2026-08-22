@@ -34,19 +34,21 @@ class AdjudicationCascade:
         if not moves_text:
             return None
         clean = moves_text.strip()
-        if clean.endswith("1-0") or clean.endswith("1 - 0"):
+
+        # Strip PGN comments {...} and [%...] annotations first
+        no_comments = re.sub(r"\{[^}]*\}", "", clean)
+        no_comments = re.sub(r"\[%[^]]*\]", "", no_comments).strip()
+
+        if no_comments.endswith("1-0") or no_comments.endswith("1 - 0"):
             return "1-0"
-        if clean.endswith("0-1") or clean.endswith("0 - 1"):
+        if no_comments.endswith("0-1") or no_comments.endswith("0 - 1"):
             return "0-1"
-        if clean.endswith("1/2-1/2") or clean.endswith("1/2 - 1/2") or clean.endswith("0.5-0.5"):
+        if no_comments.endswith("1/2-1/2") or no_comments.endswith("1/2 - 1/2") or no_comments.endswith("0.5-0.5"):
             return "1/2-1/2"
-        if clean.endswith("#"):
-            # Checkmate on last move. If last move was by white (odd ply or no '...'), 1-0, else 0-1
-            last_token = clean.split()[-1]
-            if last_token.endswith("#"):
-                # Approximate from token list
-                tokens = [t for t in clean.split() if not t.endswith(".") and not t.isdigit()]
-                return "1-0" if len(tokens) % 2 != 0 else "0-1"
+
+        tokens = [t for t in no_comments.split() if not t.endswith(".") and not t.isdigit() and not t.startswith("$")]
+        if tokens and tokens[-1].endswith("#"):
+            return "1-0" if len(tokens) % 2 != 0 else "0-1"
         return None
 
     @staticmethod
@@ -200,7 +202,12 @@ class DataFitnessService:
                 "total_games": 0,
                 "health_score": 100.0,
                 "grade": "A+",
-                "tiers": {"tier_0": 0, "tier_1": 0, "tier_2": 0, "tier_3": 0},
+                "tiers": {
+                    "tier_0_quarantine": 0,
+                    "tier_1_sanitized": 0,
+                    "tier_2_silver": 0,
+                    "tier_3_gold": 0,
+                },
                 "issues": {"missing_results": 0, "unclassified_ecos": 0, "missing_elos": 0, "short_stubs": 0, "corrupt_moves": 0},
             }
 

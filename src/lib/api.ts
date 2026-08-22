@@ -319,3 +319,167 @@ export const updateAIProfile = async (content: string): Promise<{ profile: strin
   return res.json();
 };
 
+// ----------------------------------------------------
+// Data Fitness & Ingestion APIs
+// ----------------------------------------------------
+
+export interface FitnessAuditReport {
+  database_name: string;
+  database_path: string;
+  total_games: number;
+  health_score: number;
+  grade: string;
+  tiers: {
+    tier_0_quarantine: number;
+    tier_1_sanitized: number;
+    tier_2_silver: number;
+    tier_3_gold: number;
+  };
+  issues: {
+    missing_results: number;
+    unclassified_ecos: number;
+    missing_elos: number;
+    short_stubs: number;
+    corrupt_moves: number;
+  };
+}
+
+export const fetchFitnessAudit = async (dbName: string): Promise<FitnessAuditReport> => {
+  const res = await fetch(`${API_BASE}/fitness/audit?db_name=${encodeURIComponent(dbName)}`);
+  if (!res.ok) throw new Error("Failed to load audit report");
+  return res.json();
+};
+
+export const sanitizeDatabase = async (payload: {
+  db_name: string;
+  purge_short_stubs: boolean;
+  auto_repair_results: boolean;
+  normalize_names_dates: boolean;
+}): Promise<{
+  status: string;
+  database_name: string;
+  purged_stubs_count: number;
+  repaired_results_count: number;
+  normalized_records_count: number;
+}> => {
+  const res = await fetch(`${API_BASE}/fitness/sanitize`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("Sanitization pass failed");
+  return res.json();
+};
+
+export const generateSilverStats = async (dbName: string): Promise<{
+  status: string;
+  database_name: string;
+  ecos_assigned: number;
+  tier_2_silver_games: number;
+  current_health_score: number;
+  grade: string;
+}> => {
+  const res = await fetch(`${API_BASE}/fitness/generate-silver-stats`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ db_name: dbName }),
+  });
+  if (!res.ok) throw new Error("Silver statistics generation failed");
+  return res.json();
+};
+
+export const startMassAnalysis = async (payload: {
+  db_name: string;
+  depth: number;
+  mode: string;
+}): Promise<{ job_id: string; status: string; total_games: number }> => {
+  const res = await fetch(`${API_BASE}/fitness/mass-analysis/start`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("Failed to start mass analysis");
+  return res.json();
+};
+
+export const fetchMassAnalysisStatus = async (jobId: string) => {
+  const res = await fetch(`${API_BASE}/fitness/mass-analysis/status/${encodeURIComponent(jobId)}`);
+  if (!res.ok) return null;
+  return res.json();
+};
+
+export const cancelMassAnalysis = async (jobId: string) => {
+  const res = await fetch(`${API_BASE}/fitness/mass-analysis/cancel/${encodeURIComponent(jobId)}`, {
+    method: "POST",
+  });
+  return res.json();
+};
+
+// ----------------------------------------------------
+// Analytics (Dossier, Compare, Fashion Index) APIs
+// ----------------------------------------------------
+
+export const fetchDossierPlayer = async (
+  player: string,
+  options?: { time_control?: string; date_range?: string; db_name?: string }
+) => {
+  const url = new URL(`${API_BASE}/dossier/player/${encodeURIComponent(player)}`);
+  if (options?.time_control) url.searchParams.set("time_control", options.time_control);
+  if (options?.date_range) url.searchParams.set("date_range", options.date_range);
+  if (options?.db_name) url.searchParams.set("db_name", options.db_name);
+  const res = await fetch(url.toString());
+  if (!res.ok) throw new Error(`Dossier for ${player} not found`);
+  return res.json();
+};
+
+export const fetchDossierCompare = async (playerA: string, playerB: string, dbName?: string) => {
+  const url = new URL(`${API_BASE}/dossier/compare`);
+  url.searchParams.set("player_a", playerA);
+  url.searchParams.set("player_b", playerB);
+  if (dbName) url.searchParams.set("db_name", dbName);
+  const res = await fetch(url.toString());
+  if (!res.ok) throw new Error("Comparison failed");
+  return res.json();
+};
+
+export const fetchOpeningFashion = async (
+  eco: string,
+  options?: { time_range?: string; db_name?: string }
+) => {
+  const url = new URL(`${API_BASE}/openings/fashion`);
+  url.searchParams.set("eco", eco);
+  if (options?.time_range) url.searchParams.set("time_range", options.time_range);
+  if (options?.db_name) url.searchParams.set("db_name", options.db_name);
+  const res = await fetch(url.toString());
+  if (!res.ok) throw new Error("Failed to fetch fashion index");
+  return res.json();
+};
+
+export const fetchOpeningPioneers = async () => {
+  const res = await fetch(`${API_BASE}/openings/pioneer`);
+  if (!res.ok) throw new Error("Failed to fetch opening pioneers");
+  return res.json();
+};
+
+// ----------------------------------------------------
+// Consolidator / Merge APIs
+// ----------------------------------------------------
+
+export const mergeDatabases = async (payload: {
+  source_dbs: string[];
+  target_db_name: string;
+  deduplicate: boolean;
+}) => {
+  const res = await fetch(`${API_BASE}/consolidator/merge`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Database merge failed" }));
+    throw new Error(err.detail || "Database merge failed");
+  }
+  return res.json();
+};
+
+

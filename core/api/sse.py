@@ -8,7 +8,7 @@ async def event_generator():
     yield "event: connect\ndata: {\"status\": \"connected\"}\n\n"
     try:
         while True:
-            await asyncio.sleep(15)
+            await asyncio.sleep(10)
             yield "event: ping\ndata: {\"status\": \"alive\"}\n\n"
     except asyncio.CancelledError:
         pass

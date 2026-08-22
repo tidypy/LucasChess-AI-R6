@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Wing } from "./components/layout/Wing";
 import { DesktopMenu } from "./components/layout/DesktopMenu";
 import { ResponsiveChessboard } from "./components/chessboard/ResponsiveChessboard";
@@ -17,7 +17,7 @@ import { ClickLogConsole } from "./components/debug/ClickLogConsole";
 import { Tooltip } from "./components/common/Tooltip";
 import { ErrorBoundary } from "./components/common/ErrorBoundary";
 import { useQuery } from "@tanstack/react-query";
-import { fetchGame } from "./lib/api";
+import { fetchGame, API_BASE } from "./lib/api";
 import {
   UXTheme,
   BoardTheme,
@@ -62,24 +62,30 @@ function MainApp() {
     retry: 1,
   });
 
+  // Keep fresh ref to logAction to prevent stale closures
+  const logActionRef = useRef(logAction);
+  useEffect(() => {
+    logActionRef.current = logAction;
+  });
+
   // Connect to SSE Endpoint
   useEffect(() => {
-    const eventSource = new EventSource("http://127.0.0.1:8000/api/v1/events");
+    const eventSource = new EventSource(`${API_BASE}/events`);
 
     eventSource.onmessage = (event) => {
-      logAction("SSE", "Incoming Stream Message", event.data);
+      logActionRef.current("SSE", "Incoming Stream Message", event.data);
     };
 
     eventSource.addEventListener("connect", (e) => {
       const msg = `[Connect] ${e.data}`;
-      setEvents((prev) => [...prev, msg]);
-      logAction("SSE", "Connected to SSE Telemetry Stream", e.data);
+      setEvents((prev) => [...prev.slice(-6), msg]);
+      logActionRef.current("SSE", "Connected to SSE Telemetry Stream", e.data);
     });
 
     eventSource.addEventListener("ping", (e) => {
       const msg = `[Ping] ${e.data}`;
       setEvents((prev) => [...prev.slice(-6), msg]);
-      logAction("SSE", "Heartbeat Ping", e.data);
+      logActionRef.current("SSE", "Heartbeat Ping", e.data);
     });
 
     eventSource.onerror = (err) => {

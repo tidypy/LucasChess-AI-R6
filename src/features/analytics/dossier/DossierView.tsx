@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { UXTheme } from "../../../lib/theme";
 import { useClickLogger } from "../../../lib/clickLogger";
+import { fetchDossierPlayer } from "../../../lib/api";
 import { Tooltip } from "../../../components/common/Tooltip";
 import {
   Search,
@@ -28,15 +29,11 @@ export function DossierView({ uxTheme, onOpenCompare }: DossierViewProps) {
 
   const { data: dossier, isLoading } = useQuery({
     queryKey: ["dossier", playerName, timeControl, dateRange],
-    queryFn: async () => {
-      const res = await fetch(
-        `http://127.0.0.1:8000/api/v1/dossier/player/${encodeURIComponent(
-          playerName
-        )}?time_control=${encodeURIComponent(timeControl)}&date_range=${encodeURIComponent(dateRange)}`
-      );
-      if (!res.ok) throw new Error("Failed to load player dossier");
-      return res.json();
-    },
+    queryFn: () =>
+      fetchDossierPlayer(playerName, {
+        time_control: timeControl,
+        date_range: dateRange,
+      }),
   });
 
   const handleSearchSubmit = (e: FormEvent) => {

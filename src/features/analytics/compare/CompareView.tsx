@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { UXTheme } from "../../../lib/theme";
 import { useClickLogger } from "../../../lib/clickLogger";
+import { fetchDossierCompare } from "../../../lib/api";
 import { Tooltip } from "../../../components/common/Tooltip";
 import { ArrowLeft, ArrowRightLeft, Search, RefreshCw } from "lucide-react";
 
@@ -26,15 +27,7 @@ export function CompareView({
 
   const { data: compareData, isLoading } = useQuery({
     queryKey: ["compare", playerA, playerB],
-    queryFn: async () => {
-      const res = await fetch(
-        `http://127.0.0.1:8000/api/v1/dossier/compare?player_a=${encodeURIComponent(
-          playerA
-        )}&player_b=${encodeURIComponent(playerB)}`
-      );
-      if (!res.ok) throw new Error("Failed to load comparison data");
-      return res.json();
-    },
+    queryFn: () => fetchDossierCompare(playerA, playerB),
   });
 
   const handleSearchA = (e: FormEvent) => {

@@ -2,7 +2,17 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { UXTheme } from "../../../lib/theme";
 import { useClickLogger } from "../../../lib/clickLogger";
-import { fetchDatabases, uploadAndIngestDatabase, setActiveDatabase } from "../../../lib/api";
+import {
+  fetchDatabases,
+  uploadAndIngestDatabase,
+  setActiveDatabase,
+  fetchFitnessAudit,
+  sanitizeDatabase,
+  generateSilverStats,
+  startMassAnalysis,
+  fetchMassAnalysisStatus,
+  cancelMassAnalysis,
+} from "../../../lib/api";
 import { Tooltip } from "../../../components/common/Tooltip";
 import {
   ShieldCheck,
@@ -49,6 +59,7 @@ export function DataFitnessView({
   );
   const [isImporting, setIsImporting] = useState<boolean>(false);
   const [importSuccess, setImportSuccess] = useState<boolean>(false);
+  const [importError, setImportError] = useState<string | null>(null);
 
   // Sanitization options
   const [purgeStubs, setPurgeStubs] = useState(true);
@@ -69,6 +80,7 @@ export function DataFitnessView({
   useEffect(() => {
     if (pendingImportFile) {
       setTargetDbName(pendingImportFile.name.replace(/\.[^/.]+$/, "") + ".lcdb");
+      setImportError(null);
     }
   }, [pendingImportFile]);
 
@@ -81,30 +93,19 @@ export function DataFitnessView({
   // 2. Fetch Database Audit Report
   const { data: auditData, isLoading: isLoadingAudit, refetch: refetchAudit } = useQuery({
     queryKey: ["fitnessAudit", selectedDb],
-    queryFn: async () => {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/fitness/audit?db_name=${encodeURIComponent(selectedDb)}`);
-      if (!res.ok) throw new Error("Failed to load audit report");
-      return res.json();
-    },
+    queryFn: () => fetchFitnessAudit(selectedDb),
     enabled: !!selectedDb,
   });
 
   // 3. Sanitization Mutation
   const sanitizeMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch("http://127.0.0.1:8000/api/v1/fitness/sanitize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          db_name: selectedDb,
-          purge_short_stubs: purgeStubs,
-          auto_repair_results: autoRepairResults,
-          normalize_names_dates: normalizeNames,
-        }),
-      });
-      if (!res.ok) throw new Error("Sanitization pass failed");
-      return res.json();
-    },
+    mutationFn: () =>
+      sanitizeDatabase({
+        db_name: selectedDb,
+        purge_short_stubs: purgeStubs,
+        auto_repair_results: autoRepairResults,
+        normalize_names_dates: normalizeNames,
+      }),
     onSuccess: (data) => {
       logAction("API", `Sanitized database: ${selectedDb}`, `Normalized: ${data.normalized_records_count}, Repaired: ${data.repaired_results_count}`);
       refetchAudit();
@@ -114,15 +115,7 @@ export function DataFitnessView({
 
   // 4. Silver Stats Mutation
   const silverMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch("http://127.0.0.1:8000/api/v1/fitness/generate-silver-stats", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ db_name: selectedDb }),
-      });
-      if (!res.ok) throw new Error("Silver statistics generation failed");
-      return res.json();
-    },
+    mutationFn: () => generateSilverStats(selectedDb),
     onSuccess: (data) => {
       logAction("API", `Generated Silver Stats for ${selectedDb}`, `Assigned ECOs: ${data.ecos_assigned}`);
       refetchAudit();
@@ -132,19 +125,12 @@ export function DataFitnessView({
 
   // 5. Mass Analysis Start Mutation
   const startAnalysisMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch("http://127.0.0.1:8000/api/v1/fitness/mass-analysis/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          db_name: selectedDb,
-          depth: analysisDepth,
-          mode: analysisMode,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to start mass analysis");
-      return res.json();
-    },
+    mutationFn: () =>
+      startMassAnalysis({
+        db_name: selectedDb,
+        depth: analysisDepth,
+        mode: analysisMode,
+      }),
     onSuccess: (data) => {
       setActiveJobId(data.job_id);
       logAction("API", `Started Mass Analysis job: ${data.job_id} at depth ${analysisDepth}`);
@@ -154,12 +140,7 @@ export function DataFitnessView({
   // 6. Polling active analysis job status
   const { data: jobStatus } = useQuery({
     queryKey: ["analysisJobStatus", activeJobId],
-    queryFn: async () => {
-      if (!activeJobId) return null;
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/fitness/mass-analysis/status/${activeJobId}`);
-      if (!res.ok) return null;
-      return res.json();
-    },
+    queryFn: () => (activeJobId ? fetchMassAnalysisStatus(activeJobId) : null),
     enabled: !!activeJobId,
     refetchInterval: activeJobId ? 1000 : false,
   });
@@ -174,7 +155,7 @@ export function DataFitnessView({
 
   const handleCancelAnalysis = async () => {
     if (activeJobId) {
-      await fetch(`http://127.0.0.1:8000/api/v1/fitness/mass-analysis/cancel/${activeJobId}`, { method: "POST" });
+      await cancelMassAnalysis(activeJobId);
       logAction("API", `Cancelled Mass Analysis job: ${activeJobId}`);
       setActiveJobId(null);
       refetchAudit();
@@ -182,12 +163,12 @@ export function DataFitnessView({
   };
 
   const tiers = auditData?.tiers || { tier_0_quarantine: 0, tier_1_sanitized: 0, tier_2_silver: 0, tier_3_gold: 0 };
-  const totalGames = auditData?.total_games || 1;
+  const totalGames = auditData?.total_games ?? 0;
 
-  const t0Pct = Math.round((tiers.tier_0_quarantine / totalGames) * 100);
-  const t1Pct = Math.round((tiers.tier_1_sanitized / totalGames) * 100);
-  const t2Pct = Math.round((tiers.tier_2_silver / totalGames) * 100);
-  const t3Pct = Math.max(0, 100 - t0Pct - t1Pct - t2Pct);
+  const t0Pct = totalGames > 0 ? Math.round((tiers.tier_0_quarantine / totalGames) * 100) : 0;
+  const t1Pct = totalGames > 0 ? Math.round((tiers.tier_1_sanitized / totalGames) * 100) : 0;
+  const t2Pct = totalGames > 0 ? Math.round((tiers.tier_2_silver / totalGames) * 100) : 0;
+  const t3Pct = totalGames > 0 ? Math.round((tiers.tier_3_gold / totalGames) * 100) : 0;
 
   return (
     <div className="flex flex-col gap-6 max-w-6xl mx-auto pb-12 select-none animate-in fade-in duration-200 font-sans">
@@ -323,6 +304,7 @@ export function DataFitnessView({
                   const res = await uploadAndIngestDatabase(pendingImportFile, targetDbName, importStrategy);
                   logAction("API", `Ingestion Complete: ${res.db_name}`, `Imported ${res.imported_games} games`);
                   setImportSuccess(true);
+                  setImportError(null);
                   await setActiveDatabase(res.db_name);
                   queryClient.invalidateQueries({ queryKey: ["databases"] });
                   queryClient.invalidateQueries({ queryKey: ["storageTelemetry"] });
@@ -334,7 +316,7 @@ export function DataFitnessView({
                 } catch (err: any) {
                   logAction("ERROR", "Ingestion Failed", err.message);
                   setIsImporting(false);
-                  alert(`Database Ingestion Error: ${err.message}`);
+                  setImportError(err.message || "Database Ingestion Failed");
                 }
               }}
               disabled={isImporting}
@@ -358,12 +340,19 @@ export function DataFitnessView({
               )}
             </button>
           </div>
+
+          {importError && (
+            <div className="p-3 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-mono flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0 text-rose-400" />
+              <span>Ingestion Error: {importError}</span>
+            </div>
+          )}
         </div>
       )}
 
       {/* 4-Tier Distribution & Overall Health Card */}
       <div className={`p-6 rounded-3xl ${isLight ? "bg-white border-slate-200 shadow-lg text-slate-900" : "bg-[#14171c] border-slate-800 shadow-2xl text-white"} border space-y-5`}>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-white/5 pb-4">
+        <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 border-b ${isLight ? "border-slate-200" : "border-white/5"} pb-4`}>
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-slate-950 font-black text-2xl flex items-center justify-center shadow-lg flex-shrink-0">
               {isLoadingAudit ? <RefreshCw className="w-6 h-6 animate-spin text-slate-950" /> : (auditData?.grade || "N/A")}
@@ -533,33 +522,39 @@ export function DataFitnessView({
               </h2>
 
               <div className="space-y-3 text-xs">
-                <label
-                  onClick={() => setAutoRepairResults(!autoRepairResults)}
-                  className="flex items-start gap-2.5 cursor-pointer p-2.5 rounded-xl bg-black/30 border border-white/5 hover:bg-white/5 transition-all"
-                >
-                  <input type="checkbox" checked={autoRepairResults} readOnly className="mt-0.5" />
+                <label className="flex items-start gap-2.5 cursor-pointer p-2.5 rounded-xl bg-black/30 border border-white/5 hover:bg-white/5 transition-all">
+                  <input
+                    type="checkbox"
+                    checked={autoRepairResults}
+                    onChange={(e) => setAutoRepairResults(e.target.checked)}
+                    className="mt-0.5"
+                  />
                   <div>
                     <span className="font-bold text-slate-200 block">Adjudication Cascade</span>
                     <span className="text-[10px] text-slate-500">Resolve '*' via Termination tag &amp; terminal checkmate</span>
                   </div>
                 </label>
 
-                <label
-                  onClick={() => setNormalizeNames(!normalizeNames)}
-                  className="flex items-start gap-2.5 cursor-pointer p-2.5 rounded-xl bg-black/30 border border-white/5 hover:bg-white/5 transition-all"
-                >
-                  <input type="checkbox" checked={normalizeNames} readOnly className="mt-0.5" />
+                <label className="flex items-start gap-2.5 cursor-pointer p-2.5 rounded-xl bg-black/30 border border-white/5 hover:bg-white/5 transition-all">
+                  <input
+                    type="checkbox"
+                    checked={normalizeNames}
+                    onChange={(e) => setNormalizeNames(e.target.checked)}
+                    className="mt-0.5"
+                  />
                   <div>
                     <span className="font-bold text-slate-200 block">Normalize Names &amp; Dates</span>
                     <span className="text-[10px] text-slate-500">Standardize player casing &amp; ISO YYYY.MM.DD dates</span>
                   </div>
                 </label>
 
-                <label
-                  onClick={() => setPurgeStubs(!purgeStubs)}
-                  className="flex items-start gap-2.5 cursor-pointer p-2.5 rounded-xl bg-black/30 border border-white/5 hover:bg-white/5 transition-all"
-                >
-                  <input type="checkbox" checked={purgeStubs} readOnly className="mt-0.5" />
+                <label className="flex items-start gap-2.5 cursor-pointer p-2.5 rounded-xl bg-black/30 border border-white/5 hover:bg-white/5 transition-all">
+                  <input
+                    type="checkbox"
+                    checked={purgeStubs}
+                    onChange={(e) => setPurgeStubs(e.target.checked)}
+                    className="mt-0.5"
+                  />
                   <div>
                     <span className="font-bold text-slate-200 block">Purge Zero-Move Stubs</span>
                     <span className="text-[10px] text-slate-500">Delete unusable &lt; 3 ply records safely via WAL</span>
