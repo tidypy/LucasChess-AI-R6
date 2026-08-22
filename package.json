@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "sidecar": ".\\.venv\\Scripts\\python.exe -m uvicorn core.api.main:app --port 8000 --reload"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.3.3",
