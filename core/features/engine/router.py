@@ -16,6 +16,8 @@ class PlayMoveRequest(BaseModel):
     elo: Optional[int] = Field(None, description="Target Elo strength limit (e.g. 1500)")
     time_limit_ms: Optional[int] = Field(400, description="Think time in milliseconds")
     depth: Optional[int] = Field(None, description="Search depth limit")
+    book_name: Optional[str] = Field(None, description="Optional opening book name to probe")
+    use_book: Optional[bool] = Field(True, description="Whether to probe active opening book first")
 
 class EvaluateRequest(BaseModel):
     fen: str = Field(..., description="Position FEN")
@@ -70,7 +72,7 @@ async def remove_custom_engine(engine_id: str) -> Dict[str, Any]:
 
 @router.post("/play")
 async def play_engine_move(req: PlayMoveRequest) -> Dict[str, Any]:
-    """Generates the best move using standard modern UCI protocol."""
+    """Generates the best move using standard modern UCI protocol and Polyglot opening books."""
     try:
         time_sec = max(0.05, min(10.0, (req.time_limit_ms or 400) / 1000.0))
         res = engine_service.play_move(
@@ -79,6 +81,8 @@ async def play_engine_move(req: PlayMoveRequest) -> Dict[str, Any]:
             elo=req.elo,
             time_limit_sec=time_sec,
             depth=req.depth,
+            book_name=req.book_name,
+            use_book=req.use_book if req.use_book is not None else True,
         )
         return res
     except Exception as e:

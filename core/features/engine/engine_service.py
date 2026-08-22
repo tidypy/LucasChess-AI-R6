@@ -6,6 +6,8 @@ import logging
 from typing import Optional, Dict, Any, List
 import chess
 import chess.engine
+import chess.polyglot
+from core.features.openings.opening_book_service import OpeningBookService
 
 logger = logging.getLogger("deepscout.engine")
 
@@ -57,13 +59,15 @@ DEFAULT_BUILTIN_ENGINES = [
 class UCIEngineService:
     """
     Standard Modern UCI Engine Service.
-    Supports Stockfish 18, built-in engines, and custom user-registered UCI engines.
+    Supports Stockfish 18, built-in engines, custom user-registered UCI engines,
+    and Polyglot (.bin) Opening Book obedience.
     """
 
     def __init__(self, root_dir: str = ROOT_DIR):
         self.root_dir = root_dir
         self._engine_paths: Dict[str, str] = {}
         self._custom_engines_file = os.path.join(self.root_dir, "UserData", "custom_engines.json")
+        self.book_service = OpeningBookService(self.root_dir)
         self._discover_engines()
         self._load_custom_engines()
 
@@ -236,9 +240,12 @@ class UCIEngineService:
         elo: Optional[int] = None,
         time_limit_sec: float = 0.4,
         depth: Optional[int] = None,
+        book_name: Optional[str] = None,
+        use_book: bool = True,
     ) -> Dict[str, Any]:
         """
         Executes standard modern UCI 'play' / 'go' commands to return the best engine move.
+        First probes the active Polyglot opening book; if in book, plays book move instantly.
         """
         board = chess.Board(fen)
         if board.is_game_over():
@@ -247,6 +254,28 @@ class UCIEngineService:
                 "error": "Game is already over in this position.",
                 "is_game_over": True,
             }
+
+        # 1. Probe Polyglot Opening Book
+        if use_book and self.book_service:
+            book_probe = self.book_service.probe_book(board, book_name=book_name)
+            if book_probe is not None:
+                return {
+                    "success": True,
+                    "engine": engine_id,
+                    "best_move_uci": book_probe["best_move_uci"],
+                    "best_move_san": book_probe["best_move_san"],
+                    "from_square": book_probe["from_square"],
+                    "to_square": book_probe["to_square"],
+                    "eval_score": "+0.00",
+                    "eval_cp": 0,
+                    "depth": 1,
+                    "pv_san": [book_probe["best_move_san"]],
+                    "pv_uci": [book_probe["best_move_uci"]],
+                    "is_book_move": True,
+                    "book_name": book_probe["book_name"],
+                    "book_weight": book_probe["weight"],
+                    "book_candidates": book_probe.get("candidates", []),
+                }
 
         exe_path = self.get_engine_path(engine_id)
         if not exe_path or not os.path.exists(exe_path):

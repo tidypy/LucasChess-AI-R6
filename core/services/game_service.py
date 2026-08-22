@@ -6,9 +6,18 @@ class GameService:
     """
     Business logic and orchestration layer for databases and games.
     """
-    def __init__(self, default_repo: GameRepository, root_dir: str):
+    def __init__(self, default_repo: Optional[Any] = None, root_dir: Optional[str] = None):
+        if isinstance(default_repo, str):
+            root_dir = default_repo
+            default_repo = None
+        self.root_dir = root_dir or os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        if default_repo is None:
+            default_path = os.path.join(self.root_dir, "patriciaTourny.sqlite")
+            if not os.path.exists(default_path):
+                candidates = [os.path.join(self.root_dir, f) for f in os.listdir(self.root_dir) if f.endswith((".sqlite", ".db"))]
+                default_path = candidates[0] if candidates else os.path.join(self.root_dir, "patriciaTourny.sqlite")
+            default_repo = GameRepository(default_path) if os.path.exists(default_path) else GameRepository.create_empty_db(default_path)
         self.repo = default_repo
-        self.root_dir = root_dir
         self.active_db_path = default_repo.db_path
         self._repositories: Dict[str, GameRepository] = {
             os.path.basename(default_repo.db_path): default_repo
