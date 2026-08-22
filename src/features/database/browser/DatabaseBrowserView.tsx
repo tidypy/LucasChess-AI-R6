@@ -1,9 +1,16 @@
 import { useState, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { UXTheme, BoardTheme } from "../../../lib/theme";
 import { useClickLogger } from "../../../lib/clickLogger";
 import { Tooltip } from "../../../components/common/Tooltip";
-import { fetchDatabases, fetchGamesList, fetchGame, GameSummary } from "../../../lib/api";
+import {
+  fetchDatabases,
+  fetchGamesList,
+  fetchGame,
+  deleteDatabase,
+  exportFilteredDatabase,
+  GameSummary,
+} from "../../../lib/api";
 import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
 import { FashionIndexView } from "../../analytics/opening_fashion/FashionIndexView";
@@ -29,6 +36,9 @@ import {
   TrendingUp,
   Users,
   Layers,
+  Trash2,
+  Download,
+  RefreshCw,
 } from "lucide-react";
 
 interface DatabaseBrowserViewProps {
@@ -49,6 +59,7 @@ export function DatabaseBrowserView({
   onOpenDataFitness,
 }: DatabaseBrowserViewProps) {
   const { logAction } = useClickLogger();
+  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // State
@@ -62,6 +73,35 @@ export function DatabaseBrowserView({
   const [searchDbText, setSearchDbText] = useState("");
   const [searchGameText, setSearchGameText] = useState("");
   const [isPreviewOpen, setIsPreviewOpen] = useState(true);
+
+  // Delete and Export Modals State
+  const [dbToDelete, setDbToDelete] = useState<string | null>(null);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportTargetName, setExportTargetName] = useState("");
+  const [exportStatus, setExportStatus] = useState<string | null>(null);
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteDatabase,
+    onSuccess: (data) => {
+      logAction("API", `Successfully deleted database: ${data.deleted}`);
+      setDbToDelete(null);
+      setSelectedDb(null);
+      queryClient.invalidateQueries({ queryKey: ["databases"] });
+    },
+  });
+
+  const exportMutation = useMutation({
+    mutationFn: exportFilteredDatabase,
+    onSuccess: (data) => {
+      logAction("API", `Exported sub-database: ${data.target_db}`, `${data.exported_games} games`);
+      setExportStatus(`Exported ${data.exported_games} games into ${data.target_db}`);
+      queryClient.invalidateQueries({ queryKey: ["databases"] });
+      setTimeout(() => {
+        setIsExportModalOpen(false);
+        setExportStatus(null);
+      }, 1500);
+    },
+  });
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -464,26 +504,40 @@ export function DatabaseBrowserView({
                           : "border-[#262c36] hover:border-[#64748b] hover:-translate-y-0.5 hover:shadow-lg"
                       }`}
                     >
-                      <div className="flex items-start gap-3">
-                        <div
-                          className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm shadow-md ${
-                            isTournament
-                              ? "bg-gradient-to-br from-blue-900 to-slate-900 text-blue-400 border border-blue-800"
-                              : isRepertoire
-                              ? "bg-gradient-to-br from-emerald-900 to-slate-900 text-emerald-400 border border-emerald-800"
-                              : "bg-gradient-to-br from-purple-900 to-slate-900 text-purple-400 border border-purple-800"
-                          }`}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 min-w-0">
+                          <div
+                            className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm shadow-md flex-shrink-0 ${
+                              isTournament
+                                ? "bg-gradient-to-br from-blue-900 to-slate-900 text-blue-400 border border-blue-800"
+                                : isRepertoire
+                                ? "bg-gradient-to-br from-emerald-900 to-slate-900 text-emerald-400 border border-emerald-800"
+                                : "bg-gradient-to-br from-purple-900 to-slate-900 text-purple-400 border border-purple-800"
+                            }`}
+                          >
+                            ♞
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-sm text-[#e2e8f0] truncate">
+                              {db.name.replace(/\.(lcdb|sqlite|db)$/, "")}
+                            </div>
+                            <div className="text-[10px] font-bold text-[#64748b] uppercase tracking-wider">
+                              {isTournament ? "Tournament Master" : isRepertoire ? "Repertoire DB" : "Archive DB"}
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDbToDelete(db.name);
+                            logAction("CLICK", `Prompted Delete Database: ${db.name}`);
+                          }}
+                          className="p-1 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded transition-colors"
+                          title="Delete Database"
                         >
-                          ♞
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-sm text-[#e2e8f0] truncate">
-                            {db.name.replace(/\.(lcdb|sqlite|db)$/, "")}
-                          </div>
-                          <div className="text-[10px] font-bold text-[#64748b] uppercase tracking-wider">
-                            {isTournament ? "Tournament Master" : isRepertoire ? "Repertoire DB" : "Archive DB"}
-                          </div>
-                        </div>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2 mt-auto pt-3 border-t border-[#262c36] text-xs">
@@ -514,6 +568,7 @@ export function DatabaseBrowserView({
                       <th className="py-2.5 px-4">Type</th>
                       <th className="py-2.5 px-4 text-right">Size</th>
                       <th className="py-2.5 px-4 text-center">Status</th>
+                      <th className="py-2.5 px-3 text-center">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/[0.03]">
@@ -542,6 +597,19 @@ export function DatabaseBrowserView({
                           <td className="py-2 px-4 text-center font-mono text-[11px] text-emerald-400 font-bold">
                             Active
                           </td>
+                          <td className="py-2 px-3 text-center">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDbToDelete(db.name);
+                                logAction("CLICK", `Prompted Delete Database: ${db.name}`);
+                              }}
+                              className="p-1 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded transition-colors"
+                              title="Delete Database"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
                         </tr>
                       );
                     })}
@@ -565,6 +633,19 @@ export function DatabaseBrowserView({
                 </div>
 
                 <div className="flex items-center gap-3">
+                  {/* Export Filtered Sub-DB Button */}
+                  <button
+                    onClick={() => {
+                      setExportTargetName(activeDbName ? activeDbName.replace(/\.(lcdb|sqlite|db)$/, "") + "_Filtered.lcdb" : "Sub_Database.lcdb");
+                      setIsExportModalOpen(true);
+                      logAction("CLICK", "Opened Export Sub-Database Modal", `Source: ${activeDbName}`);
+                    }}
+                    className="px-2.5 py-0.5 bg-blue-600/90 hover:bg-blue-500 text-white rounded text-[11px] font-bold flex items-center gap-1 shadow-sm cursor-pointer transition-all"
+                  >
+                    <Download className="w-3 h-3" />
+                    Export Filtered
+                  </button>
+
                   {/* Game filter in preview */}
                   <input
                     type="text"
@@ -722,6 +803,130 @@ export function DatabaseBrowserView({
         <div>Ready · DeepScout Chess Studio v1.0</div>
         <div className="opacity-80 font-mono">SQLite WAL · DuckDB Vector Ready</div>
       </footer>
+
+      {/* 6. Delete Database Confirmation Modal */}
+      {dbToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-slate-900 border border-rose-500/40 rounded-3xl p-6 shadow-2xl max-w-md w-full text-slate-100 space-y-4">
+            <div className="flex items-center gap-3 text-rose-400">
+              <div className="p-2.5 rounded-2xl bg-rose-500/20 border border-rose-500/30">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-white">Delete Database</h3>
+                <span className="text-[11px] text-slate-400 font-mono">Permanent database removal</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed font-sans">
+              Are you sure you want to delete <strong className="text-white font-mono">{dbToDelete}</strong>? This will detach the database and remove its local SQLite file.
+            </p>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setDbToDelete(null)}
+                className="px-4 py-1.5 text-xs text-slate-300 hover:text-white bg-slate-800 rounded-xl hover:bg-slate-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => deleteMutation.mutate(dbToDelete)}
+                disabled={deleteMutation.isPending}
+                className="px-4 py-1.5 text-xs font-bold text-white bg-rose-600 rounded-xl hover:bg-rose-500 transition-all flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {deleteMutation.isPending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                Delete Database
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 7. Export Filtered Sub-Database Modal */}
+      {isExportModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-slate-900 border border-blue-500/40 rounded-3xl p-6 shadow-2xl max-w-lg w-full text-slate-100 space-y-4">
+            <div className="flex items-center justify-between border-b border-white/5 pb-3">
+              <div className="flex items-center gap-3 text-blue-400">
+                <div className="p-2.5 rounded-2xl bg-blue-500/20 border border-blue-500/30">
+                  <Download className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-white">Export Filtered Sub-Database</h3>
+                  <span className="text-[11px] text-slate-400 font-mono">
+                    Source: {activeDbName} · {searchGameText ? `Filter: "${searchGameText}"` : "All Indexed Games"}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsExportModalOpen(false)}
+                className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="space-y-1.5">
+                <label className="text-slate-300 font-semibold block">Target Database Filename:</label>
+                <input
+                  type="text"
+                  value={exportTargetName}
+                  onChange={(e) => setExportTargetName(e.target.value)}
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-blue-400 outline-none focus:border-blue-500"
+                  placeholder="Sub_Database.lcdb"
+                />
+              </div>
+
+              <div className="p-3 bg-black/30 rounded-xl border border-white/5 space-y-1 text-[11px] font-mono text-slate-400">
+                <div>Format: <strong className="text-white">Standard SQLite (.lcdb)</strong></div>
+                <div>Games Included: <strong className="text-emerald-400">{gamesData?.total || 0} games</strong></div>
+                <div>Deduplication &amp; Integrity: <strong className="text-blue-400">Auto-Indexed</strong></div>
+              </div>
+
+              {exportStatus && (
+                <div className="p-2.5 bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-emerald-300 font-bold text-xs flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  {exportStatus}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-white/5">
+              <button
+                onClick={() => setIsExportModalOpen(false)}
+                className="px-4 py-1.5 text-xs text-slate-300 hover:text-white bg-slate-800 rounded-xl hover:bg-slate-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (!activeDbName || !exportTargetName) return;
+                  exportMutation.mutate({
+                    source_db: activeDbName,
+                    target_name: exportTargetName,
+                    search: searchGameText || undefined,
+                  });
+                }}
+                disabled={exportMutation.isPending || !exportTargetName.trim()}
+                className="px-5 py-1.5 text-xs font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-500 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+              >
+                {exportMutation.isPending ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-3.5 h-3.5" />
+                    Export Sub-Database
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

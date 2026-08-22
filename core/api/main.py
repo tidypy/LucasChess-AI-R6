@@ -48,6 +48,16 @@ class PgnImportRequest(BaseModel):
 class SetActiveDbRequest(BaseModel):
     db_name: str
 
+class ExportFilteredDbRequest(BaseModel):
+    source_db: str
+    target_name: str
+    search: Optional[str] = None
+    white: Optional[str] = None
+    black: Optional[str] = None
+    eco: Optional[str] = None
+    result: Optional[str] = None
+    game_ids: Optional[List[int]] = None
+
 @app.get("/api/v1/system/health")
 async def health_check():
     return {
@@ -61,6 +71,37 @@ async def list_databases():
     if not game_service:
         raise HTTPException(status_code=500, detail="GameService not initialized.")
     return game_service.list_available_databases()
+
+@app.delete("/api/v1/databases/{db_name}")
+async def delete_database(db_name: str):
+    if not game_service:
+        raise HTTPException(status_code=500, detail="GameService not initialized.")
+    try:
+        return game_service.delete_database(db_name)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Database '{db_name}' not found.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/v1/databases/export-filtered")
+async def export_filtered_database(req: ExportFilteredDbRequest):
+    if not game_service:
+        raise HTTPException(status_code=500, detail="GameService not initialized.")
+    try:
+        return game_service.export_filtered_database(
+            source_db=req.source_db,
+            target_name=req.target_name,
+            search=req.search,
+            white=req.white,
+            black=req.black,
+            eco=req.eco,
+            result=req.result,
+            game_ids=req.game_ids,
+        )
+    except FileExistsError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/v1/databases/active")
 async def set_active_database(req: SetActiveDbRequest):

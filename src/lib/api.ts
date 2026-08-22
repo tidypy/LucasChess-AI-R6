@@ -56,6 +56,43 @@ export const fetchDatabases = async (): Promise<DatabaseInfo[]> => {
   return res.json();
 };
 
+export const deleteDatabase = async (dbName: string): Promise<{ success: boolean; deleted: string }> => {
+  const res = await fetch(`${API_BASE}/databases/${encodeURIComponent(dbName)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to delete database" }));
+    throw new Error(err.detail || "Failed to delete database");
+  }
+  return res.json();
+};
+
+export interface ExportFilteredPayload {
+  source_db: string;
+  target_name: string;
+  search?: string;
+  white?: string;
+  black?: string;
+  eco?: string;
+  result?: string;
+  game_ids?: number[];
+}
+
+export const exportFilteredDatabase = async (
+  payload: ExportFilteredPayload
+): Promise<{ success: boolean; target_db: string; exported_games: number; size_mb?: number }> => {
+  const res = await fetch(`${API_BASE}/databases/export-filtered`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to export sub-database" }));
+    throw new Error(err.detail || "Failed to export sub-database");
+  }
+  return res.json();
+};
+
 export const setActiveDatabase = async (dbName: string) => {
   const res = await fetch(`${API_BASE}/databases/active`, {
     method: "POST",
