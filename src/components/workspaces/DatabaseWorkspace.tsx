@@ -144,7 +144,7 @@ export function DatabaseWorkspace({ onLoadGame, uxTheme }: DatabaseWorkspaceProp
               )}
             </h2>
             <p className="text-xs opacity-70">
-              Active Database: <span className="font-mono font-bold text-emerald-400">{stats?.path || "patriciaTourny.lcdb"}</span>
+              Active Database: <span className="font-mono font-bold text-emerald-400">{stats?.path || "patriciaTourny.sqlite"}</span>
             </p>
           </div>
         </div>

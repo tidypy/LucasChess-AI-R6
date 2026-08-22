@@ -33,15 +33,21 @@ app.include_router(ai_router)
 app.include_router(engine_router)
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-DB_PATH = os.path.join(ROOT_DIR, "patriciaTourny.lcdb")
+DB_PATH = os.path.join(ROOT_DIR, "patriciaTourny.sqlite")
 
 try:
+    if not os.path.exists(DB_PATH):
+        # Look for existing .sqlite or create default
+        candidates = [os.path.join(ROOT_DIR, f) for f in os.listdir(ROOT_DIR) if f.endswith((".sqlite", ".db"))]
+        if candidates:
+            DB_PATH = candidates[0]
+        else:
+            default_repo = GameRepository.create_empty_db(DB_PATH)
     default_repo = GameRepository(DB_PATH)
     game_service = GameService(default_repo, ROOT_DIR)
-except FileNotFoundError:
-    # Create fallback empty DB if none exists
+except Exception as e:
     game_service = None
-    print(f"Warning: Default database {DB_PATH} not found.")
+    print(f"Warning: Failed to initialize GameService: {e}")
 
 class PgnImportRequest(BaseModel):
     pgn_text: str

@@ -45,7 +45,7 @@ const PREVIEW_REPERTOIRE_TREE: PolyglotMoveRow[] = [
 export function BookBuilderView({ }: BookBuilderViewProps) {
   const { logAction } = useClickLogger();
 
-  const [selectedDb, setSelectedDb] = useState("patriciaTourny.lcdb");
+  const [selectedDb, setSelectedDb] = useState("patriciaTourny.sqlite");
   const [maxPlies, setMaxPlies] = useState(24);
   const [minGames, setMinGames] = useState(5);
   const [minWinRate, setMinWinRate] = useState(48);

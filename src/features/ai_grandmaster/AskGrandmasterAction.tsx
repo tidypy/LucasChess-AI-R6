@@ -14,7 +14,7 @@ export interface AskGrandmasterActionProps {
   className?: string;
 }
 
-const KIBITZER_DB_NAME = "Kibitzer_Analysis.lcdb";
+const KIBITZER_DB_NAME = "Kibitzer_Analysis.sqlite";
 
 export function AskGrandmasterAction({
   fen,

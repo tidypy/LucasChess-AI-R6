@@ -54,7 +54,7 @@ const OPENING_BOOKS = [
   { id: "none", name: "No Book (Engine Scratch)", desc: "Calculates every move from scratch" },
 ];
 
-const SPARRING_DB_NAME = "Sparring_Games.lcdb";
+const SPARRING_DB_NAME = "Sparring_Games.sqlite";
 
 export function SparView({ uxTheme, boardTheme }: SparViewProps) {
   const { logAction } = useClickLogger();
@@ -144,7 +144,7 @@ export function SparView({ uxTheme, boardTheme }: SparViewProps) {
 ${game.pgn()}`;
   };
 
-  // Background Autosave to Sparring_Games.lcdb
+  // Background Autosave to Sparring_Games.sqlite
   const autoSaveGame = async () => {
     if (moveHistory.length === 0) return;
     try {

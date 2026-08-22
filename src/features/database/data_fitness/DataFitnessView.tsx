@@ -49,13 +49,13 @@ export function DataFitnessView({
   const queryClient = useQueryClient();
   const isLight = uxTheme?.mode === "light" || uxTheme?.id === "clean-light";
 
-  const [selectedDb, setSelectedDb] = useState<string>(initialDbName || "patriciaTourny.lcdb");
+  const [selectedDb, setSelectedDb] = useState<string>(initialDbName || "patriciaTourny.sqlite");
   const [activeTab, setActiveTab] = useState<"audit" | "silver" | "gold">("audit");
 
   // Ingestion & Import Setup State
   const [importStrategy, setImportStrategy] = useState<"fast" | "sanitize" | "gold" | "repertoire">("sanitize");
   const [targetDbName, setTargetDbName] = useState<string>(
-    pendingImportFile ? pendingImportFile.name.replace(/\.[^/.]+$/, "") + ".lcdb" : "NewDatabase.lcdb"
+    pendingImportFile ? pendingImportFile.name.replace(/\.[^/.]+$/, "") + ".sqlite" : "NewDatabase.sqlite"
   );
   const [isImporting, setIsImporting] = useState<boolean>(false);
   const [importSuccess, setImportSuccess] = useState<boolean>(false);
@@ -79,7 +79,7 @@ export function DataFitnessView({
 
   useEffect(() => {
     if (pendingImportFile) {
-      setTargetDbName(pendingImportFile.name.replace(/\.[^/.]+$/, "") + ".lcdb");
+      setTargetDbName(pendingImportFile.name.replace(/\.[^/.]+$/, "") + ".sqlite");
       setImportError(null);
     }
   }, [pendingImportFile]);

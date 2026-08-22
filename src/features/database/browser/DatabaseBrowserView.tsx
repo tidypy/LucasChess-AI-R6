@@ -354,7 +354,7 @@ export function DatabaseBrowserView({
           <input
             type="file"
             ref={fileInputRef}
-            accept=".pgn,.sqlite,.lcdb,.cbh,.bin"
+            accept=".pgn,.sqlite,.db,.cbh,.bin"
             className="hidden"
             onChange={handleFileSelect}
           />
@@ -819,7 +819,7 @@ export function DatabaseBrowserView({
                   {/* Export Filtered Sub-DB Button */}
                   <button
                     onClick={() => {
-                      setExportTargetName(activeDbName ? activeDbName.replace(/\.(lcdb|sqlite|db)$/, "") + "_Filtered.lcdb" : "Sub_Database.lcdb");
+                      setExportTargetName(activeDbName ? activeDbName.replace(/\.(sqlite|db|lcdb)$/, "") + "_Filtered.sqlite" : "Sub_Database.sqlite");
                       setIsExportModalOpen(true);
                       logAction("CLICK", "Opened Export Sub-Database Modal", `Source: ${activeDbName}`);
                     }}
@@ -1125,12 +1125,12 @@ export function DatabaseBrowserView({
                   value={exportTargetName}
                   onChange={(e) => setExportTargetName(e.target.value)}
                   className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-blue-400 outline-none focus:border-blue-500"
-                  placeholder="Sub_Database.lcdb"
+                  placeholder="Sub_Database.sqlite"
                 />
               </div>
 
               <div className="p-3 bg-black/30 rounded-xl border border-white/5 space-y-1 text-[11px] font-mono text-slate-400">
-                <div>Format: <strong className="text-white">Standard SQLite (.lcdb)</strong></div>
+                <div>Format: <strong className="text-white">Standard SQLite (.sqlite)</strong></div>
                 <div>Games Included: <strong className="text-emerald-400">{gamesData?.total || 0} games</strong></div>
                 <div>Deduplication &amp; Integrity: <strong className="text-blue-400">Auto-Indexed</strong></div>
               </div>

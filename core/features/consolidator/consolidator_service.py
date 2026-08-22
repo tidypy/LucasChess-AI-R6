@@ -27,8 +27,8 @@ class ConsolidatorService:
         Merges games from multiple SQLite databases into a unified target database
         with chunked batch streaming and robust SHA-256 move-sequence deduplication.
         """
-        if not target_db_name.endswith(".sqlite") and not target_db_name.endswith(".db") and not target_db_name.endswith(".lcdb"):
-            target_db_name += ".Tournament.sqlite"
+        if not target_db_name.endswith(".sqlite") and not target_db_name.endswith(".db"):
+            target_db_name += ".sqlite"
 
         target_path = os.path.join(self.root_dir, target_db_name)
         target_abs_path = os.path.abspath(target_path)

@@ -30,7 +30,7 @@ class MassAnalysisRequest(BaseModel):
     max_games: Optional[int] = None
 
 @router.get("/audit")
-async def audit_database(db_name: str = Query("patriciaTourny.lcdb")):
+async def audit_database(db_name: str = Query("patriciaTourny.sqlite")):
     try:
         return fitness_service.audit_database(db_name)
     except FileNotFoundError:

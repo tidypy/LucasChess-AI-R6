@@ -30,7 +30,7 @@ class GameService:
                 return repo
 
         if create_if_missing:
-            clean_name = db_name if db_name.endswith((".lcdb", ".sqlite", ".db")) else f"{db_name}.lcdb"
+            clean_name = db_name if db_name.endswith((".sqlite", ".db")) else f"{db_name}.sqlite"
             new_path = os.path.join(self.root_dir, clean_name)
             repo = GameRepository.create_empty_db(new_path)
             self._repositories[db_name] = repo
@@ -45,22 +45,18 @@ class GameService:
         self.active_db_path = repo.db_path
         return self.repo.get_database_stats()
 
-    def get_game(self, game_id: int, db_name: Optional[str] = None) -> Optional[Dict[str, Any]]:
-        repo = self._get_or_create_repo(db_name) if db_name else self.repo
-        return repo.get_game_by_rowid(game_id)
-
     def list_games(
         self,
         page: int = 1,
-        page_size: int = 50,
+        page_size: int = 25,
         search: Optional[str] = None,
         white: Optional[str] = None,
         black: Optional[str] = None,
-        result: Optional[str] = None,
         eco: Optional[str] = None,
-        sort_by: str = "ROWID",
-        sort_order: str = "ASC",
+        result: Optional[str] = None,
         db_name: Optional[str] = None,
+        sort_by: Optional[str] = None,
+        sort_order: str = "asc",
     ) -> Dict[str, Any]:
         repo = self._get_or_create_repo(db_name) if db_name else self.repo
         return repo.list_games(
@@ -69,13 +65,17 @@ class GameService:
             search=search,
             white=white,
             black=black,
-            result=result,
             eco=eco,
+            result=result,
             sort_by=sort_by,
             sort_order=sort_order,
         )
 
-    def list_players(self, search: Optional[str] = None, limit: int = 100, db_name: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_game(self, game_id: int, db_name: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        repo = self._get_or_create_repo(db_name) if db_name else self.repo
+        return repo.get_game(game_id)
+
+    def list_players(self, search: Optional[str] = None, limit: int = 50, db_name: Optional[str] = None) -> List[Dict[str, Any]]:
         repo = self._get_or_create_repo(db_name) if db_name else self.repo
         return repo.list_players(search=search, limit=limit)
 
@@ -86,7 +86,7 @@ class GameService:
     def list_available_databases(self) -> List[Dict[str, Any]]:
         results = []
         seen_names = set()
-        db_exts = (".lcdb", ".sqlite", ".db")
+        db_exts = (".sqlite", ".db")
 
         # Check root
         for f in os.listdir(self.root_dir):
@@ -123,8 +123,8 @@ class GameService:
 
     def ingest_database(self, file_name: str, target_name: str, file_bytes: bytes, strategy: str = "fast") -> Dict[str, Any]:
         clean_target = target_name.strip()
-        if not (clean_target.endswith(".lcdb") or clean_target.endswith(".sqlite")):
-            clean_target += ".lcdb"
+        if not (clean_target.endswith(".sqlite") or clean_target.endswith(".db")):
+            clean_target += ".sqlite"
 
         target_path = os.path.join(self.root_dir, clean_target)
         if os.path.exists(target_path):
@@ -142,7 +142,7 @@ class GameService:
             repo = GameRepository.create_empty_db(target_path)
             imported_count = repo.import_pgn(pgn_text)
             self._repositories[clean_target] = repo
-        elif lower_orig.endswith((".lcdb", ".sqlite", ".db")):
+        elif lower_orig.endswith((".sqlite", ".db")):
             with open(target_path, "wb") as f:
                 f.write(file_bytes)
             repo = GameRepository(target_path)
@@ -176,7 +176,7 @@ class GameService:
 
     def list_trash(self) -> List[Dict[str, Any]]:
         results = []
-        db_exts = (".lcdb", ".sqlite", ".db")
+        db_exts = (".sqlite", ".db")
         if os.path.exists(self.trash_dir):
             for f in os.listdir(self.trash_dir):
                 if f.endswith(db_exts) and not f.startswith("."):
@@ -330,8 +330,8 @@ class GameService:
     ) -> Dict[str, Any]:
         source_repo = self._get_or_create_repo(source_db)
         clean_target = target_name.strip()
-        if not (clean_target.endswith(".lcdb") or clean_target.endswith(".sqlite")):
-            clean_target += ".lcdb"
+        if not (clean_target.endswith(".sqlite") or clean_target.endswith(".db")):
+            clean_target += ".sqlite"
 
         target_path = os.path.join(self.root_dir, clean_target)
         if os.path.exists(target_path):
