@@ -28,7 +28,7 @@ interface DataFitnessViewProps {
 }
 
 export function DataFitnessView({
-  uxTheme: _uxTheme,
+  uxTheme,
   initialDbName,
   pendingImportFile,
   onClearImportFile,
@@ -37,6 +37,7 @@ export function DataFitnessView({
 }: DataFitnessViewProps) {
   const { logAction } = useClickLogger();
   const queryClient = useQueryClient();
+  const isLight = uxTheme?.mode === "light" || uxTheme?.id === "clean-light";
 
   const [selectedDb, setSelectedDb] = useState<string>(initialDbName || "patriciaTourny.lcdb");
   const [activeTab, setActiveTab] = useState<"audit" | "silver" | "gold">("audit");
@@ -361,53 +362,59 @@ export function DataFitnessView({
       )}
 
       {/* 4-Tier Distribution & Overall Health Card */}
-      <div className="p-6 rounded-3xl bg-[#14171c] border border-slate-800 shadow-2xl space-y-5">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-4">
+      <div className={`p-6 rounded-3xl ${isLight ? "bg-white border-slate-200 shadow-lg text-slate-900" : "bg-[#14171c] border-slate-800 shadow-2xl text-white"} border space-y-5`}>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-white/5 pb-4">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-slate-950 font-black text-2xl flex items-center justify-center shadow-lg">
-              {auditData?.grade || "A"}
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-slate-950 font-black text-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+              {isLoadingAudit ? <RefreshCw className="w-6 h-6 animate-spin text-slate-950" /> : (auditData?.grade || "N/A")}
             </div>
-            <div>
-              <div className="text-xl font-bold text-white flex items-center gap-2">
-                {auditData?.health_score || 95.6}% Health Score
-                <span className="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
-                  {auditData?.grade === "A+" || auditData?.grade === "A" ? "Analytics Ready" : "Sanitization Recommended"}
+            <div className="min-w-0">
+              <div className={`text-xl font-bold ${isLight ? "text-slate-900" : "text-white"} flex items-center gap-2 flex-wrap`}>
+                {isLoadingAudit ? "Scanning Database..." : `${auditData?.health_score ?? 0}% Health Score`}
+                <span className={`text-xs font-mono px-2 py-0.5 rounded ${
+                  (auditData?.health_score ?? 0) >= 80
+                    ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                    : (auditData?.health_score ?? 0) >= 60
+                    ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                    : "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                } border font-bold`}>
+                  {auditData?.grade === "A+" || auditData?.grade === "A" ? "Analytics Ready" : (auditData?.health_score ?? 0) >= 70 ? "Silver Theory Ready" : "Sanitization Recommended"}
                 </span>
               </div>
-              <div className="text-xs font-mono text-slate-400 mt-0.5">
-                {auditData?.total_games?.toLocaleString() || 0} Total Games Indexed in {selectedDb}
+              <div className={`text-xs font-mono ${isLight ? "text-slate-500" : "text-slate-400"} mt-0.5 truncate`}>
+                {auditData?.total_games?.toLocaleString() || 0} Total Games Indexed in <span className="font-bold">{selectedDb}</span>
               </div>
             </div>
           </div>
 
           {/* Tier Counts Badges */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center font-mono text-xs">
-            <div className="p-2 rounded-xl bg-black/40 border border-rose-500/30">
-              <span className="text-[10px] text-rose-400 block font-bold">Tier 0 (Quarantine)</span>
-              <span className="text-sm font-bold text-white">{tiers.tier_0_quarantine}</span>
+            <div className={`p-2 rounded-xl ${isLight ? "bg-rose-50 border-rose-200" : "bg-black/40 border-rose-500/30"} border`}>
+              <span className="text-[10px] text-rose-500 block font-bold truncate">Tier 0 (Quarantine)</span>
+              <span className={`text-sm font-bold ${isLight ? "text-slate-900" : "text-white"}`}>{tiers.tier_0_quarantine}</span>
             </div>
-            <div className="p-2 rounded-xl bg-black/40 border border-amber-500/30">
-              <span className="text-[10px] text-amber-400 block font-bold">Tier 1 (Sanitized)</span>
-              <span className="text-sm font-bold text-white">{tiers.tier_1_sanitized}</span>
+            <div className={`p-2 rounded-xl ${isLight ? "bg-amber-50 border-amber-200" : "bg-black/40 border-amber-500/30"} border`}>
+              <span className="text-[10px] text-amber-500 block font-bold truncate">Tier 1 (Sanitized)</span>
+              <span className={`text-sm font-bold ${isLight ? "text-slate-900" : "text-white"}`}>{tiers.tier_1_sanitized}</span>
             </div>
-            <div className="p-2 rounded-xl bg-black/40 border border-emerald-500/30">
-              <span className="text-[10px] text-emerald-400 block font-bold">Tier 2 (Silver Stats)</span>
-              <span className="text-sm font-bold text-emerald-400 font-bold">{tiers.tier_2_silver}</span>
+            <div className={`p-2 rounded-xl ${isLight ? "bg-emerald-50 border-emerald-200" : "bg-black/40 border-emerald-500/30"} border`}>
+              <span className="text-[10px] text-emerald-500 block font-bold truncate">Tier 2 (Silver Stats)</span>
+              <span className="text-sm font-bold text-emerald-500">{tiers.tier_2_silver}</span>
             </div>
-            <div className="p-2 rounded-xl bg-black/40 border border-purple-500/30">
-              <span className="text-[10px] text-purple-400 block font-bold">Tier 3 (Gold Evaluated)</span>
-              <span className="text-sm font-bold text-purple-400 font-bold">{tiers.tier_3_gold}</span>
+            <div className={`p-2 rounded-xl ${isLight ? "bg-purple-50 border-purple-200" : "bg-black/40 border-purple-500/30"} border`}>
+              <span className="text-[10px] text-purple-500 block font-bold truncate">Tier 3 (Gold Evaluated)</span>
+              <span className="text-sm font-bold text-purple-500">{tiers.tier_3_gold}</span>
             </div>
           </div>
         </div>
 
         {/* Tier Distribution Multi-Bar */}
         <div className="space-y-1.5">
-          <div className="flex justify-between text-[11px] font-mono text-slate-400">
+          <div className={`flex justify-between text-[11px] font-mono ${isLight ? "text-slate-500" : "text-slate-400"}`}>
             <span>Tier Lifecycle Progress:</span>
             <span>{tiers.tier_2_silver + tiers.tier_3_gold} of {totalGames} games Tier 2+</span>
           </div>
-          <div className="h-3 w-full bg-black/50 rounded-full flex overflow-hidden shadow-inner">
+          <div className={`h-3 w-full ${isLight ? "bg-slate-200" : "bg-black/50"} rounded-full flex overflow-hidden shadow-inner`}>
             {t0Pct > 0 && <div style={{ width: `${t0Pct}%` }} className="bg-rose-500" title={`Tier 0: ${t0Pct}%`} />}
             {t1Pct > 0 && <div style={{ width: `${t1Pct}%` }} className="bg-amber-500" title={`Tier 1: ${t1Pct}%`} />}
             {t2Pct > 0 && <div style={{ width: `${t2Pct}%` }} className="bg-emerald-500" title={`Tier 2 (Silver): ${t2Pct}%`} />}

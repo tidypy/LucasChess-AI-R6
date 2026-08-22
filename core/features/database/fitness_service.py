@@ -240,11 +240,18 @@ class DataFitnessService:
             else:
                 t1_count += 1
 
-        # Calculate composite health score
-        issue_penalty = (missing_results * 1.5 + unclassified_ecos * 0.8 + missing_elos * 0.5 + short_stubs * 3.0 + corrupt_moves * 5.0)
-        max_penalty = max(1, total_games * 2.5)
-        health_score = round(max(10.0, min(100.0, 100.0 - (issue_penalty / max_penalty) * 100.0)), 1)
+        # Multi-dimensional tier-weighted health formula:
+        # Tier 0 (Quarantine): 0% value
+        # Tier 1 (Sanitized metadata): 45% value
+        # Tier 2 (Silver Tournament Verified with ECO & ELO): 80% value
+        # Tier 3 (Gold Deep Stockfish Evaluated): 100% value
+        tier_base_score = (t0_count * 0.0 + t1_count * 45.0 + t2_count * 80.0 + t3_count * 100.0) / total_games
 
+        # Deduct penalties for structural defects & missing tags
+        defect_ratio = (missing_results * 1.0 + unclassified_ecos * 0.5 + missing_elos * 0.3 + short_stubs * 2.5 + corrupt_moves * 5.0) / total_games
+        penalty_deduction = min(30.0, defect_ratio * 30.0)
+
+        health_score = round(max(5.0, min(100.0, tier_base_score - penalty_deduction)), 1)
         grade = "A+" if health_score >= 95 else "A" if health_score >= 88 else "B" if health_score >= 75 else "C" if health_score >= 60 else "Needs Repair"
 
         return {

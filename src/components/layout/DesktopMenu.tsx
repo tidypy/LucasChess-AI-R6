@@ -90,8 +90,8 @@ export function DesktopMenu({
                 : "bg-slate-800/80 hover:bg-slate-800 border-slate-700/60 text-slate-200"
             }`}
           >
-            <Sun className="w-3.5 h-3.5 text-amber-500" />
-            <span className="text-[11px] font-mono">{currentUXTheme.name}</span>
+            <Sun className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+            <span className="text-[11px] font-mono max-w-[130px] truncate">{currentUXTheme.name}</span>
           </button>
         </Tooltip>
 
@@ -108,8 +108,8 @@ export function DesktopMenu({
                 : "bg-slate-800/80 hover:bg-slate-800 border-slate-700/60 text-slate-200"
             }`}
           >
-            <Grid className="w-3.5 h-3.5 text-blue-500" />
-            <span className="text-[11px] font-mono">{currentBoardTheme.name.split(" ")[0]}</span>
+            <Grid className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+            <span className="text-[11px] font-mono max-w-[90px] truncate">{currentBoardTheme.name.split(" ")[0]}</span>
           </button>
         </Tooltip>
 

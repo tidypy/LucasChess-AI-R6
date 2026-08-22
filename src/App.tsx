@@ -88,9 +88,8 @@ function MainApp() {
 
     return () => {
       eventSource.close();
-      logAction("SSE", "Closed SSE Connection");
     };
-  }, [logAction]);
+  }, []);
 
   const handleOpenTheme = (tab: "ux" | "board" | "custom") => {
     setThemeModalTab(tab);
