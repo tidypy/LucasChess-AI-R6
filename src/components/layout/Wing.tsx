@@ -1,16 +1,261 @@
-import React from "react";
-import { Menu, Play, Activity, Database, Settings } from "lucide-react";
+import {
+  Compass,
+  Database,
+  Sun,
+  Grid,
+  Bug,
+  Settings,
+  Sparkles,
+  BarChart2,
+  Users,
+  TrendingUp,
+  Layers,
+  ShieldCheck,
+} from "lucide-react";
+import { useClickLogger } from "../../lib/clickLogger";
+import { Tooltip } from "../common/Tooltip";
+import { UXTheme } from "../../lib/theme";
 
-export function Wing() {
+interface WingProps {
+  activeView: string;
+  onSelectView: (view: string) => void;
+  onOpenThemeCustomizer: (tab: "ux" | "board" | "custom") => void;
+  onToggleDebugConsole: () => void;
+  isConsoleOpen: boolean;
+  uxTheme: UXTheme;
+}
+
+export function Wing({
+  activeView,
+  onSelectView,
+  onOpenThemeCustomizer,
+  onToggleDebugConsole,
+  isConsoleOpen,
+  uxTheme,
+}: WingProps) {
+  const { logAction } = useClickLogger();
+  const isLight = uxTheme.mode === "light";
+
+  const handleNav = (viewName: string) => {
+    logAction("NAV", `Switched Workspace: ${viewName}`, `Active View: ${viewName}`);
+    onSelectView(viewName);
+  };
+
   return (
-    <div className="w-16 h-screen bg-slate-950 flex flex-col items-center py-4 space-y-8 border-r border-slate-800 text-slate-400">
-      <div className="text-emerald-500 font-bold text-xl cursor-pointer hover:text-emerald-400">LCL</div>
-      <Menu className="w-6 h-6 cursor-pointer hover:text-slate-100" />
-      <Play className="w-6 h-6 cursor-pointer hover:text-slate-100" />
-      <Activity className="w-6 h-6 cursor-pointer hover:text-slate-100 text-emerald-500" />
-      <Database className="w-6 h-6 cursor-pointer hover:text-slate-100" />
-      <div className="flex-grow"></div>
-      <Settings className="w-6 h-6 cursor-pointer hover:text-slate-100" />
+    <div
+      className={`w-16 h-screen flex flex-col items-center py-4 space-y-4 border-r select-none z-20 transition-colors duration-200 ${
+        isLight
+          ? "bg-white border-slate-200 text-slate-500 shadow-sm"
+          : "bg-[#090d16] border-slate-800 text-slate-400"
+      }`}
+    >
+      {/* Brand Icon */}
+      <Tooltip content="DeepScout Chess" description="Return to Main Workspace" position="right">
+        <button
+          onClick={() => handleNav("Analysis")}
+          className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 text-slate-950 font-black text-sm flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
+        >
+          DSC
+        </button>
+      </Tooltip>
+
+      <div className={`w-8 h-[1px] ${isLight ? "bg-slate-200" : "bg-slate-800"}`} />
+
+      {/* Main Workspace Navigation Icons */}
+      <Tooltip content="Analysis & Board" description="Explore positions and analyze games" position="right">
+        <button
+          onClick={() => handleNav("Analysis")}
+          className={`p-2.5 rounded-2xl transition-all ${
+            activeView === "Analysis"
+              ? "bg-emerald-500/20 text-emerald-500 shadow-md border border-emerald-500/30"
+              : isLight
+              ? "hover:text-slate-900 hover:bg-slate-100"
+              : "hover:text-slate-100 hover:bg-slate-800/60"
+          }`}
+        >
+          <Compass className="w-5 h-5" />
+        </button>
+      </Tooltip>
+
+      <Tooltip content="Player Dossier" description="Longitudinal BI, Glicko-2 & style signature" position="right">
+        <button
+          onClick={() => handleNav("Dossier")}
+          className={`p-2.5 rounded-2xl transition-all ${
+            activeView === "Dossier"
+              ? "bg-blue-500/20 text-blue-400 shadow-md border border-blue-500/30"
+              : isLight
+              ? "hover:text-slate-900 hover:bg-slate-100"
+              : "hover:text-slate-100 hover:bg-slate-800/60"
+          }`}
+        >
+          <BarChart2 className="w-5 h-5" />
+        </button>
+      </Tooltip>
+
+      <Tooltip content="Head-to-Head Compare" description="Side-by-side gap analysis and style divergence" position="right">
+        <button
+          onClick={() => handleNav("Compare")}
+          className={`p-2.5 rounded-2xl transition-all ${
+            activeView === "Compare"
+              ? "bg-blue-500/20 text-blue-400 shadow-md border border-blue-500/30"
+              : isLight
+              ? "hover:text-slate-900 hover:bg-slate-100"
+              : "hover:text-slate-100 hover:bg-slate-800/60"
+          }`}
+        >
+          <Users className="w-5 h-5" />
+        </button>
+      </Tooltip>
+
+      <Tooltip content="Fashion Index" description="Historical opening popularity over eras" position="right">
+        <button
+          onClick={() => handleNav("Fashion")}
+          className={`p-2.5 rounded-2xl transition-all ${
+            activeView === "Fashion"
+              ? "bg-purple-500/20 text-purple-400 shadow-md border border-purple-500/30"
+              : isLight
+              ? "hover:text-slate-900 hover:bg-slate-100"
+              : "hover:text-slate-100 hover:bg-slate-800/60"
+          }`}
+        >
+          <TrendingUp className="w-5 h-5" />
+        </button>
+      </Tooltip>
+
+      <Tooltip content="Database Browser" description="ChessBase-style shelf & game preview" position="right">
+        <button
+          onClick={() => handleNav("Database")}
+          className={`p-2.5 rounded-2xl transition-all ${
+            activeView === "Database"
+              ? "bg-emerald-500/20 text-emerald-500 shadow-md border border-emerald-500/30"
+              : isLight
+              ? "hover:text-slate-900 hover:bg-slate-100"
+              : "hover:text-slate-100 hover:bg-slate-800/60"
+          }`}
+        >
+          <Database className="w-5 h-5" />
+        </button>
+      </Tooltip>
+
+      <Tooltip content="Data Fitness & Quality" description="Audit health, sanitize records & run Mass Analysis" position="right">
+        <button
+          onClick={() => handleNav("Fitness")}
+          className={`p-2.5 rounded-2xl transition-all ${
+            activeView === "Fitness"
+              ? "bg-emerald-500/20 text-emerald-400 shadow-md border border-emerald-500/30"
+              : isLight
+              ? "hover:text-slate-900 hover:bg-slate-100"
+              : "hover:text-slate-100 hover:bg-slate-800/60"
+          }`}
+        >
+          <ShieldCheck className="w-5 h-5" />
+        </button>
+      </Tooltip>
+
+      <Tooltip content="Database Consolidator" description="Merge, deduplicate & export standard SQLite" position="right">
+        <button
+          onClick={() => handleNav("Consolidator")}
+          className={`p-2.5 rounded-2xl transition-all ${
+            activeView === "Consolidator"
+              ? "bg-emerald-500/20 text-emerald-500 shadow-md border border-emerald-500/30"
+              : isLight
+              ? "hover:text-slate-900 hover:bg-slate-100"
+              : "hover:text-slate-100 hover:bg-slate-800/60"
+          }`}
+        >
+          <Layers className="w-5 h-5" />
+        </button>
+      </Tooltip>
+
+      <Tooltip content="AI Grandmaster" description="Persona modeling & neural simulation" position="right">
+        <button
+          onClick={() => handleNav("AI Grandmaster")}
+          className={`p-2.5 rounded-2xl transition-all ${
+            activeView === "AI Grandmaster"
+              ? "bg-emerald-500/20 text-emerald-500 shadow-md border border-emerald-500/30"
+              : isLight
+              ? "hover:text-slate-900 hover:bg-slate-100"
+              : "hover:text-slate-100 hover:bg-slate-800/60"
+          }`}
+        >
+          <Sparkles className="w-5 h-5" />
+        </button>
+      </Tooltip>
+
+      <div className="flex-grow" />
+
+      {/* Utilities & Themes */}
+      <Tooltip content="Change UX Theme" description="Switch application window & card colors (Dark/Light)" position="right">
+        <button
+          onClick={() => {
+            logAction("CLICK", "Clicked 'Change UX Theme' in Wing");
+            onOpenThemeCustomizer("ux");
+          }}
+          className={`p-2.5 rounded-2xl transition-colors ${
+            isLight
+              ? "text-amber-600 hover:bg-amber-100/60"
+              : "text-amber-400 hover:bg-amber-500/10"
+          }`}
+        >
+          <Sun className="w-5 h-5" />
+        </button>
+      </Tooltip>
+
+      <Tooltip content="Change Board Theme" description="Change chessboard square colors & palette" position="right">
+        <button
+          onClick={() => {
+            logAction("CLICK", "Clicked 'Change Board Theme' in Wing");
+            onOpenThemeCustomizer("board");
+          }}
+          className={`p-2.5 rounded-2xl transition-colors ${
+            isLight
+              ? "text-blue-600 hover:bg-blue-100/60"
+              : "text-blue-400 hover:bg-blue-500/10"
+          }`}
+        >
+          <Grid className="w-5 h-5" />
+        </button>
+      </Tooltip>
+
+      <Tooltip
+        content="Click & Debug Logger"
+        description={isConsoleOpen ? "Hide live interaction debug console" : "Show live interaction debug console"}
+        position="right"
+      >
+        <button
+          onClick={() => {
+            logAction("CLICK", `${isConsoleOpen ? "Closed" : "Opened"} Debug Console`);
+            onToggleDebugConsole();
+          }}
+          className={`p-2.5 rounded-2xl transition-all ${
+            isConsoleOpen
+              ? "bg-amber-500/20 text-amber-500 border border-amber-500/40"
+              : isLight
+              ? "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+              : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+          }`}
+        >
+          <Bug className="w-5 h-5" />
+        </button>
+      </Tooltip>
+
+      <Tooltip content="Settings" description="Configure engine paths, UCI options, and core" position="right">
+        <button
+          onClick={() => {
+            logAction("CLICK", "Opened Settings Modal");
+            handleNav("Settings");
+          }}
+          className={`p-2.5 rounded-2xl transition-all ${
+            activeView === "Settings"
+              ? "bg-emerald-500/20 text-emerald-500 shadow-md border border-emerald-500/30"
+              : isLight
+              ? "hover:text-slate-900 hover:bg-slate-100"
+              : "hover:text-slate-100 hover:bg-slate-800/60"
+          }`}
+        >
+          <Settings className="w-5 h-5" />
+        </button>
+      </Tooltip>
     </div>
   );
 }

@@ -1,0 +1,658 @@
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { UXTheme } from "../../../lib/theme";
+import { useClickLogger } from "../../../lib/clickLogger";
+import { fetchDatabases } from "../../../lib/api";
+import { Tooltip } from "../../../components/common/Tooltip";
+import {
+  ShieldCheck,
+  AlertTriangle,
+  Zap,
+  RefreshCw,
+  CheckCircle2,
+  XCircle,
+  Database,
+  Sparkles,
+  Play,
+  Flame,
+  Layers,
+} from "lucide-react";
+
+interface DataFitnessViewProps {
+  uxTheme: UXTheme;
+  initialDbName?: string;
+  onNavigateToBrowser?: () => void;
+  onNavigateToDossier?: () => void;
+}
+
+export function DataFitnessView({
+  uxTheme: _uxTheme,
+  initialDbName,
+  onNavigateToBrowser,
+  onNavigateToDossier,
+}: DataFitnessViewProps) {
+  const { logAction } = useClickLogger();
+  const queryClient = useQueryClient();
+
+  const [selectedDb, setSelectedDb] = useState<string>(initialDbName || "patriciaTourny.lcdb");
+  const [activeTab, setActiveTab] = useState<"audit" | "silver" | "gold">("audit");
+
+  // Sanitization options
+  const [purgeStubs, setPurgeStubs] = useState(true);
+  const [autoRepairResults, setAutoRepairResults] = useState(true);
+  const [normalizeNames, setNormalizeNames] = useState(true);
+
+  // Mass analysis options
+  const [analysisDepth, setAnalysisDepth] = useState<number>(16);
+  const [analysisMode, setAnalysisMode] = useState<"MISSING_ONLY" | "OVERWRITE">("MISSING_ONLY");
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+
+  // 1. Fetch available databases
+  const { data: databases } = useQuery({
+    queryKey: ["databases"],
+    queryFn: fetchDatabases,
+  });
+
+  useEffect(() => {
+    if (databases && databases.length > 0 && !selectedDb) {
+      setSelectedDb(databases[0].name);
+    }
+  }, [databases, selectedDb]);
+
+  // 2. Fetch Database Audit Report
+  const { data: auditData, isLoading: isLoadingAudit, refetch: refetchAudit } = useQuery({
+    queryKey: ["fitnessAudit", selectedDb],
+    queryFn: async () => {
+      const res = await fetch(`http://127.0.0.1:8000/api/v1/fitness/audit?db_name=${encodeURIComponent(selectedDb)}`);
+      if (!res.ok) throw new Error("Failed to load audit report");
+      return res.json();
+    },
+    enabled: !!selectedDb,
+  });
+
+  // 3. Sanitization Mutation
+  const sanitizeMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("http://127.0.0.1:8000/api/v1/fitness/sanitize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          db_name: selectedDb,
+          purge_short_stubs: purgeStubs,
+          auto_repair_results: autoRepairResults,
+          normalize_names_dates: normalizeNames,
+        }),
+      });
+      if (!res.ok) throw new Error("Sanitization pass failed");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      logAction("API", `Sanitized database: ${selectedDb}`, `Normalized: ${data.normalized_records_count}, Repaired: ${data.repaired_results_count}`);
+      refetchAudit();
+      queryClient.invalidateQueries({ queryKey: ["databases"] });
+    },
+  });
+
+  // 4. Silver Stats Mutation
+  const silverMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("http://127.0.0.1:8000/api/v1/fitness/generate-silver-stats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ db_name: selectedDb }),
+      });
+      if (!res.ok) throw new Error("Silver statistics generation failed");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      logAction("API", `Generated Silver Stats for ${selectedDb}`, `Assigned ECOs: ${data.ecos_assigned}`);
+      refetchAudit();
+      queryClient.invalidateQueries({ queryKey: ["databases"] });
+    },
+  });
+
+  // 5. Mass Analysis Start Mutation
+  const startAnalysisMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("http://127.0.0.1:8000/api/v1/fitness/mass-analysis/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          db_name: selectedDb,
+          depth: analysisDepth,
+          mode: analysisMode,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to start mass analysis");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setActiveJobId(data.job_id);
+      logAction("API", `Started Mass Analysis job: ${data.job_id} at depth ${analysisDepth}`);
+    },
+  });
+
+  // 6. Polling active analysis job status
+  const { data: jobStatus } = useQuery({
+    queryKey: ["analysisJobStatus", activeJobId],
+    queryFn: async () => {
+      if (!activeJobId) return null;
+      const res = await fetch(`http://127.0.0.1:8000/api/v1/fitness/mass-analysis/status/${activeJobId}`);
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!activeJobId,
+    refetchInterval: activeJobId ? 1000 : false,
+  });
+
+  // Reset or refresh when job completes
+  useEffect(() => {
+    if (jobStatus && jobStatus.status === "completed") {
+      refetchAudit();
+      queryClient.invalidateQueries({ queryKey: ["databases"] });
+    }
+  }, [jobStatus, refetchAudit, queryClient]);
+
+  const handleCancelAnalysis = async () => {
+    if (activeJobId) {
+      await fetch(`http://127.0.0.1:8000/api/v1/fitness/mass-analysis/cancel/${activeJobId}`, { method: "POST" });
+      logAction("API", `Cancelled Mass Analysis job: ${activeJobId}`);
+      setActiveJobId(null);
+      refetchAudit();
+    }
+  };
+
+  const tiers = auditData?.tiers || { tier_0_quarantine: 0, tier_1_sanitized: 0, tier_2_silver: 0, tier_3_gold: 0 };
+  const totalGames = auditData?.total_games || 1;
+
+  const t0Pct = Math.round((tiers.tier_0_quarantine / totalGames) * 100);
+  const t1Pct = Math.round((tiers.tier_1_sanitized / totalGames) * 100);
+  const t2Pct = Math.round((tiers.tier_2_silver / totalGames) * 100);
+  const t3Pct = Math.max(0, 100 - t0Pct - t1Pct - t2Pct);
+
+  return (
+    <div className="flex flex-col gap-6 max-w-6xl mx-auto pb-12 select-none animate-in fade-in duration-200 font-sans">
+      {/* Top Banner & Navigation */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-emerald-400 font-bold mb-1 flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            Data Fitness & Statistical Enrichment Studio
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
+            Data Fitness Pipeline
+            <span className="text-xs font-mono font-normal text-slate-400">
+              — Elevate Raw Data to Tier 3 Gold Analytics
+            </span>
+          </h1>
+        </div>
+
+        {/* Database Selector Dropdown */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center bg-[#14171c] border border-slate-800 rounded-2xl px-3 py-1.5 shadow-md">
+            <Database className="w-3.5 h-3.5 text-blue-400 mr-2" />
+            <select
+              value={selectedDb}
+              onChange={(e) => {
+                setSelectedDb(e.target.value);
+                logAction("NAV", `Selected Database for Fitness: ${e.target.value}`);
+              }}
+              className="bg-transparent text-xs font-mono text-white outline-none cursor-pointer"
+            >
+              {databases?.map((db) => (
+                <option key={db.name} value={db.name} className="bg-slate-900 text-white">
+                  {db.name} ({db.size_mb} MB)
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <Tooltip content="Browse Database Games">
+            <button
+              onClick={() => {
+                logAction("NAV", "Opened Database Browser from Fitness View");
+                if (onNavigateToBrowser) onNavigateToBrowser();
+              }}
+              className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 shadow-md transition-all flex items-center gap-1.5"
+            >
+              <Layers className="w-3.5 h-3.5 text-emerald-400" />
+              Shelf Browser
+            </button>
+          </Tooltip>
+        </div>
+      </div>
+
+      {/* 4-Tier Distribution & Overall Health Card */}
+      <div className="p-6 rounded-3xl bg-[#14171c] border border-slate-800 shadow-2xl space-y-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-4">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-slate-950 font-black text-2xl flex items-center justify-center shadow-lg">
+              {auditData?.grade || "A"}
+            </div>
+            <div>
+              <div className="text-xl font-bold text-white flex items-center gap-2">
+                {auditData?.health_score || 95.6}% Health Score
+                <span className="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+                  {auditData?.grade === "A+" || auditData?.grade === "A" ? "Analytics Ready" : "Sanitization Recommended"}
+                </span>
+              </div>
+              <div className="text-xs font-mono text-slate-400 mt-0.5">
+                {auditData?.total_games?.toLocaleString() || 0} Total Games Indexed in {selectedDb}
+              </div>
+            </div>
+          </div>
+
+          {/* Tier Counts Badges */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center font-mono text-xs">
+            <div className="p-2 rounded-xl bg-black/40 border border-rose-500/30">
+              <span className="text-[10px] text-rose-400 block font-bold">Tier 0 (Quarantine)</span>
+              <span className="text-sm font-bold text-white">{tiers.tier_0_quarantine}</span>
+            </div>
+            <div className="p-2 rounded-xl bg-black/40 border border-amber-500/30">
+              <span className="text-[10px] text-amber-400 block font-bold">Tier 1 (Sanitized)</span>
+              <span className="text-sm font-bold text-white">{tiers.tier_1_sanitized}</span>
+            </div>
+            <div className="p-2 rounded-xl bg-black/40 border border-emerald-500/30">
+              <span className="text-[10px] text-emerald-400 block font-bold">Tier 2 (Silver Stats)</span>
+              <span className="text-sm font-bold text-emerald-400 font-bold">{tiers.tier_2_silver}</span>
+            </div>
+            <div className="p-2 rounded-xl bg-black/40 border border-purple-500/30">
+              <span className="text-[10px] text-purple-400 block font-bold">Tier 3 (Gold Evaluated)</span>
+              <span className="text-sm font-bold text-purple-400 font-bold">{tiers.tier_3_gold}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Tier Distribution Multi-Bar */}
+        <div className="space-y-1.5">
+          <div className="flex justify-between text-[11px] font-mono text-slate-400">
+            <span>Tier Lifecycle Progress:</span>
+            <span>{tiers.tier_2_silver + tiers.tier_3_gold} of {totalGames} games Tier 2+</span>
+          </div>
+          <div className="h-3 w-full bg-black/50 rounded-full flex overflow-hidden shadow-inner">
+            {t0Pct > 0 && <div style={{ width: `${t0Pct}%` }} className="bg-rose-500" title={`Tier 0: ${t0Pct}%`} />}
+            {t1Pct > 0 && <div style={{ width: `${t1Pct}%` }} className="bg-amber-500" title={`Tier 1: ${t1Pct}%`} />}
+            {t2Pct > 0 && <div style={{ width: `${t2Pct}%` }} className="bg-emerald-500" title={`Tier 2 (Silver): ${t2Pct}%`} />}
+            {t3Pct > 0 && <div style={{ width: `${t3Pct}%` }} className="bg-purple-600" title={`Tier 3 (Gold): ${t3Pct}%`} />}
+          </div>
+        </div>
+      </div>
+
+      {/* Stage Navigation Tabs */}
+      <div className="flex gap-2 border-b border-slate-800 pb-2">
+        <button
+          onClick={() => {
+            setActiveTab("audit");
+            logAction("NAV", "Switched to Health Audit tab");
+          }}
+          className={`px-4 py-2 text-xs font-bold font-mono rounded-xl transition-all flex items-center gap-2 ${
+            activeTab === "audit"
+              ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-md"
+              : "text-slate-400 hover:text-white hover:bg-white/5"
+          }`}
+        >
+          <ShieldCheck className="w-4 h-4" />
+          1. Health Audit & Sanitization
+        </button>
+
+        <button
+          onClick={() => {
+            setActiveTab("silver");
+            logAction("NAV", "Switched to Silver Statistics tab");
+          }}
+          className={`px-4 py-2 text-xs font-bold font-mono rounded-xl transition-all flex items-center gap-2 ${
+            activeTab === "silver"
+              ? "bg-blue-500/15 text-blue-400 border border-blue-500/30 shadow-md"
+              : "text-slate-400 hover:text-white hover:bg-white/5"
+          }`}
+        >
+          <Zap className="w-4 h-4" />
+          2. Silver Statistics (Instant)
+        </button>
+
+        <button
+          onClick={() => {
+            setActiveTab("gold");
+            logAction("NAV", "Switched to Gold Mass Analysis tab");
+          }}
+          className={`px-4 py-2 text-xs font-bold font-mono rounded-xl transition-all flex items-center gap-2 ${
+            activeTab === "gold"
+              ? "bg-purple-500/15 text-purple-400 border border-purple-500/30 shadow-md"
+              : "text-slate-400 hover:text-white hover:bg-white/5"
+          }`}
+        >
+          <Flame className="w-4 h-4" />
+          3. Gold Mass Analysis (Stockfish)
+        </button>
+      </div>
+
+      {/* TAB 1: Health Audit & Sanitization */}
+      {activeTab === "audit" && (
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 animate-in fade-in duration-150">
+          {/* Anomaly Cards (7 cols) */}
+          <div className="md:col-span-7 p-6 rounded-3xl bg-[#14171c] border border-slate-800 shadow-xl space-y-4">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 border-b border-white/5 pb-3">
+              <AlertTriangle className="w-4 h-4 text-amber-400" />
+              Identified Data Anomalies
+            </h2>
+
+            <div className="space-y-3 font-sans text-xs">
+              <div className="p-3.5 rounded-2xl bg-black/30 border border-white/5 flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-white block">Ambiguous / Missing Results (*)</span>
+                  <span className="text-[10px] text-slate-500">Un-adjudicated games that distort performance ratings</span>
+                </div>
+                <span className={`font-mono font-bold text-sm ${auditData?.issues?.missing_results ? "text-rose-400" : "text-emerald-400"}`}>
+                  {auditData?.issues?.missing_results || 0}
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-black/30 border border-white/5 flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-white block">Unclassified ECOs (A00 / Missing)</span>
+                  <span className="text-[10px] text-slate-500">Games without opening theory categorization</span>
+                </div>
+                <span className={`font-mono font-bold text-sm ${auditData?.issues?.unclassified_ecos ? "text-amber-400" : "text-emerald-400"}`}>
+                  {auditData?.issues?.unclassified_ecos || 0}
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-black/30 border border-white/5 flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-white block">Unrated / Missing Elo Ratings</span>
+                  <span className="text-[10px] text-slate-500">Opponents missing authorative FIDE/National ratings</span>
+                </div>
+                <span className="font-mono font-bold text-sm text-slate-400">
+                  {auditData?.issues?.missing_elos || 0}
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-black/30 border border-white/5 flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-white block">Short Stubs & Accidental Aborts (&lt; 3 plies)</span>
+                  <span className="text-[10px] text-slate-500">Corrupted zero-move records to purge from analytics</span>
+                </div>
+                <span className={`font-mono font-bold text-sm ${auditData?.issues?.short_stubs ? "text-rose-400" : "text-emerald-400"}`}>
+                  {auditData?.issues?.short_stubs || 0}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Sanitization Action Rules (5 cols) */}
+          <div className="md:col-span-5 p-6 rounded-3xl bg-[#14171c] border border-slate-800 shadow-xl space-y-5 flex flex-col justify-between">
+            <div className="space-y-4">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 border-b border-white/5 pb-3">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                Sanitization Rules
+              </h2>
+
+              <div className="space-y-3 text-xs">
+                <label
+                  onClick={() => setAutoRepairResults(!autoRepairResults)}
+                  className="flex items-start gap-2.5 cursor-pointer p-2.5 rounded-xl bg-black/30 border border-white/5 hover:bg-white/5 transition-all"
+                >
+                  <input type="checkbox" checked={autoRepairResults} readOnly className="mt-0.5" />
+                  <div>
+                    <span className="font-bold text-slate-200 block">Adjudication Cascade</span>
+                    <span className="text-[10px] text-slate-500">Resolve '*' via Termination tag &amp; terminal checkmate</span>
+                  </div>
+                </label>
+
+                <label
+                  onClick={() => setNormalizeNames(!normalizeNames)}
+                  className="flex items-start gap-2.5 cursor-pointer p-2.5 rounded-xl bg-black/30 border border-white/5 hover:bg-white/5 transition-all"
+                >
+                  <input type="checkbox" checked={normalizeNames} readOnly className="mt-0.5" />
+                  <div>
+                    <span className="font-bold text-slate-200 block">Normalize Names &amp; Dates</span>
+                    <span className="text-[10px] text-slate-500">Standardize player casing &amp; ISO YYYY.MM.DD dates</span>
+                  </div>
+                </label>
+
+                <label
+                  onClick={() => setPurgeStubs(!purgeStubs)}
+                  className="flex items-start gap-2.5 cursor-pointer p-2.5 rounded-xl bg-black/30 border border-white/5 hover:bg-white/5 transition-all"
+                >
+                  <input type="checkbox" checked={purgeStubs} readOnly className="mt-0.5" />
+                  <div>
+                    <span className="font-bold text-slate-200 block">Purge Zero-Move Stubs</span>
+                    <span className="text-[10px] text-slate-500">Delete unusable &lt; 3 ply records safely via WAL</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <button
+              onClick={() => sanitizeMutation.mutate()}
+              disabled={sanitizeMutation.isPending || isLoadingAudit}
+              className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40"
+            >
+              {sanitizeMutation.isPending ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Sanitizing Records...
+                </>
+              ) : (
+                <>
+                  <ShieldCheck className="w-4 h-4" />
+                  Run Full Sanitization Pass
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2: Silver Statistics (Instant) */}
+      {activeTab === "silver" && (
+        <div className="p-8 rounded-3xl bg-[#14171c] border border-slate-800 shadow-2xl space-y-6 animate-in fade-in duration-150">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-white/5 pb-4">
+            <div>
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <Zap className="w-5 h-5 text-blue-400" />
+                Stage A: Silver Statistics &amp; Opening Repertoire
+              </h2>
+              <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
+                Extracts metadata, classifies all opening lines via Polyglot tree, generates Glicko-2 ratings (&mu;, RD, &sigma;), and preserves pre-existing [%eval] and [Accuracy] annotations. Elevates games to <strong>Tier 2 (Silver)</strong> instantly without engine overhead.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {onNavigateToDossier && (
+                <button
+                  onClick={() => {
+                    logAction("NAV", "Opened Dossier from Silver Stats tab");
+                    onNavigateToDossier();
+                  }}
+                  className="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-2xl border border-slate-700 shadow-md transition-all flex items-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4 text-emerald-400" />
+                  View in Dossier
+                </button>
+              )}
+
+              <button
+                onClick={() => silverMutation.mutate()}
+                disabled={silverMutation.isPending}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-2xl shadow-xl transition-all flex items-center gap-2 whitespace-nowrap disabled:opacity-40"
+              >
+                {silverMutation.isPending ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Generating Statistics...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 text-cyan-300" />
+                    Generate Silver Statistics
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Capabilities Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-sans text-xs">
+            <div className="p-4 rounded-2xl bg-black/30 border border-white/5 space-y-1.5">
+              <span className="font-bold text-blue-400 block">Polyglot ECO Classification</span>
+              <p className="text-slate-400 text-[11px] leading-relaxed">
+                Infers Italian, Sicilian, French, and Queen&apos;s Gambit lines from move sequences and updates database records.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-black/30 border border-white/5 space-y-1.5">
+              <span className="font-bold text-emerald-400 block">Glicko-2 Rating Matrix</span>
+              <p className="text-slate-400 text-[11px] leading-relaxed">
+                Computes true skill ratings, uncertainty (RD), and volatility across all active players in the tournament.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-black/30 border border-white/5 space-y-1.5">
+              <span className="font-bold text-amber-400 block">Instant Dossier Readiness</span>
+              <p className="text-slate-400 text-[11px] leading-relaxed">
+                Unlocks the Player Dossier, Head-to-Head Compare view, and Opening Fashion Index immediately.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: Gold Mass Analysis (Stockfish Engine) */}
+      {activeTab === "gold" && (
+        <div className="p-8 rounded-3xl bg-[#14171c] border border-slate-800 shadow-2xl space-y-6 animate-in fade-in duration-150">
+          <div className="border-b border-white/5 pb-4">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <Flame className="w-5 h-5 text-purple-400" />
+              Stage B: Mass Engine Analysis (Gold Standard · Tier 3)
+            </h2>
+            <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
+              Launches an asynchronous Stockfish worker to evaluate every game move-by-move. Computes Phase ACPL (Opening, Middlegame, Endgame), CAPS accuracy curves, blunder spectra, and attaches an immutable <code>AnalysisProvenance</code> stamp with atomic per-game WAL commits.
+            </p>
+          </div>
+
+          {/* Engine Parameters & Controls */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-sans text-xs">
+            <div className="space-y-4 p-5 rounded-2xl bg-black/30 border border-white/5">
+              <span className="font-bold text-slate-200 block uppercase tracking-wider text-[11px]">
+                Engine Configuration
+              </span>
+
+              <div className="space-y-2">
+                <label className="text-slate-400 block">Analysis Depth:</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[12, 16, 20, 22].map((d) => (
+                    <button
+                      key={d}
+                      onClick={() => setAnalysisDepth(d)}
+                      className={`py-1.5 rounded-xl font-mono font-bold transition-all border ${
+                        analysisDepth === d
+                          ? "bg-purple-600 text-white border-purple-400 shadow-md"
+                          : "bg-black/40 text-slate-400 border-white/10 hover:text-white"
+                      }`}
+                    >
+                      d={d} {d === 12 ? "(Fast)" : d === 16 ? "(Std)" : d === 20 ? "(Deep)" : "(GM)"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-2">
+                <label className="text-slate-400 block">Analysis Mode:</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setAnalysisMode("MISSING_ONLY")}
+                    className={`py-1.5 rounded-xl font-mono font-bold transition-all border ${
+                      analysisMode === "MISSING_ONLY"
+                        ? "bg-purple-600 text-white border-purple-400 shadow-md"
+                        : "bg-black/40 text-slate-400 border-white/10 hover:text-white"
+                    }`}
+                  >
+                    Missing Only (Skip Tier 3)
+                  </button>
+                  <button
+                    onClick={() => setAnalysisMode("OVERWRITE")}
+                    className={`py-1.5 rounded-xl font-mono font-bold transition-all border ${
+                      analysisMode === "OVERWRITE"
+                        ? "bg-purple-600 text-white border-purple-400 shadow-md"
+                        : "bg-black/40 text-slate-400 border-white/10 hover:text-white"
+                    }`}
+                  >
+                    Overwrite (Re-evaluate All)
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Live Progress or Launcher Box */}
+            <div className="p-5 rounded-2xl bg-black/30 border border-white/5 flex flex-col justify-between space-y-4">
+              <div>
+                <span className="font-bold text-slate-200 block uppercase tracking-wider text-[11px]">
+                  Job Status &amp; Execution
+                </span>
+
+                {activeJobId && jobStatus ? (
+                  <div className="space-y-3 mt-3">
+                    <div className="flex justify-between text-xs font-mono">
+                      <span className="text-purple-400 font-bold">Status: {jobStatus.status}</span>
+                      <span className="text-slate-300 font-bold">{jobStatus.progress_pct}%</span>
+                    </div>
+
+                    <div className="h-3 w-full bg-black/60 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-purple-600 to-cyan-400 rounded-full transition-all duration-300"
+                        style={{ width: `${jobStatus.progress_pct}%` }}
+                      />
+                    </div>
+
+                    <div className="text-[11px] font-mono text-slate-400 truncate">
+                      Current: <span className="text-slate-200">{jobStatus.current_game || "Initializing..."}</span>
+                    </div>
+
+                    <div className="text-[11px] font-mono text-slate-500">
+                      Processed {jobStatus.processed} of {jobStatus.total} games
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-xs text-slate-400 mt-3 space-y-2">
+                    <p>
+                      Analysis runs at low CPU priority with atomic per-game commits. You can pause, cancel, or navigate away at any time without losing completed evaluations.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {activeJobId && jobStatus?.status === "running" ? (
+                <button
+                  onClick={handleCancelAnalysis}
+                  className="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
+                >
+                  <XCircle className="w-4 h-4" />
+                  Cancel Mass Analysis
+                </button>
+              ) : (
+                <button
+                  onClick={() => startAnalysisMutation.mutate()}
+                  disabled={startAnalysisMutation.isPending}
+                  className="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-40"
+                >
+                  {startAnalysisMutation.isPending ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Starting Worker Pool...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4 text-emerald-400" />
+                      Start Mass Analysis (Depth {analysisDepth})
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
