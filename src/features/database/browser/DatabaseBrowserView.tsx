@@ -71,7 +71,7 @@ export function DatabaseBrowserView({
   // State
   const [activeSubTab, setActiveSubTab] = useState<"shelf" | "fashion" | "dossier" | "compare" | "fitness" | "consolidator">("shelf");
   const [comparePlayer, setComparePlayer] = useState<string>("Carlsen,M");
-  const [pendingImportFile, setPendingImportFile] = useState<{ name: string; size: number } | null>(null);
+  const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
   const [selectedDb, setSelectedDb] = useState<string | null>(null);
   const [selectedFolder, setSelectedFolder] = useState<string>("My Databases");
   const [selectedGame, setSelectedGame] = useState<GameSummary | null>(null);
@@ -152,7 +152,7 @@ export function DatabaseBrowserView({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setPendingImportFile({ name: file.name, size: file.size });
+      setPendingImportFile(file);
       setActiveSubTab("fitness");
       logAction("CLICK", `Browsed and Selected DB File for Import: ${file.name}`, `${file.size} bytes`);
       // Reset input value so re-selecting same file triggers onChange
@@ -210,6 +210,8 @@ export function DatabaseBrowserView({
     logAction("CLICK", `Selected game #${game.id}: ${game.WHITE} vs ${game.BLACK}`);
   };
 
+  const isLight = uxTheme?.mode === "light" || uxTheme?.id === "clean-light";
+
   const SUB_TABS = [
     { id: "shelf", label: "Shelf & Games", icon: Database },
     { id: "fashion", label: "Fashion Index (Report)", icon: TrendingUp },
@@ -219,9 +221,9 @@ export function DatabaseBrowserView({
   ];
 
   return (
-    <div className="flex flex-col h-full bg-[#080a0c] text-[#e2e8f0] select-none overflow-hidden font-sans">
+    <div className={`flex flex-col h-full ${isLight ? "bg-slate-100 text-slate-900" : "bg-[#080a0c] text-[#e2e8f0]"} select-none overflow-hidden font-sans`}>
       {/* 1. Top Sub-Command Bar */}
-      <header className="h-12 bg-[#0d1014] border-b border-[#1e232b] flex items-center justify-between px-4 flex-shrink-0 shadow-lg z-10">
+      <header className={`h-12 ${isLight ? "bg-white border-slate-300 text-slate-900 shadow-sm" : "bg-[#0d1014] border-[#1e232b] text-white shadow-lg"} border-b flex items-center justify-between px-4 flex-shrink-0 z-10`}>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 font-bold text-sm text-[#3b82f6] mr-1">
             <Database className="w-4 h-4 text-[#3b82f6]" />
@@ -242,6 +244,8 @@ export function DatabaseBrowserView({
                   className={`px-3 py-1.5 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 ${
                     isActive
                       ? "bg-[#3b82f6]/15 text-[#3b82f6] font-bold border border-[#3b82f6]/30 shadow-sm"
+                      : isLight
+                      ? "text-slate-600 hover:bg-slate-200 hover:text-slate-900"
                       : "text-[#8b949e] hover:bg-[#181d24] hover:text-[#e2e8f0]"
                   }`}
                 >
@@ -256,14 +260,14 @@ export function DatabaseBrowserView({
         {/* Feature Action Buttons */}
         <div className="flex items-center gap-2">
           {/* Database Filter Search */}
-          <div className="flex items-center bg-[#080a0c] border border-[#262c36] rounded px-2 h-7 w-48 focus-within:border-[#3b82f6] transition-colors">
+          <div className={`flex items-center ${isLight ? "bg-white border-slate-300" : "bg-[#080a0c] border-[#262c36]"} border rounded px-2 h-7 w-48 focus-within:border-[#3b82f6] transition-colors`}>
             <Search className="w-3 h-3 text-[#64748b] mr-1.5" />
             <input
               type="text"
               placeholder="Find database..."
               value={searchDbText}
               onChange={(e) => setSearchDbText(e.target.value)}
-              className="bg-transparent border-none text-xs text-[#e2e8f0] outline-none w-full placeholder-[#64748b]"
+              className={`bg-transparent border-none text-xs ${isLight ? "text-slate-900 placeholder-slate-400" : "text-[#e2e8f0] placeholder-[#64748b]"} outline-none w-full`}
             />
           </div>
 
@@ -407,7 +411,7 @@ export function DatabaseBrowserView({
       ) : (
         <div className="flex-1 flex min-h-0 overflow-hidden">
         {/* Left Folder Hierarchy Tree */}
-        <aside className="w-56 bg-[#111418] border-r border-[#1e232b] flex flex-col flex-shrink-0 overflow-y-auto">
+        <aside className={`w-56 ${isLight ? "bg-slate-50 border-slate-200" : "bg-[#111418] border-[#1e232b]"} border-r flex flex-col flex-shrink-0 overflow-y-auto`}>
           <div className="pt-4 pb-2">
             <div className="text-[10px] font-bold text-[#64748b] uppercase tracking-wider px-4 pb-2">
               Shortcuts
@@ -419,7 +423,11 @@ export function DatabaseBrowserView({
               }}
               className={`flex items-center gap-2 px-4 py-1.5 text-xs cursor-pointer transition-all ${
                 selectedFolder === "My Databases"
-                  ? "bg-[#3b82f6]/10 text-[#3b82f6] font-semibold border-r-2 border-[#3b82f6]"
+                  ? isLight
+                    ? "bg-blue-100 text-blue-700 font-semibold border-r-2 border-blue-600"
+                    : "bg-[#3b82f6]/10 text-[#3b82f6] font-semibold border-r-2 border-[#3b82f6]"
+                  : isLight
+                  ? "text-slate-600 hover:bg-slate-200 hover:text-slate-900"
                   : "text-[#8b949e] hover:bg-[#181d24] hover:text-[#e2e8f0]"
               }`}
             >
@@ -433,7 +441,11 @@ export function DatabaseBrowserView({
               }}
               className={`flex items-center gap-2 px-4 py-1.5 text-xs cursor-pointer transition-all ${
                 selectedFolder === "Recent Files"
-                  ? "bg-[#3b82f6]/10 text-[#3b82f6] font-semibold border-r-2 border-[#3b82f6]"
+                  ? isLight
+                    ? "bg-blue-100 text-blue-700 font-semibold border-r-2 border-blue-600"
+                    : "bg-[#3b82f6]/10 text-[#3b82f6] font-semibold border-r-2 border-[#3b82f6]"
+                  : isLight
+                  ? "text-slate-600 hover:bg-slate-200 hover:text-slate-900"
                   : "text-[#8b949e] hover:bg-[#181d24] hover:text-[#e2e8f0]"
               }`}
             >
@@ -447,14 +459,16 @@ export function DatabaseBrowserView({
               }}
               className={`flex items-center gap-2 px-4 py-1.5 text-xs cursor-pointer transition-all ${
                 selectedFolder === "Trash"
-                  ? "bg-rose-500/15 text-rose-400 font-semibold border-r-2 border-rose-500"
+                  ? "bg-rose-500/15 text-rose-500 font-semibold border-r-2 border-rose-500"
+                  : isLight
+                  ? "text-slate-600 hover:bg-slate-200 hover:text-slate-900"
                   : "text-[#8b949e] hover:bg-[#181d24] hover:text-[#e2e8f0]"
               }`}
             >
               <Trash2 className="w-3.5 h-3.5 opacity-80 text-rose-400" />
               Trash
               {trashDbs && trashDbs.length > 0 && (
-                <span className="ml-auto text-[10px] bg-rose-500/20 text-rose-400 font-bold px-1.5 py-0.5 rounded-full border border-rose-500/30">
+                <span className="ml-auto text-[10px] bg-rose-500/20 text-rose-500 font-bold px-1.5 py-0.5 rounded-full border border-rose-500/30">
                   {trashDbs.length}
                 </span>
               )}
@@ -536,17 +550,17 @@ export function DatabaseBrowserView({
         </aside>
 
         {/* 3. Main Center Content */}
-        <main className="flex-1 flex flex-col min-w-0 bg-[#080a0c] overflow-hidden">
+        <main className={`flex-1 flex flex-col min-w-0 ${isLight ? "bg-slate-100" : "bg-[#080a0c]"} overflow-hidden`}>
           {/* Trash Vault Dedicated View */}
           {selectedFolder === "Trash" ? (
             <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-4">
                 <div>
-                  <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                    <Trash2 className="w-5 h-5 text-rose-400" />
+                  <h1 className={`text-xl font-bold tracking-tight ${isLight ? "text-slate-900" : "text-white"} flex items-center gap-2`}>
+                    <Trash2 className="w-5 h-5 text-rose-500" />
                     Trash &amp; Pending Purge
                   </h1>
-                  <span className="text-xs text-slate-400 font-mono">
+                  <span className={`text-xs ${isLight ? "text-slate-500" : "text-slate-400"} font-mono`}>
                     Databases moved here are hidden from your shelf. You can restore them or purge to permanently reclaim disk space.
                   </span>
                 </div>
@@ -563,10 +577,10 @@ export function DatabaseBrowserView({
               </div>
 
               {!trashDbs || trashDbs.length === 0 ? (
-                <div className="p-12 text-center rounded-3xl bg-[#111418] border border-slate-800 text-slate-400 space-y-2">
-                  <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
-                  <h3 className="text-sm font-bold text-white">Trash is Empty</h3>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                <div className={`p-12 text-center rounded-3xl ${isLight ? "bg-white border-slate-200 text-slate-500" : "bg-[#111418] border-slate-800 text-slate-400"} border space-y-2`}>
+                  <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto" />
+                  <h3 className={`text-sm font-bold ${isLight ? "text-slate-900" : "text-white"}`}>Trash is Empty</h3>
+                  <p className={`text-xs ${isLight ? "text-slate-500" : "text-slate-400"} max-w-sm mx-auto`}>
                     When you delete a database from the shelf, it will be safely placed here before being permanently purged.
                   </p>
                 </div>
@@ -575,19 +589,19 @@ export function DatabaseBrowserView({
                   {trashDbs.map((item) => (
                     <div
                       key={item.name}
-                      className="bg-[#15181e] border border-rose-500/20 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-lg"
+                      className={`${isLight ? "bg-white border-rose-200" : "bg-[#15181e] border-rose-500/20"} border rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-md`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <div className="font-semibold text-sm text-white font-mono truncate">{item.name}</div>
-                          <span className="text-[11px] text-slate-400 font-mono">Size: {item.size_mb} MB</span>
+                          <div className={`font-semibold text-sm ${isLight ? "text-slate-900" : "text-white"} font-mono truncate`}>{item.name}</div>
+                          <span className={`text-[11px] ${isLight ? "text-slate-500" : "text-slate-400"} font-mono`}>Size: {item.size_mb} MB</span>
                         </div>
-                        <span className="text-[10px] bg-rose-500/10 text-rose-400 font-bold px-2 py-0.5 rounded-full border border-rose-500/20">
+                        <span className="text-[10px] bg-rose-500/10 text-rose-500 font-bold px-2 py-0.5 rounded-full border border-rose-500/20">
                           Trashed
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/5">
+                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200 dark:border-white/5">
                         <button
                           onClick={() => restoreMutation.mutate(item.name)}
                           disabled={restoreMutation.isPending}
@@ -607,21 +621,21 @@ export function DatabaseBrowserView({
             <div className="flex-1 overflow-y-auto p-6 flex flex-col">
               <div className="flex justify-between items-end mb-4">
                 <div>
-                  <h1 className="text-lg font-bold tracking-tight text-white m-0">
+                  <h1 className={`text-lg font-bold tracking-tight ${isLight ? "text-slate-900" : "text-white"} m-0`}>
                     {selectedFolder}
                   </h1>
-                  <span className="text-xs text-[#64748b]">
+                  <span className={`text-xs ${isLight ? "text-slate-500" : "text-[#64748b]"}`}>
                     {filteredDbs.length} Standard SQLite databases available
                   </span>
                 </div>
 
                 {/* View toggle (Grid / List) */}
-                <div className="flex gap-1 bg-[#111418] border border-[#262c36] p-0.5 rounded">
+                <div className={`flex gap-1 ${isLight ? "bg-slate-200 border-slate-300" : "bg-[#111418] border-[#262c36]"} border p-0.5 rounded`}>
                   <button
                     onClick={() => setViewMode("grid")}
                     className={`p-1 rounded ${
                       viewMode === "grid"
-                        ? "bg-[#080a0c] text-white shadow"
+                        ? isLight ? "bg-white text-blue-600 shadow" : "bg-[#080a0c] text-white shadow"
                         : "text-[#64748b] hover:text-white"
                     }`}
                   >
@@ -631,7 +645,7 @@ export function DatabaseBrowserView({
                     onClick={() => setViewMode("list")}
                     className={`p-1 rounded ${
                       viewMode === "list"
-                        ? "bg-[#080a0c] text-white shadow"
+                        ? isLight ? "bg-white text-blue-600 shadow" : "bg-[#080a0c] text-white shadow"
                         : "text-[#64748b] hover:text-white"
                     }`}
                   >
@@ -652,10 +666,14 @@ export function DatabaseBrowserView({
                       <div
                         key={db.name}
                         onClick={() => handleSelectDb(db.name)}
-                        className={`bg-[#15181e] border rounded-lg p-4 cursor-pointer transition-all duration-150 flex flex-col gap-3 relative overflow-hidden ${
+                        className={`rounded-xl p-4 cursor-pointer transition-all duration-150 flex flex-col gap-3 relative overflow-hidden ${
                           isSelected
-                            ? "border-[#3b82f6] bg-[#3b82f6]/5 shadow-[0_0_0_1px_#3b82f6]"
-                            : "border-[#262c36] hover:border-[#64748b] hover:-translate-y-0.5 hover:shadow-lg"
+                            ? isLight
+                              ? "border-2 border-blue-500 bg-blue-50/70 shadow-md ring-1 ring-blue-500/20"
+                              : "border-[#3b82f6] bg-[#3b82f6]/5 shadow-[0_0_0_1px_#3b82f6]"
+                            : isLight
+                            ? "bg-white border border-slate-200 hover:border-slate-300 hover:-translate-y-0.5 hover:shadow-md"
+                            : "bg-[#15181e] border border-[#262c36] hover:border-[#64748b] hover:-translate-y-0.5 hover:shadow-lg"
                         }`}
                       >
                         <div className="flex items-start justify-between gap-3">
@@ -672,7 +690,7 @@ export function DatabaseBrowserView({
                               ♞
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="font-semibold text-sm text-[#e2e8f0] truncate">
+                              <div className={`font-semibold text-sm ${isLight ? "text-slate-900" : "text-[#e2e8f0]"} truncate`}>
                                 {db.name.replace(/\.(lcdb|sqlite|db)$/, "")}
                               </div>
                               <div className="text-[10px] font-bold text-[#64748b] uppercase tracking-wider">
@@ -688,23 +706,23 @@ export function DatabaseBrowserView({
                                 trashMutation.mutate(db.name);
                                 logAction("CLICK", `Moved Database to Trash: ${db.name}`);
                               }}
-                              className="p-1 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded transition-colors"
+                              className="p-1 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded transition-colors"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </Tooltip>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2 mt-auto pt-3 border-t border-[#262c36] text-xs">
+                        <div className={`grid grid-cols-2 gap-2 mt-auto pt-3 border-t ${isLight ? "border-slate-200" : "border-[#262c36]"} text-xs`}>
                           <div>
                             <span className="text-[10px] text-[#64748b] block">File Size</span>
-                            <span className="font-mono text-xs font-medium text-[#e2e8f0]">
+                            <span className={`font-mono text-xs font-medium ${isLight ? "text-slate-800" : "text-[#e2e8f0]"}`}>
                               {db.size_mb} MB
                             </span>
                           </div>
                           <div>
                             <span className="text-[10px] text-[#64748b] block">Status</span>
-                            <span className="font-mono text-[11px] text-emerald-400 flex items-center gap-1 font-semibold">
+                            <span className="font-mono text-[11px] text-emerald-500 flex items-center gap-1 font-semibold">
                               <CheckCircle2 className="w-3 h-3" /> Ready
                             </span>
                           </div>
@@ -789,7 +807,7 @@ export function DatabaseBrowserView({
                   </span>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   {/* Export Filtered Sub-DB Button */}
                   <button
                     onClick={() => {
@@ -802,6 +820,22 @@ export function DatabaseBrowserView({
                     <Download className="w-3 h-3" />
                     Export Filtered
                   </button>
+
+                  {/* Move Active DB to Trash Button */}
+                  <Tooltip content="Move Selected Database to Trash" description="Soft-delete database to reclaim space later">
+                    <button
+                      onClick={() => {
+                        if (activeDbName) {
+                          trashMutation.mutate(activeDbName);
+                          logAction("CLICK", `Moved Active Database to Trash: ${activeDbName}`);
+                        }
+                      }}
+                      className="px-2 py-0.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded text-[11px] font-bold flex items-center gap-1 shadow-sm cursor-pointer transition-all"
+                    >
+                      <Trash2 className="w-3 h-3 text-rose-400" />
+                      Move to Trash
+                    </button>
+                  </Tooltip>
 
                   {/* Game filter in preview */}
                   <input

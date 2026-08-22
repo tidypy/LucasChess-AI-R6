@@ -113,6 +113,53 @@ class GameService:
         repo = self._get_or_create_repo(db_name) if db_name else self.repo
         return repo.import_pgn(pgn_content)
 
+    def ingest_database(self, file_name: str, target_name: str, file_bytes: bytes, strategy: str = "fast") -> Dict[str, Any]:
+        clean_target = target_name.strip()
+        if not (clean_target.endswith(".lcdb") or clean_target.endswith(".sqlite")):
+            clean_target += ".lcdb"
+
+        target_path = os.path.join(self.root_dir, clean_target)
+        if os.path.exists(target_path):
+            raise FileExistsError(f"Database '{clean_target}' already exists.")
+
+        lower_orig = file_name.lower()
+        imported_count = 0
+
+        if lower_orig.endswith(".pgn"):
+            try:
+                pgn_text = file_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                pgn_text = file_bytes.decode("latin-1", errors="replace")
+
+            repo = GameRepository.create_empty_db(target_path)
+            imported_count = repo.import_pgn(pgn_text)
+            self._repositories[clean_target] = repo
+        elif lower_orig.endswith((".lcdb", ".sqlite", ".db")):
+            with open(target_path, "wb") as f:
+                f.write(file_bytes)
+            repo = GameRepository(target_path)
+            self._repositories[clean_target] = repo
+            stats = repo.get_database_stats()
+            imported_count = stats.get("total_games", 0)
+        else:
+            try:
+                pgn_text = file_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                pgn_text = file_bytes.decode("latin-1", errors="replace")
+            repo = GameRepository.create_empty_db(target_path)
+            imported_count = repo.import_pgn(pgn_text)
+            self._repositories[clean_target] = repo
+
+        self.set_active_database(clean_target)
+
+        return {
+            "success": True,
+            "db_name": clean_target,
+            "imported_games": imported_count,
+            "size_mb": round(os.path.getsize(target_path) / (1024 * 1024), 2),
+            "strategy": strategy,
+        }
+
     @property
     def trash_dir(self) -> str:
         t_dir = os.path.join(self.root_dir, "UserData", "Trash")

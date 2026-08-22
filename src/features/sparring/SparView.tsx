@@ -3,6 +3,8 @@ import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import { UXTheme, BoardTheme } from "../../lib/theme";
 import { useClickLogger } from "../../lib/clickLogger";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchDatabases, API_BASE } from "../../lib/api";
 import { AskGrandmasterAction } from "../ai_grandmaster/AskGrandmasterAction";
 import {
   Swords,
@@ -11,6 +13,11 @@ import {
   Sliders,
   ArrowUpDown,
   BookOpen,
+  Save,
+  Trophy,
+  Download,
+  CheckCircle2,
+  RefreshCw,
 } from "lucide-react";
 
 interface SparViewProps {
@@ -37,6 +44,7 @@ const OPENING_BOOKS = [
 
 export function SparView({ boardTheme }: SparViewProps) {
   const { logAction } = useClickLogger();
+  const queryClient = useQueryClient();
 
   const [game, setGame] = useState(new Chess());
   const [fen, setFen] = useState(game.fen());
@@ -47,8 +55,96 @@ export function SparView({ boardTheme }: SparViewProps) {
   const [isGameActive, setIsGameActive] = useState(false);
   const [moveHistory, setMoveHistory] = useState<string[]>([]);
   const [evalScore, setEvalScore] = useState("+0.00");
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
+
+  const { data: databases } = useQuery({
+    queryKey: ["databases"],
+    queryFn: fetchDatabases,
+  });
 
   const currentEngineObj = ENGINES.find((e) => e.id === selectedEngine) || ENGINES[0];
+
+  const isCheckmate = game.isCheckmate();
+  const isDraw = game.isDraw();
+  const isStalemate = game.isStalemate();
+  const isThreefold = game.isThreefoldRepetition();
+  const isGameOver = game.isGameOver();
+
+  const getWinnerDescription = () => {
+    if (isCheckmate) {
+      const winnerColor = game.turn() === "w" ? "Black" : "White";
+      const isPlayerWinner =
+        (winnerColor === "White" && playerSide === "white") ||
+        (winnerColor === "Black" && playerSide === "black");
+      return {
+        title: "CHECKMATE!",
+        subtitle: isPlayerWinner
+          ? `Victory! You defeated ${currentEngineObj.name} by checkmate!`
+          : `${currentEngineObj.name} won by checkmate.`,
+        isWin: isPlayerWinner,
+      };
+    }
+    if (isStalemate) return { title: "DRAW (Stalemate)", subtitle: "The game ended in a stalemate.", isWin: false };
+    if (isThreefold) return { title: "DRAW (3-Fold Repetition)", subtitle: "Position repeated 3 times.", isWin: false };
+    if (isDraw) return { title: "DRAW", subtitle: "Game drawn by chess rules.", isWin: false };
+    return null;
+  };
+
+  const gameOverInfo = getWinnerDescription();
+
+  const generatePgn = () => {
+    const dateStr = new Date().toISOString().split("T")[0].replace(/-/g, ".");
+    const resultStr = isCheckmate ? (game.turn() === "w" ? "0-1" : "1-0") : isDraw ? "1/2-1/2" : "*";
+    const whiteName = playerSide === "white" ? "Player (Human)" : `${currentEngineObj.name} (${targetElo})`;
+    const blackName = playerSide === "black" ? "Player (Human)" : `${currentEngineObj.name} (${targetElo})`;
+
+    return `[Event "DeepScout Engine Sparring"]
+[Site "Local Chess Studio"]
+[Date "${dateStr}"]
+[Round "1"]
+[White "${whiteName}"]
+[Black "${blackName}"]
+[Result "${resultStr}"]
+[WhiteElo "${playerSide === "white" ? 1800 : targetElo}"]
+[BlackElo "${playerSide === "black" ? 1800 : targetElo}"]
+[ECO "—"]
+[Opening "${selectedBook}"]
+
+${game.pgn()}`;
+  };
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const pgnText = generatePgn();
+      const targetDb = databases && databases.length > 0 ? databases[0].name : "patriciaTourny.lcdb";
+      const res = await fetch(`${API_BASE}/databases/import`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pgn_text: pgnText, db_name: targetDb }),
+      });
+      if (!res.ok) throw new Error("Failed to save sparring game");
+      return res.json();
+    },
+    onSuccess: () => {
+      setSaveSuccessMsg("Game saved to active database!");
+      logAction("API", "Saved Sparring Game to Database");
+      queryClient.invalidateQueries({ queryKey: ["databases"] });
+      queryClient.invalidateQueries({ queryKey: ["browserGames"] });
+      setTimeout(() => setSaveSuccessMsg(null), 3000);
+    },
+  });
+
+  const handleDownloadPgn = () => {
+    const pgn = generatePgn();
+    const blob = new Blob([pgn], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Sparring_${currentEngineObj.name}_${Date.now()}.pgn`;
+    link.click();
+    URL.revokeObjectURL(url);
+    logAction("CLICK", "Exported Sparring Game PGN");
+  };
 
   const handleStartGame = () => {
     const newG = new Chess();
@@ -57,6 +153,7 @@ export function SparView({ boardTheme }: SparViewProps) {
     setMoveHistory([]);
     setIsGameActive(true);
     setEvalScore("+0.00");
+    setSaveSuccessMsg(null);
     logAction(
       "CLICK",
       `Started Sparring Game vs ${currentEngineObj.name}`,
@@ -71,11 +168,12 @@ export function SparView({ boardTheme }: SparViewProps) {
     setMoveHistory([]);
     setIsGameActive(false);
     setEvalScore("+0.00");
+    setSaveSuccessMsg(null);
     logAction("CLICK", "Reset Sparring Arena");
   };
 
   const handlePieceDrop = ({ sourceSquare, targetSquare }: { piece: any; sourceSquare: string; targetSquare: string | null }): boolean => {
-    if (!targetSquare) return false;
+    if (!targetSquare || isGameOver) return false;
     try {
       const move = game.move({
         from: sourceSquare,
@@ -142,6 +240,46 @@ export function SparView({ boardTheme }: SparViewProps) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left: Chessboard (7 cols) */}
         <div className="lg:col-span-7 flex flex-col items-center p-6 rounded-3xl bg-[#14171c] border border-slate-800 shadow-2xl space-y-4">
+          {/* Game Over Banner (Checkmate / Draw) */}
+          {gameOverInfo && (
+            <div className={`w-full max-w-[480px] p-4 rounded-2xl border shadow-xl animate-in zoom-in-95 duration-200 flex items-center justify-between gap-3 ${
+              gameOverInfo.isWin
+                ? "bg-emerald-950/70 border-emerald-500/50 text-emerald-200"
+                : isCheckmate
+                ? "bg-rose-950/70 border-rose-500/50 text-rose-200"
+                : "bg-amber-950/70 border-amber-500/50 text-amber-200"
+            }`}>
+              <div className="flex items-center gap-3">
+                <div className={`p-2.5 rounded-xl ${gameOverInfo.isWin ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"}`}>
+                  <Trophy className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm font-mono tracking-wider">{gameOverInfo.title}</h3>
+                  <p className="text-xs opacity-90">{gameOverInfo.subtitle}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => saveMutation.mutate()}
+                  disabled={saveMutation.isPending}
+                  className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                  title="Save Game to Active Database"
+                >
+                  {saveMutation.isPending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                  Save
+                </button>
+              </div>
+            </div>
+          )}
+
+          {saveSuccessMsg && (
+            <div className="w-full max-w-[480px] p-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-bold flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4" />
+              {saveSuccessMsg}
+            </div>
+          )}
+
           <div className="w-full max-w-[480px] aspect-square rounded-2xl overflow-hidden shadow-2xl border border-slate-700">
             <Chessboard
               options={{
@@ -155,7 +293,7 @@ export function SparView({ boardTheme }: SparViewProps) {
           </div>
 
           {/* Controls Bar */}
-          <div className="w-full max-w-[480px] flex items-center justify-between gap-3 pt-2">
+          <div className="w-full max-w-[480px] flex items-center justify-between gap-2 pt-2">
             {!isGameActive ? (
               <button
                 onClick={handleStartGame}
@@ -170,7 +308,32 @@ export function SparView({ boardTheme }: SparViewProps) {
                 className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <RotateCcw className="w-4 h-4" />
-                Resign &amp; New Game
+                {isGameOver ? "New Match" : "Resign & New Game"}
+              </button>
+            )}
+
+            {/* Save Game Button */}
+            {moveHistory.length > 0 && (
+              <button
+                onClick={() => saveMutation.mutate()}
+                disabled={saveMutation.isPending}
+                className="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl border border-white/10 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                title="Save Game to Shelf Database"
+              >
+                <Save className="w-4 h-4 text-emerald-400" />
+                Save
+              </button>
+            )}
+
+            {/* Export PGN Button */}
+            {moveHistory.length > 0 && (
+              <button
+                onClick={handleDownloadPgn}
+                className="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl border border-white/10 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                title="Download PGN File"
+              >
+                <Download className="w-4 h-4 text-blue-400" />
+                PGN
               </button>
             )}
 
@@ -181,6 +344,7 @@ export function SparView({ boardTheme }: SparViewProps) {
                 logAction("BOARD", `Flipped spar orientation to ${next}`);
               }}
               className="p-2.5 rounded-xl bg-black/40 border border-white/10 text-slate-300 hover:text-white transition-colors"
+              title="Flip Board"
             >
               <ArrowUpDown className="w-4 h-4" />
             </button>

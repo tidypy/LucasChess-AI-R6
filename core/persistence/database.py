@@ -11,6 +11,35 @@ class GameRepository:
             raise FileNotFoundError(f"Database not found at {db_path}")
         self.db_path = db_path
 
+    @classmethod
+    def create_empty_db(cls, db_path: str):
+        conn = sqlite3.connect(db_path)
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS Games (
+                WHITE TEXT,
+                BLACK TEXT,
+                RESULT TEXT,
+                EVENT TEXT,
+                SITE TEXT,
+                DATE TEXT,
+                ROUND TEXT,
+                ECO TEXT,
+                OPENING TEXT,
+                WHITEELO INTEGER,
+                BLACKELO INTEGER,
+                PLYCOUNT INTEGER,
+                FEN TEXT,
+                _DATA_ BLOB
+            );
+        """)
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_games_white ON Games(WHITE);")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_games_black ON Games(BLACK);")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_games_eco ON Games(ECO);")
+        conn.commit()
+        conn.close()
+        return cls(db_path)
+
     def _get_connection(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row

@@ -1,4 +1,4 @@
-const API_BASE = "http://127.0.0.1:8000/api/v1";
+export const API_BASE = "http://127.0.0.1:8000/api/v1";
 
 export interface GameSummary {
   id: number;
@@ -118,6 +118,28 @@ export const purgeTrash = async (
 export const deleteDatabase = async (dbName: string): Promise<{ success: boolean; deleted: string }> => {
   const res = await trashDatabase(dbName);
   return { success: res.success, deleted: res.trashed };
+};
+
+export const uploadAndIngestDatabase = async (
+  file: File,
+  targetName: string,
+  strategy: string = "fast"
+): Promise<{ success: boolean; db_name: string; imported_games: number; size_mb: number; strategy: string }> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("target_name", targetName);
+  formData.append("strategy", strategy);
+
+  const res = await fetch(`${API_BASE}/databases/upload-ingest`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to upload and ingest database" }));
+    throw new Error(err.detail || "Failed to upload and ingest database");
+  }
+  return res.json();
 };
 
 export interface ExportFilteredPayload {

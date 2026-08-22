@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
@@ -128,6 +128,27 @@ async def delete_database(db_name: str):
         return game_service.trash_database(db_name)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail=f"Database '{db_name}' not found.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/v1/databases/upload-ingest")
+async def upload_and_ingest_database(
+    file: UploadFile = File(...),
+    target_name: str = Form(...),
+    strategy: str = Form("fast"),
+):
+    if not game_service:
+        raise HTTPException(status_code=500, detail="GameService not initialized.")
+    try:
+        content = await file.read()
+        return game_service.ingest_database(
+            file_name=file.filename or "uploaded.pgn",
+            target_name=target_name,
+            file_bytes=content,
+            strategy=strategy,
+        )
+    except FileExistsError as e:
+        raise HTTPException(status_code=409, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

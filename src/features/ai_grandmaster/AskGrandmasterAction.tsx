@@ -140,10 +140,10 @@ export function AskGrandmasterAction({
         </button>
       )}
 
-      {/* Floating Modal / Popout for GM Commentary */}
+      {/* Non-Blocking Floating Window for GM Commentary */}
       {isOpen && commentary && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150 select-none">
-          <div className="bg-slate-900 border border-fuchsia-500/40 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden text-slate-100 flex flex-col">
+        <div className="fixed bottom-6 right-6 z-50 w-full max-w-md pointer-events-auto animate-in slide-in-from-bottom-5 duration-200 select-none shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
+          <div className="bg-slate-900/95 backdrop-blur-md border border-fuchsia-500/40 rounded-3xl shadow-2xl overflow-hidden text-slate-100 flex flex-col">
             {/* Header */}
             <div className="px-5 py-3.5 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2.5">

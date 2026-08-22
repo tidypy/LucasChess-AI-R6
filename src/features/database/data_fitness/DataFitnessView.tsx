@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { UXTheme } from "../../../lib/theme";
 import { useClickLogger } from "../../../lib/clickLogger";
-import { fetchDatabases } from "../../../lib/api";
+import { fetchDatabases, uploadAndIngestDatabase, setActiveDatabase } from "../../../lib/api";
 import { Tooltip } from "../../../components/common/Tooltip";
 import {
   ShieldCheck,
@@ -21,7 +21,7 @@ import {
 interface DataFitnessViewProps {
   uxTheme: UXTheme;
   initialDbName?: string;
-  pendingImportFile?: { name: string; size: number } | null;
+  pendingImportFile?: File | null;
   onClearImportFile?: () => void;
   onNavigateToBrowser?: () => void;
   onNavigateToDossier?: () => void;
@@ -314,18 +314,27 @@ export function DataFitnessView({
             </div>
 
             <button
-              onClick={() => {
+              onClick={async () => {
+                if (!pendingImportFile) return;
                 setIsImporting(true);
-                logAction("API", `Executing Database Import: ${targetDbName}`, `Strategy: ${importStrategy}`);
-                setTimeout(() => {
-                  setIsImporting(false);
+                logAction("API", `Executing Database Ingestion: ${targetDbName}`, `Strategy: ${importStrategy}`);
+                try {
+                  const res = await uploadAndIngestDatabase(pendingImportFile, targetDbName, importStrategy);
+                  logAction("API", `Ingestion Complete: ${res.db_name}`, `Imported ${res.imported_games} games`);
                   setImportSuccess(true);
+                  await setActiveDatabase(res.db_name);
                   queryClient.invalidateQueries({ queryKey: ["databases"] });
+                  queryClient.invalidateQueries({ queryKey: ["storageTelemetry"] });
                   setTimeout(() => {
+                    setIsImporting(false);
                     if (onNavigateToBrowser) onNavigateToBrowser();
                     if (onClearImportFile) onClearImportFile();
                   }, 1200);
-                }, 1500);
+                } catch (err: any) {
+                  logAction("ERROR", "Ingestion Failed", err.message);
+                  setIsImporting(false);
+                  alert(`Database Ingestion Error: ${err.message}`);
+                }
               }}
               disabled={isImporting}
               className="w-full md:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
