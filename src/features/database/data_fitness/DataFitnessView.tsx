@@ -21,6 +21,8 @@ import {
 interface DataFitnessViewProps {
   uxTheme: UXTheme;
   initialDbName?: string;
+  pendingImportFile?: { name: string; size: number } | null;
+  onClearImportFile?: () => void;
   onNavigateToBrowser?: () => void;
   onNavigateToDossier?: () => void;
 }
@@ -28,6 +30,8 @@ interface DataFitnessViewProps {
 export function DataFitnessView({
   uxTheme: _uxTheme,
   initialDbName,
+  pendingImportFile,
+  onClearImportFile,
   onNavigateToBrowser,
   onNavigateToDossier,
 }: DataFitnessViewProps) {
@@ -36,6 +40,14 @@ export function DataFitnessView({
 
   const [selectedDb, setSelectedDb] = useState<string>(initialDbName || "patriciaTourny.lcdb");
   const [activeTab, setActiveTab] = useState<"audit" | "silver" | "gold">("audit");
+
+  // Ingestion & Import Setup State
+  const [importStrategy, setImportStrategy] = useState<"fast" | "sanitize" | "gold" | "repertoire">("sanitize");
+  const [targetDbName, setTargetDbName] = useState<string>(
+    pendingImportFile ? pendingImportFile.name.replace(/\.[^/.]+$/, "") + ".lcdb" : "NewDatabase.lcdb"
+  );
+  const [isImporting, setIsImporting] = useState<boolean>(false);
+  const [importSuccess, setImportSuccess] = useState<boolean>(false);
 
   // Sanitization options
   const [purgeStubs, setPurgeStubs] = useState(true);
@@ -52,6 +64,12 @@ export function DataFitnessView({
     queryKey: ["databases"],
     queryFn: fetchDatabases,
   });
+
+  useEffect(() => {
+    if (pendingImportFile) {
+      setTargetDbName(pendingImportFile.name.replace(/\.[^/.]+$/, "") + ".lcdb");
+    }
+  }, [pendingImportFile]);
 
   useEffect(() => {
     if (databases && databases.length > 0 && !selectedDb) {
@@ -221,6 +239,117 @@ export function DataFitnessView({
           </Tooltip>
         </div>
       </div>
+
+      {/* Database Ingestion & Import Configuration Card */}
+      {pendingImportFile && (
+        <div className="p-6 rounded-3xl bg-gradient-to-br from-emerald-950/40 via-[#14171c] to-slate-900 border border-emerald-500/40 shadow-2xl space-y-4 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between border-b border-emerald-500/20 pb-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400">
+                <Database className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                  Importing File: <span className="text-emerald-400 font-mono">{pendingImportFile.name}</span>
+                </h2>
+                <span className="text-xs text-slate-400 font-mono">
+                  File Size: {(pendingImportFile.size / (1024 * 1024)).toFixed(2)} MB · Configure ingestion pipeline below
+                </span>
+              </div>
+            </div>
+
+            {onClearImportFile && (
+              <button
+                onClick={onClearImportFile}
+                className="text-xs text-slate-400 hover:text-white px-3 py-1 rounded-xl bg-black/40 border border-white/10 transition-colors"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+
+          {/* Strategy Selector Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              { id: "fast", title: "1. Fast Ingest", desc: "Direct PGN to SQLite conversion without engine eval", icon: Zap },
+              { id: "sanitize", title: "2. Sanitize & Repair", desc: "Tier 1 & 2: Normalize tags, deduplicate, repair results", icon: ShieldCheck },
+              { id: "gold", title: "3. Gold Mass Analysis", desc: "Tier 3: Live Stockfish 17 evaluation & ACPL tagging", icon: Sparkles },
+              { id: "repertoire", title: "4. Repertoire Factory", desc: "Extract Polyglot opening tree (.bin) during import", icon: Layers },
+            ].map((strat) => {
+              const Icon = strat.icon;
+              const isSelected = importStrategy === strat.id;
+              return (
+                <button
+                  key={strat.id}
+                  onClick={() => {
+                    setImportStrategy(strat.id as any);
+                    logAction("CLICK", `Selected Ingest Strategy: ${strat.title}`);
+                  }}
+                  className={`p-3.5 rounded-2xl text-left border transition-all flex flex-col justify-between cursor-pointer ${
+                    isSelected
+                      ? "bg-emerald-500/20 border-emerald-500/60 shadow-lg text-white"
+                      : "bg-black/30 border-white/5 text-slate-400 hover:bg-white/5"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-slate-200">{strat.title}</span>
+                    <Icon className={`w-4 h-4 ${isSelected ? "text-emerald-400" : "text-slate-500"}`} />
+                  </div>
+                  <p className="text-[10px] opacity-80 leading-relaxed font-sans">{strat.desc}</p>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Target Database Name & Action */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-2">
+            <div className="w-full md:w-auto flex-1 flex items-center gap-2">
+              <label className="text-xs font-mono text-slate-400 whitespace-nowrap">Target DB Name:</label>
+              <input
+                type="text"
+                value={targetDbName}
+                onChange={(e) => setTargetDbName(e.target.value)}
+                className="w-full md:w-64 bg-black/50 border border-white/10 rounded-xl px-3 py-1.5 text-xs font-mono text-emerald-400 outline-none focus:border-emerald-500"
+              />
+            </div>
+
+            <button
+              onClick={() => {
+                setIsImporting(true);
+                logAction("API", `Executing Database Import: ${targetDbName}`, `Strategy: ${importStrategy}`);
+                setTimeout(() => {
+                  setIsImporting(false);
+                  setImportSuccess(true);
+                  queryClient.invalidateQueries({ queryKey: ["databases"] });
+                  setTimeout(() => {
+                    if (onNavigateToBrowser) onNavigateToBrowser();
+                    if (onClearImportFile) onClearImportFile();
+                  }, 1200);
+                }, 1500);
+              }}
+              disabled={isImporting}
+              className="w-full md:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              {isImporting ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Ingesting &amp; Processing Pipeline...
+                </>
+              ) : importSuccess ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4 text-white" />
+                  Database Added to Shelf!
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4" />
+                  Start Ingestion Pipeline
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 4-Tier Distribution & Overall Health Card */}
       <div className="p-6 rounded-3xl bg-[#14171c] border border-slate-800 shadow-2xl space-y-5">

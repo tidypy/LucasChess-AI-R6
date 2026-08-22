@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { UXTheme, BoardTheme } from "../../../lib/theme";
 import { useClickLogger } from "../../../lib/clickLogger";
@@ -49,10 +49,12 @@ export function DatabaseBrowserView({
   onOpenDataFitness,
 }: DatabaseBrowserViewProps) {
   const { logAction } = useClickLogger();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // State
   const [activeSubTab, setActiveSubTab] = useState<"shelf" | "fashion" | "dossier" | "compare" | "fitness" | "consolidator">("shelf");
   const [comparePlayer, setComparePlayer] = useState<string>("Carlsen,M");
+  const [pendingImportFile, setPendingImportFile] = useState<{ name: string; size: number } | null>(null);
   const [selectedDb, setSelectedDb] = useState<string | null>(null);
   const [selectedFolder, setSelectedFolder] = useState<string>("My Databases");
   const [selectedGame, setSelectedGame] = useState<GameSummary | null>(null);
@@ -60,6 +62,17 @@ export function DatabaseBrowserView({
   const [searchDbText, setSearchDbText] = useState("");
   const [searchGameText, setSearchGameText] = useState("");
   const [isPreviewOpen, setIsPreviewOpen] = useState(true);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPendingImportFile({ name: file.name, size: file.size });
+      setActiveSubTab("fitness");
+      logAction("CLICK", `Browsed and Selected DB File for Import: ${file.name}`, `${file.size} bytes`);
+      // Reset input value so re-selecting same file triggers onChange
+      e.target.value = "";
+    }
+  };
 
   // Queries
   const { data: databases } = useQuery({
@@ -216,12 +229,21 @@ export function DatabaseBrowserView({
             </button>
           </Tooltip>
 
+          {/* Hidden File Input for Native OS Browser Dialog */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept=".pgn,.sqlite,.lcdb,.cbh,.bin"
+            className="hidden"
+            onChange={handleFileSelect}
+          />
+
           {/* New Database / Ingest Button */}
-          <Tooltip content="Add / Ingest Database" description="Import PGN or SQLite into Data Fitness Pipeline">
+          <Tooltip content="Add / Ingest Database" description="Browse and import a PGN or SQLite database into Data Fitness">
             <button
               onClick={() => {
-                logAction("CLICK", "Triggered Add Database / Ingestion");
-                if (onOpenDataFitness) onOpenDataFitness(activeDbName || undefined);
+                logAction("CLICK", "Triggered Add Database / Open File Dialog");
+                fileInputRef.current?.click();
               }}
               className="px-3 py-1 bg-[#3b82f6] hover:bg-[#2563eb] text-white text-xs font-bold rounded shadow-md transition-all flex items-center gap-1 cursor-pointer"
             >
@@ -260,7 +282,12 @@ export function DatabaseBrowserView({
         <div className="flex-1 overflow-y-auto p-4 md:p-6 min-h-0">
           <DataFitnessView
             uxTheme={uxTheme}
-            onNavigateToBrowser={() => setActiveSubTab("shelf")}
+            pendingImportFile={pendingImportFile}
+            onClearImportFile={() => setPendingImportFile(null)}
+            onNavigateToBrowser={() => {
+              setPendingImportFile(null);
+              setActiveSubTab("shelf");
+            }}
             onNavigateToDossier={() => setActiveSubTab("dossier")}
           />
         </div>
