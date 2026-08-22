@@ -81,7 +81,7 @@ class GameRepository:
 
         # If _DATA_ is empty or incomplete, construct from columns
         if not pgn_text or not ("1." in pgn_text or "1 " in pgn_text):
-            event = row_dict.get("EVENT") or "LuckAI ChessLab Game"
+            event = row_dict.get("EVENT") or "DeepScout Chess Game"
             site = row_dict.get("SITE") or "Local"
             date = row_dict.get("DATE") or "????.??.??"
             white = row_dict.get("WHITE") or "White"
@@ -126,6 +126,8 @@ class GameRepository:
             "black_elo": row_dict.get("BLACKELO", ""),
             "pgn": pgn_text,
         }
+
+    get_game = get_game_by_rowid
 
     def list_games(
         self,
@@ -175,8 +177,10 @@ class GameRepository:
 
         # Validate sorting column
         valid_cols = {"ROWID", "WHITE", "BLACK", "RESULT", "DATE", "ECO", "OPENING", "PLYCOUNT", "WHITEELO", "BLACKELO"}
-        clean_sort = sort_by.upper() if sort_by.upper() in valid_cols else "ROWID"
-        clean_order = "DESC" if sort_order.upper() == "DESC" else "ASC"
+        sort_str = str(sort_by).upper() if sort_by else "ROWID"
+        order_str = str(sort_order).upper() if sort_order else "ASC"
+        clean_sort = sort_str if sort_str in valid_cols else "ROWID"
+        clean_order = "DESC" if order_str == "DESC" else "ASC"
 
         # Count total
         cur.execute(f"SELECT COUNT(*) FROM Games {where_sql}", params)
