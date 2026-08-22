@@ -2,6 +2,7 @@ import collections
 import contextlib
 import sqlite3
 import threading
+import time
 
 from PySide6 import QtCore, QtWidgets
 from PySide6.QtCore import Signal
