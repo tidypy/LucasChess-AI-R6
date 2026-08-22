@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { UXTheme } from "../../lib/theme";
 import { useClickLogger } from "../../lib/clickLogger";
 import { fetchDatabases } from "../../lib/api";
@@ -8,16 +8,11 @@ import {
   Layers,
   Database,
   Sliders,
-  CheckCircle2,
   FileCheck,
   RefreshCw,
   Download,
-  Filter,
-  Flame,
-  ArrowRight,
   GitBranch,
 } from "lucide-react";
-import { Tooltip } from "../../components/common/Tooltip";
 
 interface BookBuilderViewProps {
   uxTheme: UXTheme;

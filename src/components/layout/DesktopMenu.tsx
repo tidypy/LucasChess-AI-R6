@@ -16,12 +16,8 @@ interface DesktopMenuProps {
 const MENU_ITEMS = [
   { id: "Analysis", label: "Analysis", desc: "Interactive game analysis & move tree" },
   { id: "Spar", label: "Sparring", desc: "Spar against engines, neural bots & practice openings" },
+  { id: "Database", label: "Database Hub", desc: "Database shelf, fashion index reports, player dossier & data fitness" },
   { id: "BookBuilder", label: "Book Builder", desc: "Polyglot opening book generator & repertoire factory" },
-  { id: "Dossier", label: "Player Dossier", desc: "Longitudinal BI, Glicko-2 & style signature" },
-  { id: "Compare", label: "Compare", desc: "Head-to-head matchup & gap analysis" },
-  { id: "Fashion", label: "Fashion Index", desc: "Historical opening popularity over eras" },
-  { id: "Database", label: "Database Browser", desc: "ChessBase-style shelf & game preview" },
-  { id: "Consolidator", label: "Consolidator", desc: "Merge, deduplicate & export standard SQLite" },
   { id: "AI Grandmaster", label: "AI Grandmaster", desc: "Persona modeling & neural simulation" },
 ];
 

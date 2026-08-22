@@ -26,10 +26,8 @@ import {
   Sliders,
   Eye,
   EyeOff,
-  UserCheck,
   Brain,
 } from "lucide-react";
-import { Tooltip } from "../../components/common/Tooltip";
 
 interface AIGrandmasterViewProps {
   uxTheme: UXTheme;

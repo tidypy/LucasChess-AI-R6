@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import { UXTheme, BoardTheme } from "../../lib/theme";
@@ -8,16 +8,10 @@ import {
   Swords,
   RotateCcw,
   Play,
-  Pause,
-  Bot,
-  Zap,
   Sliders,
-  Flag,
   ArrowUpDown,
   BookOpen,
-  Award,
 } from "lucide-react";
-import { Tooltip } from "../../components/common/Tooltip";
 
 interface SparViewProps {
   uxTheme: UXTheme;
@@ -41,7 +35,7 @@ const OPENING_BOOKS = [
   { id: "none", name: "No Book (Engine Scratch)", desc: "Calculates every move from scratch" },
 ];
 
-export function SparView({ uxTheme, boardTheme }: SparViewProps) {
+export function SparView({ boardTheme }: SparViewProps) {
   const { logAction } = useClickLogger();
 
   const [game, setGame] = useState(new Chess());
@@ -50,7 +44,6 @@ export function SparView({ uxTheme, boardTheme }: SparViewProps) {
   const [selectedBook, setSelectedBook] = useState("gm");
   const [playerSide, setPlayerSide] = useState<"white" | "black">("white");
   const [targetElo, setTargetElo] = useState(1600);
-  const [timeControl, setTimeControl] = useState("3+2");
   const [isGameActive, setIsGameActive] = useState(false);
   const [moveHistory, setMoveHistory] = useState<string[]>([]);
   const [evalScore, setEvalScore] = useState("+0.00");
@@ -81,7 +74,8 @@ export function SparView({ uxTheme, boardTheme }: SparViewProps) {
     logAction("CLICK", "Reset Sparring Arena");
   };
 
-  const handlePieceDrop = (sourceSquare: string, targetSquare: string) => {
+  const handlePieceDrop = ({ sourceSquare, targetSquare }: { piece: any; sourceSquare: string; targetSquare: string | null }): boolean => {
+    if (!targetSquare) return false;
     try {
       const move = game.move({
         from: sourceSquare,

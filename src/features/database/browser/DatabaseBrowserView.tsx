@@ -6,6 +6,11 @@ import { Tooltip } from "../../../components/common/Tooltip";
 import { fetchDatabases, fetchGamesList, fetchGame, GameSummary } from "../../../lib/api";
 import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
+import { FashionIndexView } from "../../analytics/opening_fashion/FashionIndexView";
+import { DossierView } from "../../analytics/dossier/DossierView";
+import { CompareView } from "../../analytics/compare/CompareView";
+import { DataFitnessView } from "../data_fitness/DataFitnessView";
+import { ConsolidatorView } from "../consolidator/ConsolidatorView";
 import {
   Database,
   Search,
@@ -21,6 +26,9 @@ import {
   History,
   CheckCircle2,
   ShieldCheck,
+  TrendingUp,
+  Users,
+  Layers,
 } from "lucide-react";
 
 interface DatabaseBrowserViewProps {
@@ -33,6 +41,7 @@ interface DatabaseBrowserViewProps {
 }
 
 export function DatabaseBrowserView({
+  uxTheme,
   boardTheme,
   onLoadGame,
   onOpenBookBuilder,
@@ -42,6 +51,8 @@ export function DatabaseBrowserView({
   const { logAction } = useClickLogger();
 
   // State
+  const [activeSubTab, setActiveSubTab] = useState<"shelf" | "fashion" | "dossier" | "compare" | "fitness" | "consolidator">("shelf");
+  const [comparePlayer, setComparePlayer] = useState<string>("Carlsen,M");
   const [selectedDb, setSelectedDb] = useState<string | null>(null);
   const [selectedFolder, setSelectedFolder] = useState<string>("My Databases");
   const [selectedGame, setSelectedGame] = useState<GameSummary | null>(null);
@@ -78,11 +89,13 @@ export function DatabaseBrowserView({
   });
 
   const previewFen = (() => {
-    if (!selectedGameDetails?.pgn) return "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    if (!selectedGameDetails?.pgn) {
+      return "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    }
     try {
-      const chess = new Chess();
-      chess.loadPgn(selectedGameDetails.pgn);
-      return chess.fen();
+      const g = new Chess();
+      g.loadPgn(selectedGameDetails.pgn);
+      return g.fen();
     } catch {
       return "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     }
@@ -104,30 +117,46 @@ export function DatabaseBrowserView({
     logAction("CLICK", `Selected game #${game.id}: ${game.WHITE} vs ${game.BLACK}`);
   };
 
+  const SUB_TABS = [
+    { id: "shelf", label: "Shelf & Games", icon: Database },
+    { id: "fashion", label: "Fashion Index (Report)", icon: TrendingUp },
+    { id: "dossier", label: "Player Dossier & Compare", icon: Users },
+    { id: "fitness", label: "Data Fitness Studio", icon: ShieldCheck },
+    { id: "consolidator", label: "Consolidator", icon: Layers },
+  ];
+
   return (
     <div className="flex flex-col h-full bg-[#080a0c] text-[#e2e8f0] select-none overflow-hidden font-sans">
       {/* 1. Top Sub-Command Bar */}
       <header className="h-12 bg-[#0d1014] border-b border-[#1e232b] flex items-center justify-between px-4 flex-shrink-0 shadow-lg z-10">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 font-bold text-sm text-[#3b82f6]">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 font-bold text-sm text-[#3b82f6] mr-1">
             <Database className="w-4 h-4 text-[#3b82f6]" />
-            DeepScout Vault
+            Database Hub
           </div>
 
-          <div className="flex gap-1">
-            {["Home", "Maintenance", "Cloud Vault", "Reports"].map((tab, idx) => (
-              <button
-                key={tab}
-                onClick={() => logAction("NAV", `Clicked tab: ${tab}`)}
-                className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
-                  idx === 0
-                    ? "bg-[#3b82f6]/10 text-[#3b82f6] font-semibold"
-                    : "text-[#8b949e] hover:bg-[#181d24] hover:text-[#e2e8f0]"
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
+          <div className="flex items-center gap-1">
+            {SUB_TABS.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeSubTab === tab.id || (activeSubTab === "compare" && tab.id === "dossier");
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveSubTab(tab.id as any);
+                    logAction("NAV", `Switched Database Sub-Tab: ${tab.label}`);
+                  }}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 ${
+                    isActive
+                      ? "bg-[#3b82f6]/15 text-[#3b82f6] font-bold border border-[#3b82f6]/30 shadow-sm"
+                      : "text-[#8b949e] hover:bg-[#181d24] hover:text-[#e2e8f0]"
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -203,8 +232,44 @@ export function DatabaseBrowserView({
         </div>
       </header>
 
-      {/* 2. Main Workspace Layout */}
-      <div className="flex-1 flex min-h-0 overflow-hidden">
+      {/* 2. Main Workspace Layout / Sub-Feature Routing */}
+      {activeSubTab === "fashion" ? (
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 min-h-0">
+          <FashionIndexView uxTheme={uxTheme} />
+        </div>
+      ) : activeSubTab === "dossier" ? (
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 min-h-0">
+          <DossierView
+            uxTheme={uxTheme}
+            onOpenCompare={(p) => {
+              if (p) setComparePlayer(p);
+              setActiveSubTab("compare");
+              logAction("NAV", `Switched to Compare View for ${p}`);
+            }}
+          />
+        </div>
+      ) : activeSubTab === "compare" ? (
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 min-h-0">
+          <CompareView
+            uxTheme={uxTheme}
+            initialPlayerA={comparePlayer}
+            onBackToDossier={() => setActiveSubTab("dossier")}
+          />
+        </div>
+      ) : activeSubTab === "fitness" ? (
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 min-h-0">
+          <DataFitnessView
+            uxTheme={uxTheme}
+            onNavigateToBrowser={() => setActiveSubTab("shelf")}
+            onNavigateToDossier={() => setActiveSubTab("dossier")}
+          />
+        </div>
+      ) : activeSubTab === "consolidator" ? (
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 min-h-0">
+          <ConsolidatorView uxTheme={uxTheme} />
+        </div>
+      ) : (
+        <div className="flex-1 flex min-h-0 overflow-hidden">
         {/* Left Folder Hierarchy Tree */}
         <aside className="w-56 bg-[#111418] border-r border-[#1e232b] flex flex-col flex-shrink-0 overflow-y-auto">
           <div className="pt-4 pb-2">
@@ -623,6 +688,7 @@ export function DatabaseBrowserView({
           )}
         </main>
       </div>
+    )}
 
       {/* 5. Footer Status Bar */}
       <footer className="h-6 bg-[#3b82f6] flex items-center justify-between px-4 text-white text-[10px] font-semibold flex-shrink-0">

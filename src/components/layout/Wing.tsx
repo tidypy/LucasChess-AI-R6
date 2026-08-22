@@ -6,11 +6,6 @@ import {
   Bug,
   Settings,
   Sparkles,
-  BarChart2,
-  Users,
-  TrendingUp,
-  Layers,
-  ShieldCheck,
   Swords,
   BookOpen,
 } from "lucide-react";
@@ -94,6 +89,21 @@ export function Wing({
         </button>
       </Tooltip>
 
+      <Tooltip content="Database Hub & Shelf" description="Explore databases, fashion index, dossiers & data fitness" position="right">
+        <button
+          onClick={() => handleNav("Database")}
+          className={`p-2.5 rounded-2xl transition-all ${
+            activeView === "Database"
+              ? "bg-[#3b82f6]/20 text-[#3b82f6] shadow-md border border-[#3b82f6]/30"
+              : isLight
+              ? "hover:text-slate-900 hover:bg-slate-100"
+              : "hover:text-slate-100 hover:bg-slate-800/60"
+          }`}
+        >
+          <Database className="w-5 h-5" />
+        </button>
+      </Tooltip>
+
       <Tooltip content="Opening Book Builder" description="Polyglot repertoire generator & tree explorer" position="right">
         <button
           onClick={() => handleNav("BookBuilder")}
@@ -109,102 +119,12 @@ export function Wing({
         </button>
       </Tooltip>
 
-      <Tooltip content="Player Dossier" description="Longitudinal BI, Glicko-2 & style signature" position="right">
-        <button
-          onClick={() => handleNav("Dossier")}
-          className={`p-2.5 rounded-2xl transition-all ${
-            activeView === "Dossier"
-              ? "bg-blue-500/20 text-blue-400 shadow-md border border-blue-500/30"
-              : isLight
-              ? "hover:text-slate-900 hover:bg-slate-100"
-              : "hover:text-slate-100 hover:bg-slate-800/60"
-          }`}
-        >
-          <BarChart2 className="w-5 h-5" />
-        </button>
-      </Tooltip>
-
-      <Tooltip content="Head-to-Head Compare" description="Side-by-side gap analysis and style divergence" position="right">
-        <button
-          onClick={() => handleNav("Compare")}
-          className={`p-2.5 rounded-2xl transition-all ${
-            activeView === "Compare"
-              ? "bg-blue-500/20 text-blue-400 shadow-md border border-blue-500/30"
-              : isLight
-              ? "hover:text-slate-900 hover:bg-slate-100"
-              : "hover:text-slate-100 hover:bg-slate-800/60"
-          }`}
-        >
-          <Users className="w-5 h-5" />
-        </button>
-      </Tooltip>
-
-      <Tooltip content="Fashion Index" description="Historical opening popularity over eras" position="right">
-        <button
-          onClick={() => handleNav("Fashion")}
-          className={`p-2.5 rounded-2xl transition-all ${
-            activeView === "Fashion"
-              ? "bg-purple-500/20 text-purple-400 shadow-md border border-purple-500/30"
-              : isLight
-              ? "hover:text-slate-900 hover:bg-slate-100"
-              : "hover:text-slate-100 hover:bg-slate-800/60"
-          }`}
-        >
-          <TrendingUp className="w-5 h-5" />
-        </button>
-      </Tooltip>
-
-      <Tooltip content="Database Browser" description="ChessBase-style shelf & game preview" position="right">
-        <button
-          onClick={() => handleNav("Database")}
-          className={`p-2.5 rounded-2xl transition-all ${
-            activeView === "Database"
-              ? "bg-emerald-500/20 text-emerald-500 shadow-md border border-emerald-500/30"
-              : isLight
-              ? "hover:text-slate-900 hover:bg-slate-100"
-              : "hover:text-slate-100 hover:bg-slate-800/60"
-          }`}
-        >
-          <Database className="w-5 h-5" />
-        </button>
-      </Tooltip>
-
-      <Tooltip content="Data Fitness & Quality" description="Audit health, sanitize records & run Mass Analysis" position="right">
-        <button
-          onClick={() => handleNav("Fitness")}
-          className={`p-2.5 rounded-2xl transition-all ${
-            activeView === "Fitness"
-              ? "bg-emerald-500/20 text-emerald-400 shadow-md border border-emerald-500/30"
-              : isLight
-              ? "hover:text-slate-900 hover:bg-slate-100"
-              : "hover:text-slate-100 hover:bg-slate-800/60"
-          }`}
-        >
-          <ShieldCheck className="w-5 h-5" />
-        </button>
-      </Tooltip>
-
-      <Tooltip content="Database Consolidator" description="Merge, deduplicate & export standard SQLite" position="right">
-        <button
-          onClick={() => handleNav("Consolidator")}
-          className={`p-2.5 rounded-2xl transition-all ${
-            activeView === "Consolidator"
-              ? "bg-emerald-500/20 text-emerald-500 shadow-md border border-emerald-500/30"
-              : isLight
-              ? "hover:text-slate-900 hover:bg-slate-100"
-              : "hover:text-slate-100 hover:bg-slate-800/60"
-          }`}
-        >
-          <Layers className="w-5 h-5" />
-        </button>
-      </Tooltip>
-
       <Tooltip content="AI Grandmaster" description="Persona modeling & neural simulation" position="right">
         <button
           onClick={() => handleNav("AI Grandmaster")}
           className={`p-2.5 rounded-2xl transition-all ${
             activeView === "AI Grandmaster"
-              ? "bg-emerald-500/20 text-emerald-500 shadow-md border border-emerald-500/30"
+              ? "bg-fuchsia-500/20 text-fuchsia-400 shadow-md border border-fuchsia-500/30"
               : isLight
               ? "hover:text-slate-900 hover:bg-slate-100"
               : "hover:text-slate-100 hover:bg-slate-800/60"
