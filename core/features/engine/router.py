@@ -22,6 +22,52 @@ class EvaluateRequest(BaseModel):
     depth: Optional[int] = Field(14, description="Evaluation depth")
     time_limit_ms: Optional[int] = Field(300, description="Evaluation time in milliseconds")
 
+class TestUciRequest(BaseModel):
+    path: str = Field(..., description="Absolute path to the UCI engine executable")
+
+class RegisterCustomEngineRequest(BaseModel):
+    name: str = Field(..., description="Display name for custom engine")
+    path: str = Field(..., description="Absolute path to engine executable")
+    elo: Optional[str] = Field("2400", description="Estimated or default Elo")
+    style: Optional[str] = Field("Custom UCI Tactical Engine", description="Playing style")
+    icon: Optional[str] = Field("⚔️", description="Avatar emoji icon")
+
+@router.get("/list")
+async def list_engines() -> List[Dict[str, Any]]:
+    """Returns all available built-in and user-registered custom UCI engines."""
+    return engine_service.get_available_engines()
+
+@router.post("/test-uci")
+async def test_uci(req: TestUciRequest) -> Dict[str, Any]:
+    """Tests UCI handshake and retrieves engine name, author, and capabilities."""
+    res = engine_service.test_uci_engine(req.path)
+    if not res.get("success"):
+        raise HTTPException(status_code=400, detail=res.get("error", "UCI Handshake Failed"))
+    return res
+
+@router.post("/custom")
+async def register_custom_engine(req: RegisterCustomEngineRequest) -> Dict[str, Any]:
+    """Registers and persists a new custom UCI engine for Sparring and Analysis."""
+    try:
+        res = engine_service.register_custom_engine(
+            name=req.name,
+            path=req.path,
+            elo=req.elo or "2400",
+            style=req.style or "Custom UCI Tactical Engine",
+            icon=req.icon or "⚔️",
+        )
+        return res
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete("/custom/{engine_id}")
+async def remove_custom_engine(engine_id: str) -> Dict[str, Any]:
+    """Removes a custom registered UCI engine."""
+    try:
+        return engine_service.remove_custom_engine(engine_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.post("/play")
 async def play_engine_move(req: PlayMoveRequest) -> Dict[str, Any]:
     """Generates the best move using standard modern UCI protocol."""

@@ -14,7 +14,7 @@ class GameService:
             os.path.basename(default_repo.db_path): default_repo
         }
 
-    def _get_or_create_repo(self, db_name: str) -> GameRepository:
+    def _get_or_create_repo(self, db_name: str, create_if_missing: bool = False) -> GameRepository:
         if db_name in self._repositories:
             return self._repositories[db_name]
 
@@ -28,6 +28,14 @@ class GameService:
                 repo = GameRepository(path)
                 self._repositories[db_name] = repo
                 return repo
+
+        if create_if_missing:
+            clean_name = db_name if db_name.endswith((".lcdb", ".sqlite", ".db")) else f"{db_name}.lcdb"
+            new_path = os.path.join(self.root_dir, clean_name)
+            repo = GameRepository.create_empty_db(new_path)
+            self._repositories[db_name] = repo
+            self._repositories[clean_name] = repo
+            return repo
 
         raise FileNotFoundError(f"Database '{db_name}' not found.")
 
@@ -110,7 +118,7 @@ class GameService:
         return results
 
     def import_pgn(self, pgn_content: str, db_name: Optional[str] = None) -> int:
-        repo = self._get_or_create_repo(db_name) if db_name else self.repo
+        repo = self._get_or_create_repo(db_name, create_if_missing=True) if db_name else self.repo
         return repo.import_pgn(pgn_content)
 
     def ingest_database(self, file_name: str, target_name: str, file_bytes: bytes, strategy: str = "fast") -> Dict[str, Any]:

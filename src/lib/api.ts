@@ -542,5 +542,70 @@ export const fetchEngineEvaluate = async (payload: {
   return res.json();
 };
 
+export interface EngineInfo {
+  id: string;
+  name: string;
+  elo: string;
+  style: string;
+  icon: string;
+  is_custom?: boolean;
+  path?: string;
+  author?: string;
+  supports_elo?: boolean;
+}
+
+export const fetchEngineList = async (): Promise<EngineInfo[]> => {
+  const res = await fetch(`${API_BASE}/engine/list`);
+  if (!res.ok) throw new Error("Failed to fetch engine list");
+  return res.json();
+};
+
+export const testUciEngine = async (path: string): Promise<{
+  success: boolean;
+  name: string;
+  author: string;
+  path: string;
+  supports_elo: boolean;
+  options: string[];
+}> => {
+  const res = await fetch(`${API_BASE}/engine/test-uci`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ path }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "UCI Handshake Failed" }));
+    throw new Error(err.detail || "UCI Handshake Failed");
+  }
+  return res.json();
+};
+
+export const registerCustomEngine = async (payload: {
+  name: string;
+  path: string;
+  elo?: string;
+  style?: string;
+  icon?: string;
+}): Promise<EngineInfo> => {
+  const res = await fetch(`${API_BASE}/engine/custom`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Registration Failed" }));
+    throw new Error(err.detail || "Failed to register custom UCI engine");
+  }
+  return res.json();
+};
+
+export const removeCustomEngine = async (engineId: string): Promise<{ success: boolean; removed_id: string }> => {
+  const res = await fetch(`${API_BASE}/engine/custom/${engineId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to remove custom engine");
+  return res.json();
+};
+
 
 

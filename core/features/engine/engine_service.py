@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import platform
 import logging
 from typing import Optional, Dict, Any, List
@@ -10,16 +11,61 @@ logger = logging.getLogger("deepscout.engine")
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
+DEFAULT_BUILTIN_ENGINES = [
+    {
+        "id": "stockfish",
+        "name": "Stockfish 18",
+        "elo": "3500+",
+        "style": "Ultimate Tactical Precision & Elo Scale",
+        "icon": "🤖",
+        "is_custom": False,
+    },
+    {
+        "id": "patricia",
+        "name": "Patricia 4",
+        "elo": "2800",
+        "style": "Sharp Alpha-Beta Tactical",
+        "icon": "⚡",
+        "is_custom": False,
+    },
+    {
+        "id": "ct800",
+        "name": "CT800",
+        "elo": "1850",
+        "style": "Positional Classicist",
+        "icon": "🛡️",
+        "is_custom": False,
+    },
+    {
+        "id": "maia1500",
+        "name": "Maia 1500",
+        "elo": "1500",
+        "style": "Human-like Neural Play",
+        "icon": "🧠",
+        "is_custom": False,
+    },
+    {
+        "id": "maia1900",
+        "name": "Maia 1900",
+        "elo": "1900",
+        "style": "Club Master Simulation",
+        "icon": "🎯",
+        "is_custom": False,
+    },
+]
+
 class UCIEngineService:
     """
     Standard Modern UCI Engine Service.
-    Uses official python-chess UCI protocol with Stockfish 18 and multi-engine auto-discovery.
+    Supports Stockfish 18, built-in engines, and custom user-registered UCI engines.
     """
 
     def __init__(self, root_dir: str = ROOT_DIR):
         self.root_dir = root_dir
         self._engine_paths: Dict[str, str] = {}
+        self._custom_engines_file = os.path.join(self.root_dir, "UserData", "custom_engines.json")
         self._discover_engines()
+        self._load_custom_engines()
 
     def _discover_engines(self):
         """Scans engine directories for native executables."""
@@ -58,6 +104,116 @@ class UCIEngineService:
                     self._engine_paths["ct800"] = p
                     break
 
+        # 4. Maia (via lc0)
+        maia_dir = os.path.join(engines_base, "maia")
+        if os.path.exists(maia_dir):
+            lc0_p = os.path.join(maia_dir, "lc0.exe" if is_windows else "lc0")
+            if os.path.exists(lc0_p):
+                self._engine_paths["maia1500"] = lc0_p
+                self._engine_paths["maia1900"] = lc0_p
+
+    def _load_custom_engines(self) -> List[Dict[str, Any]]:
+        if not os.path.exists(self._custom_engines_file):
+            return []
+        try:
+            with open(self._custom_engines_file, "r", encoding="utf-8") as f:
+                custom_list = json.load(f)
+                for eng in custom_list:
+                    if "id" in eng and "path" in eng and os.path.exists(eng["path"]):
+                        self._engine_paths[eng["id"].lower()] = eng["path"]
+                return custom_list
+        except Exception as e:
+            logger.warning("Could not read custom engines file: %s", e)
+            return []
+
+    def _save_custom_engines(self, engines: List[Dict[str, Any]]):
+        os.makedirs(os.path.dirname(self._custom_engines_file), exist_ok=True)
+        with open(self._custom_engines_file, "w", encoding="utf-8") as f:
+            json.dump(engines, f, indent=2)
+
+    def get_available_engines(self) -> List[Dict[str, Any]]:
+        """Returns all built-in and user-added custom engines."""
+        custom_engines = self._load_custom_engines()
+        all_engines = list(DEFAULT_BUILTIN_ENGINES)
+        for ce in custom_engines:
+            ce_copy = dict(ce)
+            ce_copy["is_custom"] = True
+            all_engines.append(ce_copy)
+        return all_engines
+
+    def test_uci_engine(self, executable_path: str) -> Dict[str, Any]:
+        """Validates standard UCI handshake for a binary."""
+        clean_path = os.path.expanduser(executable_path.strip().strip('"').strip("'"))
+        if not os.path.exists(clean_path):
+            raise FileNotFoundError(f"Executable not found at path: {clean_path}")
+
+        try:
+            engine = chess.engine.SimpleEngine.popen_uci(clean_path, timeout=5)
+            engine_name = engine.id.get("name", os.path.basename(clean_path))
+            engine_author = engine.id.get("author", "Unknown Author")
+            options = list(engine.options.keys())
+            supports_elo = "UCI_LimitStrength" in options or "UCI_Elo" in options
+            engine.quit()
+
+            return {
+                "success": True,
+                "name": engine_name,
+                "author": engine_author,
+                "path": clean_path,
+                "supports_elo": supports_elo,
+                "options": options[:15],
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"UCI Handshake failed: {str(e)}. Ensure this is a valid standard UCI executable.",
+            }
+
+    def register_custom_engine(
+        self,
+        name: str,
+        path: str,
+        elo: str = "2400",
+        style: str = "Custom UCI Engine",
+        icon: str = "⚔️",
+    ) -> Dict[str, Any]:
+        """Registers and persists a custom UCI engine."""
+        test_res = self.test_uci_engine(path)
+        if not test_res.get("success"):
+            raise ValueError(test_res.get("error", "Engine test failed"))
+
+        clean_path = test_res["path"]
+        engine_id = f"custom_{name.lower().replace(' ', '_')}_{int(os.path.getsize(clean_path)) % 10000}"
+        
+        custom_list = self._load_custom_engines()
+        # Remove existing with same id or path
+        custom_list = [e for e in custom_list if e.get("id") != engine_id and e.get("path") != clean_path]
+
+        new_entry = {
+            "id": engine_id,
+            "name": name.strip() or test_res.get("name", "Custom Engine"),
+            "path": clean_path,
+            "elo": elo.strip() or "2400",
+            "style": style.strip() or "Custom UCI Tactical Engine",
+            "icon": icon or "⚔️",
+            "author": test_res.get("author", ""),
+            "supports_elo": test_res.get("supports_elo", False),
+            "is_custom": True,
+        }
+        custom_list.append(new_entry)
+        self._save_custom_engines(custom_list)
+        self._engine_paths[engine_id.lower()] = clean_path
+        return new_entry
+
+    def remove_custom_engine(self, engine_id: str) -> Dict[str, Any]:
+        """Removes a registered custom engine."""
+        custom_list = self._load_custom_engines()
+        filtered = [e for e in custom_list if e.get("id") != engine_id]
+        self._save_custom_engines(filtered)
+        if engine_id.lower() in self._engine_paths:
+            del self._engine_paths[engine_id.lower()]
+        return {"success": True, "removed_id": engine_id}
+
     def get_engine_path(self, engine_id: str = "stockfish") -> Optional[str]:
         engine_id_clean = engine_id.lower()
         if engine_id_clean in self._engine_paths:
@@ -86,7 +242,6 @@ class UCIEngineService:
 
         exe_path = self.get_engine_path(engine_id)
         if not exe_path or not os.path.exists(exe_path):
-            # Fallback if no binary found: pick first legal move
             import random
             legal_moves = list(board.legal_moves)
             chosen = random.choice(legal_moves)
@@ -177,7 +332,6 @@ class UCIEngineService:
             }
         except Exception as err:
             logger.error("UCI Engine error: %s", err)
-            # Safe legal fallback
             legal_moves = list(board.legal_moves)
             if not legal_moves:
                 return {"success": False, "error": "No legal moves available."}

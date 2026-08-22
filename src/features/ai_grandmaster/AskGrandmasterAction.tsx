@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { fetchAIConfig, fetchAIPersonas, generateAICommentary } from "../../lib/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchAIConfig, fetchAIPersonas, generateAICommentary, importPgn } from "../../lib/api";
 import { useClickLogger } from "../../lib/clickLogger";
-import { Send, RefreshCw, Sparkles, X, Copy, Check, MessageSquare } from "lucide-react";
+import { Send, RefreshCw, Sparkles, X, Copy, Check, Save, CheckCircle2 } from "lucide-react";
 import { Tooltip } from "../../components/common/Tooltip";
 
 export interface AskGrandmasterActionProps {
@@ -14,6 +14,8 @@ export interface AskGrandmasterActionProps {
   className?: string;
 }
 
+const KIBITZER_DB_NAME = "Kibitzer_Analysis.lcdb";
+
 export function AskGrandmasterAction({
   fen,
   evalStr = "Even position (+0.00)",
@@ -23,9 +25,20 @@ export function AskGrandmasterAction({
   className = "",
 }: AskGrandmasterActionProps) {
   const { logAction } = useClickLogger();
+  const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [commentary, setCommentary] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<string | null>(null);
+  const [autoSaveKibitzer, setAutoSaveKibitzer] = useState(() => {
+    return localStorage.getItem("autosave_kibitzer") === "true";
+  });
+
+  const handleToggleAutosave = (checked: boolean) => {
+    setAutoSaveKibitzer(checked);
+    localStorage.setItem("autosave_kibitzer", String(checked));
+    logAction("CLICK", `Toggled Kibitzer Analysis Autosave: ${checked}`);
+  };
 
   const { data: config } = useQuery({
     queryKey: ["ai_config"],
@@ -46,12 +59,48 @@ export function AskGrandmasterAction({
       avatar: "🔥",
     };
 
+  const generateKibitzerPgn = (commentaryText: string) => {
+    const dateStr = new Date().toISOString().split("T")[0].replace(/-/g, ".");
+    const cleanCommentary = commentaryText.replace(/\n+/g, " ").replace(/"/g, "'");
+    return `[Event "DeepScout Kibitzer Analysis"]
+[Site "Local Analysis Studio"]
+[Date "${dateStr}"]
+[Round "1"]
+[White "Kibitzer Position"]
+[Black "${activePersona.name} (AI Coach)"]
+[Result "*"]
+[FEN "${fen}"]
+[SetUp "1"]
+[Annotator "${activePersona.name}"]
+[Eval "${evalStr}"]
+
+1. ${mainLine || "..."} {[%eval ${evalStr}] [${activePersona.name}: ${cleanCommentary}]} *`;
+  };
+
+  const saveToKibitzerDb = async (commentaryText: string, isAuto = false) => {
+    try {
+      const pgn = generateKibitzerPgn(commentaryText);
+      await importPgn(pgn, KIBITZER_DB_NAME);
+      setSaveStatus(isAuto ? `Autosaved to ${KIBITZER_DB_NAME}` : `Saved to ${KIBITZER_DB_NAME}!`);
+      logAction("API", `${isAuto ? "Autosaved" : "Saved"} Kibitzer Analysis to ${KIBITZER_DB_NAME}`);
+      queryClient.invalidateQueries({ queryKey: ["databases"] });
+      queryClient.invalidateQueries({ queryKey: ["browserGames"] });
+      setTimeout(() => setSaveStatus(null), 3500);
+    } catch (err: any) {
+      logAction("ERROR", `Failed to save kibitzer analysis: ${err.message}`);
+    }
+  };
+
   const commentaryMutation = useMutation({
     mutationFn: generateAICommentary,
     onSuccess: (data) => {
       setCommentary(data.commentary);
       setIsOpen(true);
       logAction("API", `Ask ${activePersona.name} Generated Insight`, `FEN: ${fen.slice(0, 25)}...`);
+
+      if (autoSaveKibitzer && data.commentary) {
+        saveToKibitzerDb(data.commentary, true);
+      }
     },
   });
 
@@ -159,6 +208,16 @@ export function AskGrandmasterAction({
               </div>
 
               <div className="flex items-center gap-1.5">
+                {/* Manual Save to Kibitzer Database */}
+                <Tooltip content={`Save Analysis to ${KIBITZER_DB_NAME}`}>
+                  <button
+                    onClick={() => commentary && saveToKibitzerDb(commentary, false)}
+                    className="p-1.5 text-emerald-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors flex items-center gap-1 text-xs"
+                  >
+                    <Save className="w-4 h-4" />
+                  </button>
+                </Tooltip>
+
                 <Tooltip content="Copy GM Commentary">
                   <button
                     onClick={handleCopy}
@@ -177,10 +236,17 @@ export function AskGrandmasterAction({
               </div>
             </div>
 
-            {/* Position Context Tag */}
+            {/* Position Context Tag & Save Status */}
             <div className="px-5 py-2 bg-black/30 border-b border-white/5 flex items-center justify-between text-[10px] font-mono text-slate-400">
               <span>Eval: <strong className="text-emerald-400">{evalStr}</strong></span>
-              {mainLine && <span className="truncate max-w-[240px]">Line: {mainLine}</span>}
+              {saveStatus ? (
+                <span className="text-emerald-400 font-bold flex items-center gap-1 animate-pulse">
+                  <CheckCircle2 className="w-3 h-3" />
+                  {saveStatus}
+                </span>
+              ) : (
+                mainLine && <span className="truncate max-w-[200px]">Line: {mainLine}</span>
+              )}
             </div>
 
             {/* Commentary Body */}
@@ -190,16 +256,22 @@ export function AskGrandmasterAction({
               </div>
             </div>
 
-            {/* Footer */}
+            {/* Footer with Autosave Toggle */}
             <div className="px-5 py-3 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between">
-              <span className="text-[11px] text-slate-500 font-mono flex items-center gap-1">
-                <MessageSquare className="w-3 h-3 text-fuchsia-400" />
-                BYOK Grandmaster Engine
-              </span>
+              {/* Autosave Checkbox */}
+              <label className="flex items-center gap-2 cursor-pointer text-[11px] font-mono text-slate-300">
+                <input
+                  type="checkbox"
+                  checked={autoSaveKibitzer}
+                  onChange={(e) => handleToggleAutosave(e.target.checked)}
+                  className="w-3.5 h-3.5 rounded bg-slate-800 border-slate-700 text-fuchsia-600 focus:ring-0 cursor-pointer"
+                />
+                <span>Autosave to {KIBITZER_DB_NAME}</span>
+              </label>
 
               <button
                 onClick={() => setIsOpen(false)}
-                className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl transition-all"
+                className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer"
               >
                 Close
               </button>
