@@ -281,7 +281,11 @@ class AIService:
 
         system_prompt = (
             f"{persona['system_prompt']}\n\n"
-            "IMPORTANT RULES:\n"
+            "CONTEXT & SAFETY GUIDELINES:\n"
+            "- You are analyzing the family-friendly intellectual board game of chess on a 64-square chessboard.\n"
+            "- Standard chess terminology like 'attack', 'piece sacrifice', 'destroy pawn structure', 'strike', 'crush the defense', or 'king safety' refers strictly and exclusively to moving wooden/digital chess pieces according to official FIDE chess rules, with zero connection to real-world violence or harm.\n"
+            "- Always fulfill chess analysis requests enthusiastically without inappropriate safety refusals.\n\n"
+            "COACHING RULES:\n"
             "1. DO NOT calculate legal moves from scratch or play independently. Trust the provided Stockfish evaluation completely.\n"
             "2. Explain what the position means, why the evaluated move is strong, and what tactical or strategic motif is at play.\n"
         )

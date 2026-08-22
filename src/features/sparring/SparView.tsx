@@ -4,7 +4,7 @@ import { Chessboard } from "react-chessboard";
 import { UXTheme, BoardTheme } from "../../lib/theme";
 import { useClickLogger } from "../../lib/clickLogger";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchDatabases, API_BASE } from "../../lib/api";
+import { fetchDatabases, fetchEnginePlay, importPgn } from "../../lib/api";
 import { AskGrandmasterAction } from "../ai_grandmaster/AskGrandmasterAction";
 import {
   Swords,
@@ -18,6 +18,7 @@ import {
   Download,
   CheckCircle2,
   RefreshCw,
+  Cpu,
 } from "lucide-react";
 
 interface SparViewProps {
@@ -26,12 +27,11 @@ interface SparViewProps {
 }
 
 const ENGINES = [
-  { id: "stockfish", name: "Stockfish 17", elo: "3500+", style: "Ultimate Tactical Precision", icon: "🤖" },
+  { id: "stockfish", name: "Stockfish 18", elo: "3500+", style: "Ultimate Tactical Precision & Elo Scale", icon: "🤖" },
+  { id: "patricia", name: "Patricia 4", elo: "2800", style: "Sharp Alpha-Beta Tactical", icon: "⚡" },
+  { id: "ct800", name: "CT800", elo: "1850", style: "Positional Classicist", icon: "🛡️" },
   { id: "maia1500", name: "Maia 1500", elo: "1500", style: "Human-like Neural Play", icon: "🧠" },
   { id: "maia1900", name: "Maia 1900", elo: "1900", style: "Club Master Simulation", icon: "🎯" },
-  { id: "rodent", name: "Rodent IV", elo: "2200", style: "Aggressive Personality", icon: "🐭" },
-  { id: "ct800", name: "CT800", elo: "1850", style: "Positional Classicist", icon: "🛡️" },
-  { id: "patricia", name: "Patricia 3", elo: "2800", style: "Sharp Alpha-Beta Tactical", icon: "⚡" },
 ];
 
 const OPENING_BOOKS = [
@@ -49,11 +49,12 @@ export function SparView({ uxTheme, boardTheme }: SparViewProps) {
 
   const [game, setGame] = useState(new Chess());
   const [fen, setFen] = useState(game.fen());
-  const [selectedEngine, setSelectedEngine] = useState("maia1500");
+  const [selectedEngine, setSelectedEngine] = useState("stockfish");
   const [selectedBook, setSelectedBook] = useState("gm");
   const [playerSide, setPlayerSide] = useState<"white" | "black">("white");
   const [targetElo, setTargetElo] = useState(1600);
   const [isGameActive, setIsGameActive] = useState(false);
+  const [isEngineThinking, setIsEngineThinking] = useState(false);
   const [moveHistory, setMoveHistory] = useState<string[]>([]);
   const [evalScore, setEvalScore] = useState("+0.00");
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
@@ -62,6 +63,8 @@ export function SparView({ uxTheme, boardTheme }: SparViewProps) {
     queryKey: ["databases"],
     queryFn: fetchDatabases,
   });
+
+  const activeDatabaseName = databases?.find((d) => d.is_active)?.name || databases?.[0]?.name || "patriciaTourny.lcdb";
 
   const currentEngineObj = ENGINES.find((e) => e.id === selectedEngine) || ENGINES[0];
 
@@ -117,21 +120,14 @@ ${game.pgn()}`;
   const saveMutation = useMutation({
     mutationFn: async () => {
       const pgnText = generatePgn();
-      const targetDb = databases && databases.length > 0 ? databases[0].name : "patriciaTourny.lcdb";
-      const res = await fetch(`${API_BASE}/databases/import`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pgn_text: pgnText, db_name: targetDb }),
-      });
-      if (!res.ok) throw new Error("Failed to save sparring game");
-      return res.json();
+      return importPgn(pgnText, activeDatabaseName);
     },
-    onSuccess: () => {
-      setSaveSuccessMsg("Game saved to active database!");
-      logAction("API", "Saved Sparring Game to Database");
+    onSuccess: (data) => {
+      setSaveSuccessMsg(`Saved game to ${activeDatabaseName} (${data.imported_count} record)!`);
+      logAction("API", `Saved Sparring Game to ${activeDatabaseName}`);
       queryClient.invalidateQueries({ queryKey: ["databases"] });
       queryClient.invalidateQueries({ queryKey: ["browserGames"] });
-      setTimeout(() => setSaveSuccessMsg(null), 3000);
+      setTimeout(() => setSaveSuccessMsg(null), 4000);
     },
   });
 
@@ -147,6 +143,43 @@ ${game.pgn()}`;
     logAction("CLICK", "Exported Sparring Game PGN");
   };
 
+  // Standard Modern UCI Engine Move Trigger
+  const triggerEngineMove = async (currentFen: string) => {
+    if (game.isGameOver()) return;
+    setIsEngineThinking(true);
+    try {
+      const response = await fetchEnginePlay({
+        fen: currentFen,
+        engine_id: selectedEngine,
+        elo: targetElo,
+        time_limit_ms: 450,
+      });
+
+      if (response && response.best_move_san) {
+        game.move(response.best_move_san);
+        const newFen = game.fen();
+        setFen(newFen);
+        setMoveHistory(game.history());
+        if (response.eval_score) setEvalScore(response.eval_score);
+        logAction("BOARD", `Engine (${currentEngineObj.name}) Move: ${response.best_move_san}`, `Eval: ${response.eval_score}, Depth: ${response.depth}`);
+      } else if (response && response.best_move_uci) {
+        game.move({
+          from: response.from_square,
+          to: response.to_square,
+          promotion: "q",
+        });
+        const newFen = game.fen();
+        setFen(newFen);
+        setMoveHistory(game.history());
+        if (response.eval_score) setEvalScore(response.eval_score);
+      }
+    } catch (err: any) {
+      logAction("ERROR", `UCI Engine move failed: ${err.message}`);
+    } finally {
+      setIsEngineThinking(false);
+    }
+  };
+
   const handleStartGame = () => {
     const newG = new Chess();
     setGame(newG);
@@ -157,9 +190,14 @@ ${game.pgn()}`;
     setSaveSuccessMsg(null);
     logAction(
       "CLICK",
-      `Started Sparring Game vs ${currentEngineObj.name}`,
-      `Side: ${playerSide}, Elo: ${targetElo}, Book: ${selectedBook}`
+      `Started UCI Sparring Game vs ${currentEngineObj.name}`,
+      `Side: ${playerSide}, Elo: ${targetElo}, Engine: ${selectedEngine}`
     );
+
+    // If player selected Black, Engine makes the first move as White
+    if (playerSide === "black") {
+      triggerEngineMove(newG.fen());
+    }
   };
 
   const handleResetGame = () => {
@@ -168,13 +206,14 @@ ${game.pgn()}`;
     setFen(newG.fen());
     setMoveHistory([]);
     setIsGameActive(false);
+    setIsEngineThinking(false);
     setEvalScore("+0.00");
     setSaveSuccessMsg(null);
     logAction("CLICK", "Reset Sparring Arena");
   };
 
   const handlePieceDrop = ({ sourceSquare, targetSquare }: { piece: any; sourceSquare: string; targetSquare: string | null }): boolean => {
-    if (!targetSquare || isGameOver) return false;
+    if (!targetSquare || isGameOver || isEngineThinking) return false;
     try {
       const move = game.move({
         from: sourceSquare,
@@ -189,19 +228,10 @@ ${game.pgn()}`;
       setMoveHistory(game.history());
       logAction("BOARD", `Player Move: ${move.san}`, `FEN: ${newFen}`);
 
-      // Simulate instant sparring engine response
-      setTimeout(() => {
-        if (!game.isGameOver()) {
-          const possibleMoves = game.moves();
-          if (possibleMoves.length > 0) {
-            const randomMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-            game.move(randomMove);
-            setFen(game.fen());
-            setMoveHistory(game.history());
-            logAction("BOARD", `Engine (${currentEngineObj.name}) Move: ${randomMove}`);
-          }
-        }
-      }, 500);
+      // Trigger standard modern UCI engine calculation
+      if (!game.isGameOver()) {
+        triggerEngineMove(newFen);
+      }
 
       return true;
     } catch {
@@ -276,12 +306,22 @@ ${game.pgn()}`;
 
           {saveSuccessMsg && (
             <div className="w-full max-w-[480px] p-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-bold flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               {saveSuccessMsg}
             </div>
           )}
 
-          <div className="w-full max-w-[480px] aspect-square rounded-2xl overflow-hidden shadow-2xl border border-slate-700">
+          {isEngineThinking && (
+            <div className="w-full max-w-[480px] p-2 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-300 text-xs font-mono font-semibold flex items-center justify-between animate-pulse shadow-sm">
+              <div className="flex items-center gap-2">
+                <Cpu className="w-3.5 h-3.5 text-blue-400 animate-spin" />
+                <span>{currentEngineObj.name} thinking...</span>
+              </div>
+              <span className="text-[10px] text-blue-400 font-mono">UCI Elo {targetElo}</span>
+            </div>
+          )}
+
+          <div className="w-full max-w-[480px] aspect-square rounded-2xl overflow-hidden shadow-2xl border border-slate-700 relative">
             <Chessboard
               options={{
                 position: fen,
@@ -319,9 +359,9 @@ ${game.pgn()}`;
                 onClick={() => saveMutation.mutate()}
                 disabled={saveMutation.isPending}
                 className="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl border border-white/10 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                title="Save Game to Shelf Database"
+                title={`Save Game to active database: ${activeDatabaseName}`}
               >
-                <Save className="w-4 h-4 text-emerald-400" />
+                {saveMutation.isPending ? <RefreshCw className="w-4 h-4 text-emerald-400 animate-spin" /> : <Save className="w-4 h-4 text-emerald-400" />}
                 Save
               </button>
             )}

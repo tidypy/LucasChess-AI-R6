@@ -482,4 +482,65 @@ export const mergeDatabases = async (payload: {
   return res.json();
 };
 
+// ----------------------------------------------------
+// Standard Modern UCI Engine APIs
+// ----------------------------------------------------
+
+export interface EnginePlayRequest {
+  fen: string;
+  engine_id?: string;
+  elo?: number;
+  time_limit_ms?: number;
+  depth?: number;
+}
+
+export interface EnginePlayResponse {
+  success: boolean;
+  engine: string;
+  best_move_uci: string;
+  best_move_san: string;
+  from_square: string;
+  to_square: string;
+  eval_score: string;
+  eval_cp: number;
+  depth: number;
+  pv_san: string[];
+  pv_uci: string[];
+  is_fallback?: boolean;
+  error?: string;
+}
+
+export const fetchEnginePlay = async (payload: EnginePlayRequest): Promise<EnginePlayResponse> => {
+  const res = await fetch(`${API_BASE}/engine/play`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("Failed to generate engine move");
+  return res.json();
+};
+
+export const fetchEngineEvaluate = async (payload: {
+  fen: string;
+  depth?: number;
+  time_limit_ms?: number;
+}): Promise<{
+  success: boolean;
+  eval_score: string;
+  eval_cp: number;
+  best_move_san: string;
+  best_move_uci: string;
+  main_line: string;
+  depth: number;
+}> => {
+  const res = await fetch(`${API_BASE}/engine/evaluate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("Failed to evaluate position");
+  return res.json();
+};
+
+
 
