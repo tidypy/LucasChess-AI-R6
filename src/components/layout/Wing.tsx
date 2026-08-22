@@ -93,7 +93,8 @@ export function Wing({
         <button
           onClick={() => handleNav("Database")}
           className={`p-2.5 rounded-2xl transition-all ${
-            activeView === "Database"
+            activeView === "Database" ||
+            ["Dossier", "Compare", "Fashion", "Consolidator", "Fitness"].includes(activeView)
               ? "bg-[#3b82f6]/20 text-[#3b82f6] shadow-md border border-[#3b82f6]/30"
               : isLight
               ? "hover:text-slate-900 hover:bg-slate-100"

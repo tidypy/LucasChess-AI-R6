@@ -2,12 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { Wing } from "./components/layout/Wing";
 import { DesktopMenu } from "./components/layout/DesktopMenu";
 import { ResponsiveChessboard } from "./components/chessboard/ResponsiveChessboard";
-import { DossierView } from "./features/analytics/dossier/DossierView";
-import { CompareView } from "./features/analytics/compare/CompareView";
-import { FashionIndexView } from "./features/analytics/opening_fashion/FashionIndexView";
-import { ConsolidatorView } from "./features/database/consolidator/ConsolidatorView";
 import { DatabaseBrowserView } from "./features/database/browser/DatabaseBrowserView";
-import { DataFitnessView } from "./features/database/data_fitness/DataFitnessView";
 import { AIGrandmasterView } from "./features/ai_grandmaster/AIGrandmasterView";
 import { AskGrandmasterAction } from "./features/ai_grandmaster/AskGrandmasterAction";
 import { SparView } from "./features/sparring/SparView";
@@ -40,7 +35,6 @@ function MainApp() {
 
   // Active Workspace / Tab
   const [activeView, setActiveView] = useState<string>("Analysis");
-  const [comparePlayerA, setComparePlayerA] = useState<string>("Carlsen,M");
 
   // Game Selection
   const [gameId, setGameId] = useState<number>(42);
@@ -301,70 +295,34 @@ function MainApp() {
                 </div>
               </div>
             </div>
-          ) : activeView === "Dossier" ? (
-            /* Player Dossier View (BI Dashboard Prototype) */
+          ) : activeView === "Database" ||
+            activeView === "Fitness" ||
+            activeView === "Dossier" ||
+            activeView === "Compare" ||
+            activeView === "Fashion" ||
+            activeView === "Consolidator" ? (
+            /* Database Hub (Shelf, Data Fitness, Dossier, Compare, Fashion Index, Consolidator) */
             <ErrorBoundary
-              fallbackTitle="Player Dossier Error"
-              onError={(err) => logAction("ERROR", "Dossier View Error", err.message)}
-            >
-              <div className="flex-grow overflow-y-auto min-h-0">
-                <DossierView
-                  uxTheme={currentUXTheme}
-                  onOpenCompare={(p) => {
-                    if (p) setComparePlayerA(p);
-                    setActiveView("Compare");
-                    logAction("NAV", `Switched to Compare View for ${p}`);
-                  }}
-                />
-              </div>
-            </ErrorBoundary>
-          ) : activeView === "Compare" ? (
-            /* Head-to-Head Compare View (Prototype) */
-            <ErrorBoundary
-              fallbackTitle="Head-to-Head Compare Error"
-              onError={(err) => logAction("ERROR", "Compare View Error", err.message)}
-            >
-              <div className="flex-grow overflow-y-auto min-h-0">
-                <CompareView
-                  uxTheme={currentUXTheme}
-                  initialPlayerA={comparePlayerA}
-                  onBackToDossier={() => {
-                    setActiveView("Dossier");
-                    logAction("NAV", "Returned to Dossier View");
-                  }}
-                />
-              </div>
-            </ErrorBoundary>
-          ) : activeView === "Fashion" ? (
-            /* Opening Fashion Index (Image 2) */
-            <ErrorBoundary
-              fallbackTitle="Fashion Index Error"
-              onError={(err) => logAction("ERROR", "Fashion Index View Error", err.message)}
-            >
-              <div className="flex-grow overflow-y-auto min-h-0">
-                <FashionIndexView uxTheme={currentUXTheme} />
-              </div>
-            </ErrorBoundary>
-          ) : activeView === "Consolidator" ? (
-            /* Database Consolidator & Multi-DB Merger */
-            <ErrorBoundary
-              fallbackTitle="Consolidator Error"
-              onError={(err) => logAction("ERROR", "Consolidator View Error", err.message)}
-            >
-              <div className="flex-grow overflow-y-auto min-h-0">
-                <ConsolidatorView uxTheme={currentUXTheme} />
-              </div>
-            </ErrorBoundary>
-          ) : activeView === "Database" ? (
-            /* Database Browser (ChessBase 16 Shelf - Image 1) */
-            <ErrorBoundary
-              fallbackTitle="Database Browser Error"
-              onError={(err) => logAction("ERROR", "Database Browser View Error", err.message)}
+              fallbackTitle="Database Hub Error"
+              onError={(err) => logAction("ERROR", "Database Hub Error", err.message)}
             >
               <div className="flex-grow h-full min-h-0 overflow-hidden">
                 <DatabaseBrowserView
                   uxTheme={currentUXTheme}
                   boardTheme={currentBoardTheme}
+                  initialSubTab={
+                    activeView === "Fitness"
+                      ? "fitness"
+                      : activeView === "Dossier"
+                      ? "dossier"
+                      : activeView === "Compare"
+                      ? "compare"
+                      : activeView === "Fashion"
+                      ? "fashion"
+                      : activeView === "Consolidator"
+                      ? "consolidator"
+                      : "shelf"
+                  }
                   onLoadGame={(id) => {
                     setGameId(id);
                     setActiveView("Analysis");
@@ -377,10 +335,6 @@ function MainApp() {
                   onOpenSparring={() => {
                     setActiveView("Spar");
                     logAction("NAV", "Navigated to Sparring Arena");
-                  }}
-                  onOpenDataFitness={() => {
-                    setActiveView("Fitness");
-                    logAction("NAV", "Navigated to Data Fitness Pipeline");
                   }}
                 />
               </div>
@@ -403,26 +357,6 @@ function MainApp() {
             >
               <div className="flex-grow overflow-y-auto min-h-0">
                 <BookBuilderView uxTheme={currentUXTheme} />
-              </div>
-            </ErrorBoundary>
-          ) : activeView === "Fitness" ? (
-            /* Data Fitness & Mass Analysis Pipeline */
-            <ErrorBoundary
-              fallbackTitle="Data Fitness Error"
-              onError={(err) => logAction("ERROR", "Data Fitness View Error", err.message)}
-            >
-              <div className="flex-grow overflow-y-auto min-h-0">
-                <DataFitnessView
-                  uxTheme={currentUXTheme}
-                  onNavigateToBrowser={() => {
-                    setActiveView("Database");
-                    logAction("NAV", "Navigated to Database Browser from Fitness");
-                  }}
-                  onNavigateToDossier={() => {
-                    setActiveView("Dossier");
-                    logAction("NAV", "Navigated to Player Dossier from Fitness");
-                  }}
-                />
               </div>
             </ErrorBoundary>
           ) : activeView === "AI Grandmaster" || activeView === "Generative Stats" ? (

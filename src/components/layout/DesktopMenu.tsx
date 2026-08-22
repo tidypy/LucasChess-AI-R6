@@ -53,7 +53,10 @@ export function DesktopMenu({
       {/* Workspace Navigation Tabs */}
       <div className="flex items-center space-x-1 overflow-x-auto py-1">
         {MENU_ITEMS.map((item) => {
-          const isActive = activeView === item.id;
+          const isActive =
+            activeView === item.id ||
+            (item.id === "Database" &&
+              ["Database", "Dossier", "Compare", "Fashion", "Consolidator", "Fitness"].includes(activeView));
           return (
             <Tooltip key={item.id} content={item.label} description={item.desc}>
               <button

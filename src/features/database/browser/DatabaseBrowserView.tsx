@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { UXTheme, BoardTheme } from "../../../lib/theme";
 import { useClickLogger } from "../../../lib/clickLogger";
@@ -53,7 +53,7 @@ interface DatabaseBrowserViewProps {
   onLoadGame: (gameId: number) => void;
   onOpenBookBuilder?: () => void;
   onOpenSparring?: (fen?: string) => void;
-  onOpenDataFitness?: (dbName?: string) => void;
+  initialSubTab?: "shelf" | "fashion" | "dossier" | "compare" | "fitness" | "consolidator";
 }
 
 export function DatabaseBrowserView({
@@ -62,14 +62,22 @@ export function DatabaseBrowserView({
   onLoadGame,
   onOpenBookBuilder,
   onOpenSparring,
-  onOpenDataFitness,
+  initialSubTab,
 }: DatabaseBrowserViewProps) {
   const { logAction } = useClickLogger();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // State
-  const [activeSubTab, setActiveSubTab] = useState<"shelf" | "fashion" | "dossier" | "compare" | "fitness" | "consolidator">("shelf");
+  const [activeSubTab, setActiveSubTab] = useState<"shelf" | "fashion" | "dossier" | "compare" | "fitness" | "consolidator">(
+    initialSubTab || "shelf"
+  );
+
+  useEffect(() => {
+    if (initialSubTab) {
+      setActiveSubTab(initialSubTab);
+    }
+  }, [initialSubTab]);
   const [comparePlayer, setComparePlayer] = useState<string>("Carlsen,M");
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
   const [selectedDb, setSelectedDb] = useState<string | null>(null);
@@ -304,9 +312,9 @@ export function DatabaseBrowserView({
             <button
               onClick={() => {
                 logAction("CLICK", "Opened Data Fitness Studio from Browser");
-                if (onOpenDataFitness) onOpenDataFitness(activeDbName || undefined);
+                setActiveSubTab("fitness");
               }}
-              className="px-2.5 py-1 text-xs font-medium text-emerald-400 hover:text-white hover:bg-emerald-500/20 rounded border border-emerald-500/30 transition-all flex items-center gap-1.5"
+              className="px-2.5 py-1 text-xs font-medium text-emerald-400 hover:text-white hover:bg-emerald-500/20 rounded border border-emerald-500/30 transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <ShieldCheck className="w-3.5 h-3.5" />
               Data Fitness

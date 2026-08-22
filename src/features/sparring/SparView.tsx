@@ -42,9 +42,10 @@ const OPENING_BOOKS = [
   { id: "none", name: "No Book (Engine Scratch)", desc: "Calculates every move from scratch" },
 ];
 
-export function SparView({ boardTheme }: SparViewProps) {
+export function SparView({ uxTheme, boardTheme }: SparViewProps) {
   const { logAction } = useClickLogger();
   const queryClient = useQueryClient();
+  const isLight = uxTheme?.mode === "light" || uxTheme?.id === "clean-light";
 
   const [game, setGame] = useState(new Chess());
   const [fen, setFen] = useState(game.fen());
@@ -213,13 +214,13 @@ ${game.pgn()}`;
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <div className="text-[10px] font-mono uppercase tracking-widest text-rose-400 font-bold mb-1 flex items-center gap-1.5">
+          <div className="text-[10px] font-mono uppercase tracking-widest text-rose-500 font-bold mb-1 flex items-center gap-1.5">
             <Swords className="w-3.5 h-3.5" />
             Engine Sparring Arena &amp; Tactical Practice
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
+          <h1 className={`text-3xl font-extrabold tracking-tight ${isLight ? "text-slate-900" : "text-white"} flex items-center gap-3`}>
             Spar Against Engine
-            <span className="text-xs font-mono font-normal text-slate-400">
+            <span className={`text-xs font-mono font-normal ${isLight ? "text-slate-500" : "text-slate-400"}`}>
               — Train openings, human-like neural bots (Maia), and Elo-scaled sparring
             </span>
           </h1>
@@ -227,11 +228,11 @@ ${game.pgn()}`;
 
         {/* Engine Match Badge */}
         <div className="flex items-center gap-3">
-          <div className="px-3.5 py-1.5 rounded-2xl bg-black/40 border border-slate-800 flex items-center gap-2 shadow-sm font-mono text-xs">
+          <div className={`px-3.5 py-1.5 rounded-2xl ${isLight ? "bg-white border-slate-200 text-slate-800" : "bg-black/40 border-slate-800 text-slate-200"} border flex items-center gap-2 shadow-sm font-mono text-xs`}>
             <span className="text-lg">{currentEngineObj.icon}</span>
-            <span className="text-slate-200 font-bold">{currentEngineObj.name}</span>
-            <span className="text-slate-500">|</span>
-            <span className="text-rose-400 font-bold">Elo {targetElo}</span>
+            <span className="font-bold">{currentEngineObj.name}</span>
+            <span className="opacity-40">|</span>
+            <span className="text-rose-500 font-bold">Elo {targetElo}</span>
           </div>
         </div>
       </div>
@@ -239,7 +240,7 @@ ${game.pgn()}`;
       {/* Main Grid: Board + Match Config / Moves */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left: Chessboard (7 cols) */}
-        <div className="lg:col-span-7 flex flex-col items-center p-6 rounded-3xl bg-[#14171c] border border-slate-800 shadow-2xl space-y-4">
+        <div className={`lg:col-span-7 flex flex-col items-center p-6 rounded-3xl ${isLight ? "bg-white border-slate-200 text-slate-900 shadow-md" : "bg-[#14171c] border-slate-800 text-white shadow-2xl"} border space-y-4`}>
           {/* Game Over Banner (Checkmate / Draw) */}
           {gameOverInfo && (
             <div className={`w-full max-w-[480px] p-4 rounded-2xl border shadow-xl animate-in zoom-in-95 duration-200 flex items-center justify-between gap-3 ${
@@ -365,15 +366,15 @@ ${game.pgn()}`;
         {/* Right: Engine Parameters & Move Log (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
           {/* Match Configuration */}
-          <div className="p-6 rounded-3xl bg-[#14171c] border border-slate-800 shadow-xl space-y-5">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 border-b border-white/5 pb-3">
-              <Sliders className="w-4 h-4 text-rose-400" />
+          <div className={`p-6 rounded-3xl ${isLight ? "bg-white border-slate-200 text-slate-900 shadow-lg" : "bg-[#14171c] border-slate-800 text-white shadow-xl"} border space-y-5`}>
+            <h2 className={`text-xs font-bold uppercase tracking-wider ${isLight ? "text-slate-800 border-slate-200" : "text-slate-200 border-white/5"} flex items-center gap-2 border-b pb-3`}>
+              <Sliders className="w-4 h-4 text-rose-500" />
               Opponent &amp; Arena Setup
             </h2>
 
             {/* Select Engine */}
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-300 block">Sparring Engine:</label>
+              <label className={`text-xs font-semibold ${isLight ? "text-slate-700" : "text-slate-300"} block`}>Sparring Engine:</label>
               <div className="grid grid-cols-2 gap-2">
                 {ENGINES.map((eng) => (
                   <button
@@ -384,7 +385,9 @@ ${game.pgn()}`;
                     }}
                     className={`p-2.5 rounded-xl text-left border text-xs font-sans transition-all flex items-center gap-2 ${
                       selectedEngine === eng.id
-                        ? "bg-rose-500/15 border-rose-500/40 text-white font-bold shadow-sm"
+                        ? "bg-rose-500/15 border-rose-500/40 text-rose-600 dark:text-white font-bold shadow-sm"
+                        : isLight
+                        ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
                         : "bg-black/30 border-white/5 text-slate-400 hover:bg-white/5"
                     }`}
                   >
@@ -401,8 +404,8 @@ ${game.pgn()}`;
             {/* Elo Slider */}
             <div className="space-y-1.5 pt-1">
               <div className="flex justify-between text-xs font-mono">
-                <span className="text-slate-400">Target Strength / Elo:</span>
-                <span className="text-rose-400 font-bold">{targetElo} Elo</span>
+                <span className={isLight ? "text-slate-600" : "text-slate-400"}>Target Strength / Elo:</span>
+                <span className="text-rose-500 font-bold">{targetElo} Elo</span>
               </div>
               <input
                 type="range"
@@ -413,7 +416,7 @@ ${game.pgn()}`;
                 onChange={(e) => setTargetElo(Number(e.target.value))}
                 className="w-full accent-rose-500 cursor-pointer"
               />
-              <div className="flex justify-between text-[10px] font-mono text-slate-500">
+              <div className={`flex justify-between text-[10px] font-mono ${isLight ? "text-slate-400" : "text-slate-500"}`}>
                 <span>Beginner (800)</span>
                 <span>Club (1600)</span>
                 <span>Grandmaster (2800)</span>
@@ -422,17 +425,17 @@ ${game.pgn()}`;
 
             {/* Opening Book Selection */}
             <div className="space-y-1.5 pt-1">
-              <label className="text-xs font-semibold text-slate-300 block flex items-center gap-1.5">
+              <label className={`text-xs font-semibold ${isLight ? "text-slate-700" : "text-slate-300"} block flex items-center gap-1.5`}>
                 <BookOpen className="w-3.5 h-3.5 text-purple-400" />
                 Opening Book (Polyglot .bin):
               </label>
               <select
                 value={selectedBook}
                 onChange={(e) => setSelectedBook(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-slate-200 outline-none cursor-pointer focus:border-rose-500"
+                className={`w-full ${isLight ? "bg-slate-50 border-slate-200 text-slate-800" : "bg-black/40 border-white/10 text-slate-200"} border rounded-xl px-3 py-2 text-xs font-mono outline-none cursor-pointer focus:border-rose-500`}
               >
                 {OPENING_BOOKS.map((b) => (
-                  <option key={b.id} value={b.id} className="bg-slate-900 text-white">
+                  <option key={b.id} value={b.id} className={isLight ? "bg-white text-slate-900" : "bg-slate-900 text-white"}>
                     {b.name} — {b.desc}
                   </option>
                 ))}
@@ -441,15 +444,15 @@ ${game.pgn()}`;
           </div>
 
           {/* Move Log History */}
-          <div className="p-6 rounded-3xl bg-[#14171c] border border-slate-800 shadow-xl space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center justify-between border-b border-white/5 pb-2">
+          <div className={`p-6 rounded-3xl ${isLight ? "bg-white border-slate-200 text-slate-900 shadow-lg" : "bg-[#14171c] border-slate-800 text-white shadow-xl"} border space-y-3`}>
+            <h3 className={`text-xs font-bold uppercase tracking-wider ${isLight ? "text-slate-800 border-slate-200" : "text-slate-200 border-white/5"} flex items-center justify-between border-b pb-2`}>
               <span>Move History</span>
-              <span className="font-mono text-[10px] text-slate-500">{moveHistory.length} plies</span>
+              <span className={`font-mono text-[10px] ${isLight ? "text-slate-400" : "text-slate-500"}`}>{moveHistory.length} plies</span>
             </h3>
 
-            <div className="h-40 overflow-y-auto font-mono text-xs space-y-1 p-2 bg-black/30 rounded-xl border border-white/5">
+            <div className={`h-40 overflow-y-auto font-mono text-xs space-y-1 p-2 ${isLight ? "bg-slate-50 border-slate-200 text-slate-800" : "bg-black/30 border-white/5 text-slate-200"} rounded-xl border`}>
               {moveHistory.length === 0 ? (
-                <div className="text-slate-500 italic text-center py-8 text-xs">
+                <div className="text-slate-400 italic text-center py-8 text-xs">
                   Moves will appear here as the sparring match progresses.
                 </div>
               ) : (
