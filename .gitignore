@@ -34,3 +34,10 @@ ai_config.json
 *.sqlite-shm
 *.db-wal
 *.db-shm
+
+# Build artifacts & diagnostic dump files
+build/
+*file.txt
+*_log.txt
+WildCat.ini
+

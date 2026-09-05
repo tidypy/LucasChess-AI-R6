@@ -8,6 +8,7 @@ import {
   Sparkles,
   Swords,
   BookOpen,
+  Cpu,
 } from "lucide-react";
 import { useClickLogger } from "../../lib/clickLogger";
 import { Tooltip } from "../common/Tooltip";
@@ -102,6 +103,21 @@ export function Wing({
           }`}
         >
           <Database className="w-5 h-5" />
+        </button>
+      </Tooltip>
+
+      <Tooltip content="UCI Engine Lab" description="Custom engine profiles, resource sliders & UCI options" position="right">
+        <button
+          onClick={() => handleNav("Engines")}
+          className={`p-2.5 rounded-2xl transition-all ${
+            activeView === "Engines"
+              ? "bg-cyan-500/20 text-cyan-400 shadow-md border border-cyan-500/30"
+              : isLight
+              ? "hover:text-slate-900 hover:bg-slate-100"
+              : "hover:text-slate-100 hover:bg-slate-800/60"
+          }`}
+        >
+          <Cpu className="w-5 h-5" />
         </button>
       </Tooltip>
 

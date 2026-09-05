@@ -13,6 +13,7 @@ from core.features.consolidator.router import router as consolidator_router
 from core.features.database.router import router as fitness_router
 from core.features.ai.router import router as ai_router
 from core.features.engine.router import router as engine_router
+from core.features.engine.companion_router import router as companion_router
 
 app = FastAPI(title="DeepScout Chess Core API", version="1.0.0")
 
@@ -31,6 +32,7 @@ app.include_router(consolidator_router)
 app.include_router(fitness_router)
 app.include_router(ai_router)
 app.include_router(engine_router)
+app.include_router(companion_router)
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DB_PATH = os.path.join(ROOT_DIR, "patriciaTourny.sqlite")

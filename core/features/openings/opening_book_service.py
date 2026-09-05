@@ -123,6 +123,8 @@ class OpeningBookService:
 
         return results
 
+    list_available_books = list_books
+
     def import_book(self, filename: str, content: bytes) -> Dict[str, Any]:
         """Imports and persists a Polyglot .bin opening book into UserData/OpeningBooks."""
         clean_name = os.path.basename(filename)
@@ -158,13 +160,19 @@ class OpeningBookService:
 
     def probe_book(
         self,
-        board: chess.Board,
+        board: Any,
         book_name: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         Probes the active or specified opening book for candidate moves.
         Returns the weighted chosen move and all candidate branch entries.
         """
+        if isinstance(board, str):
+            try:
+                board = chess.Board(board)
+            except Exception:
+                return None
+
         target_path = self.resolve_book_path(book_name) if book_name else self.get_active_book().get("path")
         if not target_path or not os.path.exists(target_path) or not target_path.endswith(".bin"):
             return None

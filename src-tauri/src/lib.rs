@@ -42,10 +42,16 @@ pub fn run() {
             let root = find_project_root().unwrap_or_else(|| PathBuf::from("."));
 
             #[cfg(target_os = "windows")]
-            let python_bin = root.join(".venv").join("Scripts").join("python.exe");
+            let venv_python = root.join(".venv").join("Scripts").join("python.exe");
 
             #[cfg(not(target_os = "windows"))]
-            let python_bin = root.join(".venv").join("bin").join("python");
+            let venv_python = root.join(".venv").join("bin").join("python");
+
+            let python_bin = if venv_python.exists() {
+                venv_python
+            } else {
+                PathBuf::from("python")
+            };
 
             let sidecar_script = root.join("core").join("sidecar.py");
 

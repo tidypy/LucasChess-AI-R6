@@ -45,12 +45,15 @@ import {
   RefreshCw,
   HardDrive,
   RotateCcw,
+  Sparkles,
+  Zap,
+  AlertTriangle,
 } from "lucide-react";
 
 interface DatabaseBrowserViewProps {
   uxTheme: UXTheme;
   boardTheme: BoardTheme;
-  onLoadGame: (gameId: number) => void;
+  onLoadGame: (gameId: number, dbName?: string) => void;
   onOpenBookBuilder?: () => void;
   onOpenSparring?: (fen?: string) => void;
   initialSubTab?: "shelf" | "fashion" | "dossier" | "compare" | "fitness" | "consolidator";
@@ -87,6 +90,13 @@ export function DatabaseBrowserView({
   const [searchDbText, setSearchDbText] = useState("");
   const [searchGameText, setSearchGameText] = useState("");
   const [isPreviewOpen, setIsPreviewOpen] = useState(true);
+  const [fitnessTargetDb, setFitnessTargetDb] = useState<string | undefined>(undefined);
+
+  const handleLaunchFitness = (dbName: string) => {
+    setFitnessTargetDb(dbName);
+    setActiveSubTab("fitness");
+    logAction("CLICK", `Launched Data Fitness Studio for ${dbName}`);
+  };
 
   // Modals State
   const [isPurgeModalOpen, setIsPurgeModalOpen] = useState(false);
@@ -403,6 +413,7 @@ export function DatabaseBrowserView({
         <div className="flex-1 overflow-y-auto p-4 md:p-6 min-h-0">
           <DataFitnessView
             uxTheme={uxTheme}
+            initialDbName={fitnessTargetDb || (selectedDb || "patriciaTourny.sqlite")}
             pendingImportFile={pendingImportFile}
             onClearImportFile={() => setPendingImportFile(null)}
             onNavigateToBrowser={() => {
@@ -721,18 +732,54 @@ export function DatabaseBrowserView({
                           </Tooltip>
                         </div>
 
-                        <div className={`grid grid-cols-2 gap-2 mt-auto pt-3 border-t ${isLight ? "border-slate-200" : "border-[#262c36]"} text-xs`}>
+                        <div className={`grid grid-cols-2 gap-2 mt-auto pt-3 border-t ${isLight ? "border-slate-200" : "border-[#262c36]"} text-xs items-center`}>
                           <div>
-                            <span className="text-[10px] text-[#64748b] block">File Size</span>
+                            <span className="text-[10px] text-[#64748b] block mb-0.5">File Size</span>
                             <span className={`font-mono text-xs font-medium ${isLight ? "text-slate-800" : "text-[#e2e8f0]"}`}>
                               {db.size_mb} MB
                             </span>
                           </div>
                           <div>
-                            <span className="text-[10px] text-[#64748b] block">Status</span>
-                            <span className="font-mono text-[11px] text-emerald-500 flex items-center gap-1 font-semibold">
-                              <CheckCircle2 className="w-3 h-3" /> Ready
-                            </span>
+                            <span className="text-[10px] text-[#64748b] block mb-0.5">Data Tier</span>
+                            <Tooltip content={`Click to launch Data Fitness audit & mass analysis for ${db.name}`}>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleLaunchFitness(db.name);
+                                }}
+                                className={`font-mono text-[10px] px-2 py-0.5 rounded-md inline-flex items-center gap-1 font-bold transition-all ${
+                                  db.badge_color === "gold" || db.tier === "Gold Tier"
+                                    ? "bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 shadow-sm"
+                                    : db.badge_color === "silver" || db.tier === "Silver Tier"
+                                    ? "bg-slate-300/15 hover:bg-slate-300/25 text-slate-200 border border-slate-300/40 shadow-sm"
+                                    : db.badge_color === "cyan" || db.tier === "Companion Stream"
+                                    ? "bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/40 shadow-sm"
+                                    : "bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/40 shadow-sm"
+                                }`}
+                              >
+                                {db.badge_color === "gold" || db.tier === "Gold Tier" ? (
+                                  <>
+                                    <Sparkles className="w-3 h-3 text-amber-400" />
+                                    <span>Gold Tier</span>
+                                  </>
+                                ) : db.badge_color === "silver" || db.tier === "Silver Tier" ? (
+                                  <>
+                                    <ShieldCheck className="w-3 h-3 text-slate-300" />
+                                    <span>Silver Tier</span>
+                                  </>
+                                ) : db.badge_color === "cyan" || db.tier === "Companion Stream" ? (
+                                  <>
+                                    <Zap className="w-3 h-3 text-cyan-400" />
+                                    <span>Companion</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <AlertTriangle className="w-3 h-3 text-rose-400" />
+                                    <span>Raw • Fitness</span>
+                                  </>
+                                )}
+                              </button>
+                            </Tooltip>
                           </div>
                         </div>
                       </div>
@@ -748,7 +795,7 @@ export function DatabaseBrowserView({
                         <th className="py-2.5 px-4">Database Name</th>
                         <th className="py-2.5 px-4">Type</th>
                         <th className="py-2.5 px-4 text-right">Size</th>
-                        <th className="py-2.5 px-4 text-center">Status</th>
+                        <th className="py-2.5 px-4 text-center">Data Tier & Status</th>
                         <th className="py-2.5 px-3 text-center">Actions</th>
                       </tr>
                     </thead>
@@ -775,8 +822,42 @@ export function DatabaseBrowserView({
                             <td className="py-2 px-4 text-right font-mono text-[11px]">
                               {db.size_mb} MB
                             </td>
-                            <td className="py-2 px-4 text-center font-mono text-[11px] text-emerald-400 font-bold">
-                              Active
+                            <td className="py-2 px-4 text-center">
+                              <Tooltip content={`Click to launch Data Fitness for ${db.name}`}>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleLaunchFitness(db.name);
+                                  }}
+                                  className={`font-mono text-[10px] px-2 py-0.5 rounded-md inline-flex items-center gap-1 font-bold transition-all ${
+                                    db.badge_color === "gold" || db.tier === "Gold Tier"
+                                      ? "bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40"
+                                      : db.badge_color === "silver" || db.tier === "Silver Tier"
+                                      ? "bg-slate-300/15 hover:bg-slate-300/25 text-slate-200 border border-slate-300/40"
+                                      : db.badge_color === "cyan" || db.tier === "Companion Stream"
+                                      ? "bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/40"
+                                      : "bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/40"
+                                  }`}
+                                >
+                                  {db.badge_color === "gold" || db.tier === "Gold Tier" ? (
+                                    <>
+                                      <Sparkles className="w-3 h-3 text-amber-400" /> Gold Tier
+                                    </>
+                                  ) : db.badge_color === "silver" || db.tier === "Silver Tier" ? (
+                                    <>
+                                      <ShieldCheck className="w-3 h-3 text-slate-300" /> Silver Tier
+                                    </>
+                                  ) : db.badge_color === "cyan" || db.tier === "Companion Stream" ? (
+                                    <>
+                                      <Zap className="w-3 h-3 text-cyan-400" /> Companion
+                                    </>
+                                  ) : (
+                                    <>
+                                      <AlertTriangle className="w-3 h-3 text-rose-400" /> Raw Tier
+                                    </>
+                                  )}
+                                </button>
+                              </Tooltip>
                             </td>
                             <td className="py-2 px-3 text-center">
                               <Tooltip content="Move to Trash">
@@ -893,7 +974,7 @@ export function DatabaseBrowserView({
                             <tr
                               key={g.id}
                               onClick={() => handleSelectGame(g)}
-                              onDoubleClick={() => onLoadGame(g.id)}
+                              onDoubleClick={() => onLoadGame(g.id, activeDbName)}
                               className={`cursor-pointer transition-colors ${
                                 isSelected
                                   ? "bg-[#3b82f6]/15 text-white font-medium"
@@ -981,7 +1062,7 @@ export function DatabaseBrowserView({
                     <button
                       onClick={() => {
                         logAction("NAV", `Opened Game #${selectedGame.id} into Analysis Workspace`);
-                        onLoadGame(selectedGame.id);
+                        onLoadGame(selectedGame.id, activeDbName);
                       }}
                       className="w-full py-1.5 bg-[#3b82f6] hover:bg-[#2563eb] text-white font-bold text-xs rounded transition-all flex items-center justify-center gap-1.5 shadow"
                     >

@@ -17,6 +17,7 @@ const MENU_ITEMS = [
   { id: "Analysis", label: "Analysis", desc: "Interactive game analysis & move tree" },
   { id: "Spar", label: "Sparring", desc: "Spar against engines, neural bots & practice openings" },
   { id: "Database", label: "Database Hub", desc: "Database shelf, fashion index reports, player dossier & data fitness" },
+  { id: "Engines", label: "Engines", desc: "UCI Engine Lab, custom bot profiles & options customizer" },
   { id: "BookBuilder", label: "Book Builder", desc: "Polyglot opening book generator & repertoire factory" },
   { id: "AI Grandmaster", label: "AI Grandmaster", desc: "Persona modeling & neural simulation" },
 ];

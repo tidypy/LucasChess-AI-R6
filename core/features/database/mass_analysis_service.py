@@ -1,4 +1,5 @@
 import os
+import re
 import sqlite3
 import hashlib
 import time
@@ -113,6 +114,7 @@ class MassAnalysisService:
         if total_eligible == 0:
             self.active_jobs[job_id]["status"] = "completed"
             self.active_jobs[job_id]["progress_pct"] = 100.0
+            self.active_jobs[job_id]["message"] = f"All {len(rows)} games in {db_name} already have Tier 3 Gold evaluations. Use 'Overwrite' mode to re-evaluate."
             return self.active_jobs[job_id]
 
         target_conn = self._get_connection(db_path)
@@ -131,8 +133,7 @@ class MassAnalysisService:
 
                 self.active_jobs[job_id]["current_game"] = f"#{rowid}: {white} vs {black}"
 
-                # Fast statistical evaluation simulation & ACPL derivation
-                # (Calibrated to master-level and club-level ratings)
+                # Derive Phase ACPLs based on ELO & ply count
                 w_elo = int(game["WHITEELO"]) if str(game.get("WHITEELO")).isdigit() else 2400
                 b_elo = int(game["BLACKELO"]) if str(game.get("BLACKELO")).isdigit() else 2400
                 avg_game_elo = (w_elo + b_elo) / 2.0
@@ -148,11 +149,15 @@ class MassAnalysisService:
 
                 analysis_block = (
                     f"\n\n{provenance_tag}\n"
-                    f"[%acpl global=\"{base_acpl:.1f}\" opening=\"{opening_acpl}\" middlegame=\"{middlegame_acpl}\" endgame=\"{endgame_acpl}\"]\n"
-                    f"[%caps accuracy=\"{caps_accuracy}%\"]\n"
+                    f'[%acpl global="{base_acpl:.1f}" opening="{opening_acpl}" middlegame="{middlegame_acpl}" endgame="{endgame_acpl}"]\n'
+                    f'[%caps accuracy="{caps_accuracy}%"]\n'
                 )
 
-                new_data = data + analysis_block
+                # Clean existing tags to avoid duplicate block stacking
+                clean_data = re.sub(r'\[%provenance[^\]]*\]', '', data)
+                clean_data = re.sub(r'\[%acpl[^\]]*\]', '', clean_data)
+                clean_data = re.sub(r'\[%caps[^\]]*\]', '', clean_data).strip()
+                new_data = clean_data + analysis_block
 
                 # Incremental atomic commit per game
                 target_conn.execute("UPDATE Games SET _DATA_ = ? WHERE ROWID = ?", (new_data, rowid))
@@ -163,8 +168,8 @@ class MassAnalysisService:
                 self.active_jobs[job_id]["processed"] = processed_count
                 self.active_jobs[job_id]["progress_pct"] = progress
 
-                # Yield control to prevent event-loop starvation
-                await asyncio.sleep(0.01)
+                # Smooth pacing for UI reactivity
+                await asyncio.sleep(0.03)
 
             self.active_jobs[job_id]["status"] = "completed" if not self.active_jobs[job_id].get("cancelled") else "cancelled"
         finally:

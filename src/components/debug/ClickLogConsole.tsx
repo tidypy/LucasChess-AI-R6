@@ -33,18 +33,21 @@ export function ClickLogConsole() {
   };
 
   const filteredLogs =
-    filter === "ALL"
+    filter === "LAST 5"
+      ? logs.slice(0, 5)
+      : filter === "ALL"
       ? logs
       : filter === "CLICK"
       ? logs.filter((l) => l.category === "CLICK" || l.isUserAction)
-      : logs.filter((l) => l.category === filter);
+      : logs.filter((l) => l.category === (filter as LogEntry["category"]));
 
-  const categories: Array<"ALL" | LogEntry["category"]> = [
+  const categories: string[] = [
+    "LAST 5",
     "ALL",
-    "ERROR",
     "CLICK",
     "BOARD",
     "NAV",
+    "ERROR",
     "THEME",
     "API",
     "SSE",
@@ -115,7 +118,9 @@ export function ClickLogConsole() {
             <Filter className="w-3.5 h-3.5 text-slate-500 flex-shrink-0 mr-1" />
             {categories.map((cat) => {
               const count =
-                cat === "ALL"
+                cat === "LAST 5"
+                  ? Math.min(5, logs.length)
+                  : cat === "ALL"
                   ? logs.length
                   : cat === "CLICK"
                   ? logs.filter((l) => l.category === "CLICK" || l.isUserAction).length

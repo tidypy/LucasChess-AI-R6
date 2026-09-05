@@ -13,8 +13,12 @@
     "windows": [
       {
         "title": "DeepScout Chess",
-        "width": 1280,
-        "height": 800
+        "width": 1680,
+        "height": 980,
+        "minWidth": 1280,
+        "minHeight": 720,
+        "center": true,
+        "resizable": true
       }
     ],
     "security": {

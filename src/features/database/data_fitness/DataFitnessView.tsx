@@ -24,7 +24,6 @@ import {
   Database,
   Sparkles,
   Play,
-  Flame,
   Layers,
 } from "lucide-react";
 
@@ -50,9 +49,10 @@ export function DataFitnessView({
   const isLight = uxTheme?.mode === "light" || uxTheme?.id === "clean-light";
 
   const [selectedDb, setSelectedDb] = useState<string>(initialDbName || "patriciaTourny.sqlite");
-  const [activeTab, setActiveTab] = useState<"audit" | "silver" | "gold">("audit");
+  // Default to Tier 2 (Silver Statistics) generation when possible
+  const [activeTab, setActiveTab] = useState<"audit" | "silver" | "gold">("silver");
 
-  // Ingestion & Import Setup State
+  // Ingestion & Import Setup State (Default to Tier 2 Sanitize & Silver Stats)
   const [importStrategy, setImportStrategy] = useState<"fast" | "sanitize" | "gold" | "repertoire">("sanitize");
   const [targetDbName, setTargetDbName] = useState<string>(
     pendingImportFile ? pendingImportFile.name.replace(/\.[^/.]+$/, "") + ".sqlite" : "NewDatabase.sqlite"
@@ -83,6 +83,12 @@ export function DataFitnessView({
       setImportError(null);
     }
   }, [pendingImportFile]);
+
+  useEffect(() => {
+    if (initialDbName) {
+      setSelectedDb(initialDbName);
+    }
+  }, [initialDbName]);
 
   useEffect(() => {
     if (databases && databases.length > 0 && !selectedDb) {
@@ -125,12 +131,15 @@ export function DataFitnessView({
 
   // 5. Mass Analysis Start Mutation
   const startAnalysisMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (overrideMode?: string) =>
       startMassAnalysis({
         db_name: selectedDb,
         depth: analysisDepth,
-        mode: analysisMode,
+        mode: (typeof overrideMode === "string" ? overrideMode : analysisMode) as "MISSING_ONLY" | "OVERWRITE",
       }),
+    onMutate: () => {
+      setActiveJobId(null);
+    },
     onSuccess: (data) => {
       setActiveJobId(data.job_id);
       logAction("API", `Started Mass Analysis job: ${data.job_id} at depth ${analysisDepth}`);
@@ -142,8 +151,24 @@ export function DataFitnessView({
     queryKey: ["analysisJobStatus", activeJobId],
     queryFn: () => (activeJobId ? fetchMassAnalysisStatus(activeJobId) : null),
     enabled: !!activeJobId,
-    refetchInterval: activeJobId ? 1000 : false,
+    refetchInterval: activeJobId ? 400 : false,
   });
+
+  // Clear active job status when changing database
+  useEffect(() => {
+    setActiveJobId(null);
+  }, [selectedDb]);
+
+  const handleStartAnalysis = () => {
+    const missingGold = totalGames - tiers.tier_3_gold;
+    let modeToUse = analysisMode;
+    if (analysisMode === "MISSING_ONLY" && missingGold === 0) {
+      modeToUse = "OVERWRITE";
+      setAnalysisMode("OVERWRITE");
+      logAction("API", `All games already have Gold evaluations; auto-switched to OVERWRITE mode.`);
+    }
+    startAnalysisMutation.mutate(modeToUse);
+  };
 
   // Reset or refresh when job completes
   useEffect(() => {
@@ -382,17 +407,21 @@ export function DataFitnessView({
               <span className="text-[10px] text-rose-500 block font-bold truncate">Tier 0 (Quarantine)</span>
               <span className={`text-sm font-bold ${isLight ? "text-slate-900" : "text-white"}`}>{tiers.tier_0_quarantine}</span>
             </div>
-            <div className={`p-2 rounded-xl ${isLight ? "bg-amber-50 border-amber-200" : "bg-black/40 border-amber-500/30"} border`}>
-              <span className="text-[10px] text-amber-500 block font-bold truncate">Tier 1 (Sanitized)</span>
-              <span className={`text-sm font-bold ${isLight ? "text-slate-900" : "text-white"}`}>{tiers.tier_1_sanitized}</span>
+            <div className={`p-2 rounded-xl ${isLight ? "bg-orange-50 border-orange-200" : "bg-black/40 border-orange-500/30"} border`}>
+              <span className="text-[10px] text-orange-500 block font-bold truncate">Tier 1 (Sanitized)</span>
+              <span className={`text-sm font-bold ${isLight ? "text-orange-600" : "text-orange-400"}`}>{tiers.tier_1_sanitized}</span>
             </div>
             <div className={`p-2 rounded-xl ${isLight ? "bg-emerald-50 border-emerald-200" : "bg-black/40 border-emerald-500/30"} border`}>
               <span className="text-[10px] text-emerald-500 block font-bold truncate">Tier 2 (Silver Stats)</span>
-              <span className="text-sm font-bold text-emerald-500">{tiers.tier_2_silver}</span>
+              <span className="text-sm font-bold text-emerald-400">{tiers.tier_2_silver}</span>
             </div>
-            <div className={`p-2 rounded-xl ${isLight ? "bg-purple-50 border-purple-200" : "bg-black/40 border-purple-500/30"} border`}>
-              <span className="text-[10px] text-purple-500 block font-bold truncate">Tier 3 (Gold Evaluated)</span>
-              <span className="text-sm font-bold text-purple-500">{tiers.tier_3_gold}</span>
+            <div className={`p-2 rounded-xl ${isLight ? "bg-rose-50 border-rose-200" : "bg-black/40 border-rose-500/30"} border`}>
+              <span className="text-[10px] text-rose-500 block font-bold truncate flex items-center justify-center gap-1">
+                <span className="text-amber-400 text-[11px]">🔥</span> Tier 3 (Gold)
+              </span>
+              <span className="text-sm font-bold text-rose-400 flex items-center justify-center gap-1">
+                <span className="text-amber-400 text-xs">🔥</span> {tiers.tier_3_gold}
+              </span>
             </div>
           </div>
         </div>
@@ -405,9 +434,9 @@ export function DataFitnessView({
           </div>
           <div className={`h-3 w-full ${isLight ? "bg-slate-200" : "bg-black/50"} rounded-full flex overflow-hidden shadow-inner`}>
             {t0Pct > 0 && <div style={{ width: `${t0Pct}%` }} className="bg-rose-500" title={`Tier 0: ${t0Pct}%`} />}
-            {t1Pct > 0 && <div style={{ width: `${t1Pct}%` }} className="bg-amber-500" title={`Tier 1: ${t1Pct}%`} />}
+            {t1Pct > 0 && <div style={{ width: `${t1Pct}%` }} className="bg-orange-500" title={`Tier 1 (Red-Orange): ${t1Pct}%`} />}
             {t2Pct > 0 && <div style={{ width: `${t2Pct}%` }} className="bg-emerald-500" title={`Tier 2 (Silver): ${t2Pct}%`} />}
-            {t3Pct > 0 && <div style={{ width: `${t3Pct}%` }} className="bg-purple-600" title={`Tier 3 (Gold): ${t3Pct}%`} />}
+            {t3Pct > 0 && <div style={{ width: `${t3Pct}%` }} className="bg-gradient-to-r from-rose-600 to-amber-500" title={`Tier 3 (Gold Fireball): ${t3Pct}%`} />}
           </div>
         </div>
       </div>
@@ -426,7 +455,7 @@ export function DataFitnessView({
           }`}
         >
           <ShieldCheck className="w-4 h-4" />
-          1. Health Audit & Sanitization
+          1. Health Audit &amp; Sanitization
         </button>
 
         <button
@@ -441,7 +470,7 @@ export function DataFitnessView({
           }`}
         >
           <Zap className="w-4 h-4" />
-          2. Silver Statistics (Instant)
+          2. Silver Statistics (Instant Preferred)
         </button>
 
         <button
@@ -451,12 +480,12 @@ export function DataFitnessView({
           }}
           className={`px-4 py-2 text-xs font-bold font-mono rounded-xl transition-all flex items-center gap-2 ${
             activeTab === "gold"
-              ? "bg-purple-500/15 text-purple-400 border border-purple-500/30 shadow-md"
+              ? "bg-rose-500/15 text-rose-400 border border-rose-500/30 shadow-md"
               : "text-slate-400 hover:text-white hover:bg-white/5"
           }`}
         >
-          <Flame className="w-4 h-4" />
-          3. Gold Mass Analysis (Stockfish)
+          <span className="text-amber-400">🔥</span>
+          <span className="text-rose-400 font-bold">3. Gold Mass Analysis (Tier 3)</span>
         </button>
       </div>
 
@@ -658,18 +687,37 @@ export function DataFitnessView({
         </div>
       )}
 
-      {/* TAB 3: Gold Mass Analysis (Stockfish Engine) */}
+            {/* TAB 3: Gold Mass Analysis (Stockfish Engine) */}
       {activeTab === "gold" && (
         <div className="p-8 rounded-3xl bg-[#14171c] border border-slate-800 shadow-2xl space-y-6 animate-in fade-in duration-150">
           <div className="border-b border-white/5 pb-4">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Flame className="w-5 h-5 text-purple-400" />
-              Stage B: Mass Engine Analysis (Gold Standard · Tier 3)
+              <span className="text-amber-400 text-xl">🔥</span>
+              <span className="text-rose-400 font-bold">Stage B: Mass Engine Analysis (Gold Standard · Tier 3)</span>
             </h2>
             <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
               Launches an asynchronous Stockfish worker to evaluate every game move-by-move. Computes Phase ACPL (Opening, Middlegame, Endgame), CAPS accuracy curves, blunder spectra, and attaches an immutable <code>AnalysisProvenance</code> stamp with atomic per-game WAL commits.
             </p>
           </div>
+
+          {/* Quarantine Alert if stubs exist */}
+          {tiers.tier_0_quarantine > 0 && (
+            <div className="p-4 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-between gap-3 text-xs text-amber-200 font-mono shadow-md">
+              <div className="flex items-center gap-2.5">
+                <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                <span>
+                  <strong>{tiers.tier_0_quarantine} Quarantine Game(s)</strong> detected in {selectedDb}. Pruning empty stubs elevates your database health to 100%.
+                </span>
+              </div>
+              <button
+                onClick={() => sanitizeMutation.mutate()}
+                disabled={sanitizeMutation.isPending}
+                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl transition-colors cursor-pointer flex-shrink-0 disabled:opacity-50"
+              >
+                {sanitizeMutation.isPending ? "Sanitizing..." : "🧹 Quick Sanitize"}
+              </button>
+            </div>
+          )}
 
           {/* Engine Parameters & Controls */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-sans text-xs">
@@ -685,7 +733,7 @@ export function DataFitnessView({
                     <button
                       key={d}
                       onClick={() => setAnalysisDepth(d)}
-                      className={`py-1.5 rounded-xl font-mono font-bold transition-all border ${
+                      className={`py-1.5 rounded-xl font-mono font-bold transition-all border cursor-pointer ${
                         analysisDepth === d
                           ? "bg-purple-600 text-white border-purple-400 shadow-md"
                           : "bg-black/40 text-slate-400 border-white/10 hover:text-white"
@@ -702,7 +750,7 @@ export function DataFitnessView({
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => setAnalysisMode("MISSING_ONLY")}
-                    className={`py-1.5 rounded-xl font-mono font-bold transition-all border ${
+                    className={`py-1.5 rounded-xl font-mono font-bold transition-all border cursor-pointer ${
                       analysisMode === "MISSING_ONLY"
                         ? "bg-purple-600 text-white border-purple-400 shadow-md"
                         : "bg-black/40 text-slate-400 border-white/10 hover:text-white"
@@ -712,7 +760,7 @@ export function DataFitnessView({
                   </button>
                   <button
                     onClick={() => setAnalysisMode("OVERWRITE")}
-                    className={`py-1.5 rounded-xl font-mono font-bold transition-all border ${
+                    className={`py-1.5 rounded-xl font-mono font-bold transition-all border cursor-pointer ${
                       analysisMode === "OVERWRITE"
                         ? "bg-purple-600 text-white border-purple-400 shadow-md"
                         : "bg-black/40 text-slate-400 border-white/10 hover:text-white"
@@ -720,6 +768,24 @@ export function DataFitnessView({
                   >
                     Overwrite (Re-evaluate All)
                   </button>
+                </div>
+
+                <div className="text-[11px] font-mono text-slate-400 pt-1">
+                  {analysisMode === "MISSING_ONLY" ? (
+                    totalGames - tiers.tier_3_gold > 0 ? (
+                      <span className="text-amber-300">
+                        {totalGames - tiers.tier_3_gold} of {totalGames} games require Tier 3 evaluation.
+                      </span>
+                    ) : (
+                      <span className="text-emerald-400">
+                        ✓ All {tiers.tier_3_gold} games already have Tier 3 Gold status. (Starting will re-evaluate in Overwrite mode).
+                      </span>
+                    )
+                  ) : (
+                    <span className="text-purple-300">
+                      All {totalGames} games will be re-evaluated with Stockfish at Depth {analysisDepth}.
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -734,29 +800,38 @@ export function DataFitnessView({
                 {activeJobId && jobStatus ? (
                   <div className="space-y-3 mt-3">
                     <div className="flex justify-between text-xs font-mono">
-                      <span className="text-purple-400 font-bold">Status: {jobStatus.status}</span>
+                      <span className={`font-bold ${jobStatus.status === "completed" ? "text-emerald-400" : "text-purple-400"}`}>
+                        Status: {jobStatus.status}
+                      </span>
                       <span className="text-slate-300 font-bold">{jobStatus.progress_pct}%</span>
                     </div>
 
                     <div className="h-3 w-full bg-black/60 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-purple-600 to-cyan-400 rounded-full transition-all duration-300"
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          jobStatus.status === "completed"
+                            ? "bg-emerald-500"
+                            : "bg-gradient-to-r from-purple-600 to-cyan-400"
+                        }`}
                         style={{ width: `${jobStatus.progress_pct}%` }}
                       />
                     </div>
 
-                    <div className="text-[11px] font-mono text-slate-400 truncate">
-                      Current: <span className="text-slate-200">{jobStatus.current_game || "Initializing..."}</span>
-                    </div>
+                    {jobStatus.status === "running" && (
+                      <div className="text-[11px] font-mono text-slate-400 truncate">
+                        Current: <span className="text-slate-200">{jobStatus.current_game || "Evaluating position..."}</span>
+                      </div>
+                    )}
 
-                    <div className="text-[11px] font-mono text-slate-500">
+                    <div className="text-[11px] font-mono text-slate-400">
                       Processed {jobStatus.processed} of {jobStatus.total} games
+                      {jobStatus.status === "completed" && " · All records committed to SQLite WAL"}
                     </div>
                   </div>
                 ) : (
                   <div className="text-xs text-slate-400 mt-3 space-y-2">
                     <p>
-                      Analysis runs at low CPU priority with atomic per-game commits. You can pause, cancel, or navigate away at any time without losing completed evaluations.
+                      Analysis runs with atomic per-game WAL commits. You can pause, cancel, or navigate away at any time without losing completed evaluations.
                     </p>
                   </div>
                 )}
@@ -765,16 +840,16 @@ export function DataFitnessView({
               {activeJobId && jobStatus?.status === "running" ? (
                 <button
                   onClick={handleCancelAnalysis}
-                  className="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
+                  className="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <XCircle className="w-4 h-4" />
                   Cancel Mass Analysis
                 </button>
               ) : (
                 <button
-                  onClick={() => startAnalysisMutation.mutate()}
+                  onClick={handleStartAnalysis}
                   disabled={startAnalysisMutation.isPending}
-                  className="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-40"
+                  className="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-40 cursor-pointer"
                 >
                   {startAnalysisMutation.isPending ? (
                     <>

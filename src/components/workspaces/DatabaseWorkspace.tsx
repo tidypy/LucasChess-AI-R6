@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 
 interface DatabaseWorkspaceProps {
-  onLoadGame: (gameId: number) => void;
+  onLoadGame: (gameId: number, dbName?: string) => void;
   uxTheme: UXTheme;
 }
 

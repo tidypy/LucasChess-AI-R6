@@ -92,21 +92,88 @@ class GameService:
         repo = self._get_or_create_repo(db_name) if db_name else self.repo
         return repo.get_database_stats()
 
+    @staticmethod
+    def _is_game_db(db_path: str) -> bool:
+        try:
+            import sqlite3
+            conn = sqlite3.connect(db_path)
+            cur = conn.cursor()
+            cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            tables = [r[0].lower() for r in cur.fetchall()]
+            conn.close()
+            valid_tables = {'games', 'variations', 'flags', 'sparring_games', 'kibitzer_analysis', 'tutor_games'}
+            return any(t in valid_tables for t in tables) or any(t.endswith(('games', 'variations', 'flags')) for t in tables)
+        except Exception:
+            return False
+
+    @staticmethod
+    def _classify_db_tier(db_path: str) -> Dict[str, Any]:
+        """
+        Fast tier inspection for database shelf:
+        - Gold Tier: Contains Stockfish / ACPL eval provenance in _DATA_
+        - Silver Tier: Standardized with ECO tags and player Elo
+        - Companion Stream: Sparring, Kibitzer, or Tutor database
+        - Raw Tier: Unsanitized / needs fitness audit
+        """
+        try:
+            import sqlite3
+            base_name = os.path.basename(db_path).lower()
+            if base_name in ("kibitzer_analysis.sqlite", "tutor_games.sqlite"):
+                return {"tier": "Companion Stream", "tier_level": 2, "grade": "A", "badge_color": "cyan"}
+
+            conn = sqlite3.connect(db_path)
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            tables = [r[0].lower() for r in cur.fetchall()]
+            target_table = "games" if "games" in tables else ("Games" if "Games" in tables else (tables[0] if tables else None))
+            if not target_table:
+                conn.close()
+                return {"tier": "Raw Tier", "tier_level": 0, "grade": "Needs Audit", "badge_color": "amber"}
+
+            cur.execute(f"SELECT ROWID, * FROM {target_table} LIMIT 25")
+            rows = [dict(r) for r in cur.fetchall()]
+            conn.close()
+
+            if not rows:
+                return {"tier": "Raw Tier", "tier_level": 0, "grade": "Empty", "badge_color": "slate"}
+
+            has_evals = any(
+                ("[%acpl" in str(r.get("_DATA_") or "") or "[%provenance" in str(r.get("_DATA_") or "") or "[%eval" in str(r.get("_DATA_") or ""))
+                for r in rows
+            )
+            if has_evals:
+                return {"tier": "Gold Tier", "tier_level": 3, "grade": "A+", "badge_color": "gold"}
+
+            has_eco_elo = sum(
+                1 for r in rows
+                if (r.get("ECO") or r.get("eco")) and (str(r.get("WHITEELO") or r.get("white_elo") or "").isdigit())
+            ) >= (len(rows) * 0.4)
+
+            if has_eco_elo:
+                return {"tier": "Silver Tier", "tier_level": 2, "grade": "B+", "badge_color": "silver"}
+
+            return {"tier": "Raw Tier", "tier_level": 1, "grade": "Needs Fitness", "badge_color": "amber"}
+        except Exception:
+            return {"tier": "Raw Tier", "tier_level": 0, "grade": "Needs Audit", "badge_color": "amber"}
+
     def list_available_databases(self) -> List[Dict[str, Any]]:
         results = []
         seen_names = set()
         db_exts = (".sqlite", ".db")
 
-        # Check root
+        # Check root directory
         for f in os.listdir(self.root_dir):
             if f.endswith(db_exts) and not f.startswith("."):
                 path = os.path.join(self.root_dir, f)
-                if os.path.isfile(path):
+                if os.path.isfile(path) and self._is_game_db(path):
+                    tier_info = self._classify_db_tier(path)
                     results.append({
                         "name": f,
                         "path": path,
                         "size_mb": round(os.path.getsize(path) / (1024 * 1024), 2),
-                        "is_active": path == self.active_db_path,
+                        "is_active": os.path.basename(path) == os.path.basename(self.active_db_path),
+                        **tier_info,
                     })
                     seen_names.add(f)
 
@@ -116,12 +183,14 @@ class GameService:
             for f in os.listdir(int_dir):
                 if f.endswith(db_exts) and f not in seen_names and not f.startswith("."):
                     path = os.path.join(int_dir, f)
-                    if os.path.isfile(path):
+                    if os.path.isfile(path) and self._is_game_db(path):
+                        tier_info = self._classify_db_tier(path)
                         results.append({
                             "name": f,
                             "path": path,
                             "size_mb": round(os.path.getsize(path) / (1024 * 1024), 2),
-                            "is_active": path == self.active_db_path,
+                            "is_active": os.path.basename(path) == os.path.basename(self.active_db_path),
+                            **tier_info,
                         })
                         seen_names.add(f)
         return results

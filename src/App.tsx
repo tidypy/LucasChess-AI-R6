@@ -1,9 +1,12 @@
 import { useEffect, useState, useRef } from "react";
 import { Wing } from "./components/layout/Wing";
 import { DesktopMenu } from "./components/layout/DesktopMenu";
-import { ResponsiveChessboard } from "./components/chessboard/ResponsiveChessboard";
+import { ResponsiveChessboard, AnalysisGameStats } from "./components/chessboard/ResponsiveChessboard";
+import { OpeningBookPanel } from "./features/analysis/OpeningBookPanel";
+import { GameStatsPanel } from "./features/analysis/GameStatsPanel";
 import { DatabaseBrowserView } from "./features/database/browser/DatabaseBrowserView";
 import { AIGrandmasterView } from "./features/ai_grandmaster/AIGrandmasterView";
+import { EnginesView } from "./features/engines/EnginesView";
 import { AskGrandmasterAction } from "./features/ai_grandmaster/AskGrandmasterAction";
 import { SparView } from "./features/sparring/SparView";
 import { BookBuilderView } from "./features/book_builder/BookBuilderView";
@@ -12,7 +15,7 @@ import { ClickLogConsole } from "./components/debug/ClickLogConsole";
 import { Tooltip } from "./components/common/Tooltip";
 import { ErrorBoundary } from "./components/common/ErrorBoundary";
 import { useQuery } from "@tanstack/react-query";
-import { fetchGame, API_BASE } from "./lib/api";
+import { fetchGame, fetchDatabases } from "./lib/api";
 import {
   UXTheme,
   BoardTheme,
@@ -24,10 +27,13 @@ import {
 import { useClickLogger } from "./lib/clickLogger";
 import {
   Sparkles,
-  Cpu,
   RefreshCw,
-  Sun,
-  Grid,
+  Terminal,
+  Copy,
+  Check,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 function MainApp() {
@@ -37,7 +43,10 @@ function MainApp() {
   const [activeView, setActiveView] = useState<string>("Analysis");
 
   // Game Selection
-  const [gameId, setGameId] = useState<number>(42);
+  const [gameId, setGameId] = useState<number>(1);
+  const [activeGameDb, setActiveGameDb] = useState<string>("patriciaTourny.sqlite");
+  const [currentBoardFen, setCurrentBoardFen] = useState<string>("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+  const [analysisStats, setAnalysisStats] = useState<AnalysisGameStats | undefined>(undefined);
 
   // Theme Management
   const [currentUXTheme, setCurrentUXTheme] = useState<UXTheme>(loadSavedUXTheme);
@@ -46,13 +55,38 @@ function MainApp() {
   const [isThemeModalOpen, setIsThemeModalOpen] = useState<boolean>(false);
   const [themeModalTab, setThemeModalTab] = useState<"ux" | "board" | "custom">("ux");
 
-  // SSE telemetry events
-  const [events, setEvents] = useState<string[]>([]);
+  // Engine UCI Log & Options State (Replaces raw SSE stream)
+  const [engineUciLogs, setEngineUciLogs] = useState<string[]>([
+    ">> uci",
+    "<< id name Patricia 4.0",
+    "<< id author Adam Kulju",
+    ">> setoption name Threads value 1",
+    ">> setoption name Hash value 64",
+    ">> isready",
+    "<< readyok",
+    "[STATUS] Engine initialized & ready for position analysis",
+  ]);
+  const [engineUciOptions, setEngineUciOptions] = useState<Record<string, any>>({
+    "Engine": "Patricia 4.0",
+    "Author": "Adam Kulju",
+    "Threads": 1,
+    "Hash (MB)": 64,
+    "Multi-PV": 3,
+    "Status": "Ready",
+  });
+  const [uciViewTab, setUciViewTab] = useState<"stream" | "options">("stream");
+  const [uciCopied, setUciCopied] = useState(false);
+
+  // Query Available Databases
+  const { data: dbList } = useQuery({
+    queryKey: ["databases"],
+    queryFn: fetchDatabases,
+  });
 
   // Fetch Game Query
   const { data: gameData, isLoading, isError, refetch } = useQuery({
-    queryKey: ["game", gameId],
-    queryFn: () => fetchGame(gameId),
+    queryKey: ["game", gameId, activeGameDb],
+    queryFn: () => fetchGame(gameId, activeGameDb),
     retry: 1,
   });
 
@@ -61,35 +95,6 @@ function MainApp() {
   useEffect(() => {
     logActionRef.current = logAction;
   });
-
-  // Connect to SSE Endpoint
-  useEffect(() => {
-    const eventSource = new EventSource(`${API_BASE}/events`);
-
-    eventSource.onmessage = (event) => {
-      logActionRef.current("SSE", "Incoming Stream Message", event.data);
-    };
-
-    eventSource.addEventListener("connect", (e) => {
-      const msg = `[Connect] ${e.data}`;
-      setEvents((prev) => [...prev.slice(-6), msg]);
-      logActionRef.current("SSE", "Connected to SSE Telemetry Stream", e.data);
-    });
-
-    eventSource.addEventListener("ping", (e) => {
-      const msg = `[Ping] ${e.data}`;
-      setEvents((prev) => [...prev.slice(-6), msg]);
-      logActionRef.current("SSE", "Heartbeat Ping", e.data);
-    });
-
-    eventSource.onerror = (err) => {
-      console.warn("SSE Connection error", err);
-    };
-
-    return () => {
-      eventSource.close();
-    };
-  }, []);
 
   const handleOpenTheme = (tab: "ux" | "board" | "custom") => {
     setThemeModalTab(tab);
@@ -180,121 +185,290 @@ function MainApp() {
                     </div>
                   </div>
                 ) : (
-                  <ResponsiveChessboard
-                    pgn={gameData?.pgn}
-                    boardTheme={currentBoardTheme}
-                    uxTheme={currentUXTheme}
-                  />
-                )}
-              </div>
-
-              {/* Right Panel: AI Dossier & Telemetry */}
-              <div className="w-full lg:w-80 flex-shrink-0 flex flex-col gap-4 min-h-0 overflow-y-auto">
-                {/* AI Dossier Panel */}
-                <div
-                  className={`rounded-3xl border p-5 shadow-2xl flex flex-col transition-colors duration-200 ${currentUXTheme.panel} ${currentUXTheme.border}`}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <h2
-                      className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
-                        isLight ? "text-emerald-700" : "text-emerald-400"
-                      }`}
-                    >
-                      <Sparkles className="w-4 h-4 text-emerald-500 animate-pulse" />
-                      AI Dossier & Style
-                    </h2>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 font-bold">
-                      Live
-                    </span>
-                  </div>
-
-                  <div className="space-y-3 text-xs">
-                    <div
-                      className={`p-3.5 rounded-2xl border space-y-1.5 ${
-                        isLight
-                          ? "bg-slate-50 border-slate-200 text-slate-800"
-                          : "bg-black/30 border-white/10 text-slate-300"
-                      }`}
-                    >
-                      <div className="text-[11px] font-bold flex items-center justify-between">
-                        <span>Current Game</span>
-                        <span className="font-mono text-emerald-500 font-bold">ID #{gameId}</span>
-                      </div>
-                      <p className="text-[11px] opacity-80 leading-relaxed">
-                        FIDE World Cup 2017 (Carlsen, M vs Bu Xiangzhi). Tactical sharp Italian game with piece sacrifices.
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <div
-                        className={`p-3 rounded-xl border text-center ${
-                          isLight
-                            ? "bg-slate-50 border-slate-200"
-                            : "bg-black/30 border-white/10"
-                        }`}
-                      >
-                        <span className="text-[10px] opacity-70 block font-medium">Opening Accuracy</span>
-                        <span className="text-sm font-black text-emerald-500 font-mono">98.4%</span>
-                      </div>
-                      <div
-                        className={`p-3 rounded-xl border text-center ${
-                          isLight
-                            ? "bg-slate-50 border-slate-200"
-                            : "bg-black/30 border-white/10"
-                        }`}
-                      >
-                        <span className="text-[10px] opacity-70 block font-medium">Avg ACPL</span>
-                        <span className="text-sm font-black text-cyan-500 font-mono">14.2</span>
-                      </div>
-                    </div>
-
-                    <div className="pt-2">
-                      <AskGrandmasterAction
-                        fen="r2q1rk1/ppp2ppp/2n1pn2/3p1b2/P2P4/2P2NP1/1P1NPPP1/R2QKB1R w KQ - 1 9"
-                        evalStr="+0.10 pawns"
-                        mainLine="a4a5 d8e7 d1a4 e6e5"
-                        contextNotes={`Game #${gameId} (Analysis Board)`}
-                        variant="banner"
-                      />
-                    </div>
-                  </div>
+                    <ResponsiveChessboard
+                      pgn={gameData?.pgn}
+                      boardTheme={currentBoardTheme}
+                      uxTheme={currentUXTheme}
+                      onPositionChange={setCurrentBoardFen}
+                      onStatsChange={setAnalysisStats}
+                      onUciLog={(logs, options) => {
+                        setEngineUciLogs(logs);
+                        if (options) setEngineUciOptions(options);
+                      }}
+                    />
+                  )}
                 </div>
 
-                {/* Telemetry Stream Box */}
-                <div
-                  className={`rounded-3xl border p-5 shadow-2xl flex flex-col flex-grow min-h-[160px] transition-colors duration-200 ${currentUXTheme.panel} ${currentUXTheme.border}`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <h2
-                      className={`font-bold text-xs uppercase tracking-wider ${
-                        isLight ? "text-slate-700" : "text-slate-400"
-                      }`}
-                    >
-                      SSE Telemetry Stream
-                    </h2>
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                {/* Right Panel: AI Dossier & Engine UCI Output */}
+                <div className="w-full lg:w-80 flex-shrink-0 flex flex-col gap-4 min-h-0 overflow-y-auto">
+                  {/* AI Dossier Panel */}
+                  <div
+                    className={`rounded-3xl border p-5 shadow-2xl flex flex-col transition-colors duration-200 ${currentUXTheme.panel} ${currentUXTheme.border}`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <h2
+                        className={`text-xs font-extrabold uppercase tracking-wider flex items-center gap-2 ${
+                          isLight ? "text-emerald-800" : "text-emerald-300"
+                        }`}
+                      >
+                        <Sparkles className="w-4 h-4 text-emerald-500 animate-pulse" />
+                        Game Info &amp; Analysis
+                      </h2>
+                      {/* Database Switcher */}
+                      <select
+                        value={activeGameDb}
+                        onChange={(e) => {
+                          setActiveGameDb(e.target.value);
+                          setGameId(1);
+                          logAction("CLICK", `Switched Analysis Database to ${e.target.value}`);
+                        }}
+                        className={`text-[11px] font-mono font-extrabold rounded-lg px-2 py-0.5 border outline-none cursor-pointer ${
+                          isLight ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-950" : "bg-emerald-950/40 border-emerald-500/40 text-emerald-300"
+                        }`}
+                      >
+                        {dbList && dbList.length > 0 ? (
+                          dbList.map((d) => (
+                            <option key={d.name} value={d.name}>
+                              {d.name}
+                            </option>
+                          ))
+                        ) : (
+                          <option value={activeGameDb}>{activeGameDb}</option>
+                        )}
+                      </select>
+                    </div>
+
+                    <div className="space-y-3 text-xs">
+                      <div
+                        className={`p-3.5 rounded-2xl border space-y-1.5 ${
+                          isLight
+                            ? "bg-slate-100/90 border-slate-300 text-slate-900"
+                            : "bg-black/40 border-white/10 text-white"
+                        }`}
+                      >
+                        <div className="text-xs font-extrabold flex items-center justify-between">
+                          <span className={isLight ? "text-slate-800" : "text-slate-200"}>Game Details</span>
+                          <div className="flex items-center gap-1.5 font-mono">
+                            <button
+                              onClick={() => {
+                                const nextId = Math.max(1, gameId - 1);
+                                setGameId(nextId);
+                                logAction("NAV", `Analysis Navigated to Game #${nextId}`);
+                              }}
+                              disabled={gameId <= 1}
+                              className="p-1 rounded-md hover:bg-slate-200 dark:hover:bg-white/10 disabled:opacity-30 cursor-pointer"
+                              title="Previous Game in DB"
+                            >
+                              <ChevronLeft className="w-3.5 h-3.5" />
+                            </button>
+                            <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
+                              ID #{gameId}
+                            </span>
+                            <button
+                              onClick={() => {
+                                const nextId = gameId + 1;
+                                setGameId(nextId);
+                                logAction("NAV", `Analysis Navigated to Game #${nextId}`);
+                              }}
+                              className="p-1 rounded-md hover:bg-slate-200 dark:hover:bg-white/10 cursor-pointer"
+                              title="Next Game in DB"
+                            >
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className={`font-extrabold text-sm truncate ${isLight ? "text-slate-900" : "text-white"}`}>
+                          {gameData?.white || "White"} vs {gameData?.black || "Black"}
+                        </div>
+                        <p className={`text-xs leading-relaxed font-mono font-semibold ${isLight ? "text-slate-800" : "text-slate-200"}`}>
+                          {gameData?.event || "Match"} · {gameData?.eco || "ECO"} {gameData?.opening ? `(${gameData.opening})` : ""} · Result: <span className="font-extrabold text-emerald-600 dark:text-emerald-400">{gameData?.result || "*"}</span>
+                        </p>
+                        {gameData?.date && gameData.date !== "????.??.??" && (
+                          <div className={`text-[11px] font-mono font-bold ${isLight ? "text-slate-700" : "text-slate-300"}`}>
+                            Date: {gameData.date}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div
+                          className={`p-3 rounded-xl border text-center ${
+                            isLight
+                              ? "bg-slate-100/90 border-slate-300 text-slate-900"
+                              : "bg-black/40 border-white/10 text-white"
+                          }`}
+                        >
+                          <span className={`text-[11px] block font-bold ${isLight ? "text-slate-700" : "text-slate-300"}`}>White Elo</span>
+                          <span className="text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono">{gameData?.white_elo || "—"}</span>
+                        </div>
+                        <div
+                          className={`p-3 rounded-xl border text-center ${
+                            isLight
+                              ? "bg-slate-100/90 border-slate-300 text-slate-900"
+                              : "bg-black/40 border-white/10 text-white"
+                          }`}
+                        >
+                          <span className={`text-[11px] block font-bold ${isLight ? "text-slate-700" : "text-slate-300"}`}>Black Elo</span>
+                          <span className="text-sm font-black text-cyan-600 dark:text-cyan-400 font-mono">{gameData?.black_elo || "—"}</span>
+                        </div>
+                      </div>
+
+                      <div className="pt-2">
+                        <AskGrandmasterAction
+                          fen={currentBoardFen}
+                          evalStr="+0.10 pawns"
+                          mainLine=""
+                          contextNotes={`Game #${gameId} (${gameData?.white || "White"} vs ${gameData?.black || "Black"})`}
+                          variant="banner"
+                        />
+                      </div>
+                    </div>
                   </div>
 
+                  {/* Engine Output & UCI Options Debugger */}
                   <div
-                    className={`font-mono text-[11px] space-y-1 flex-grow overflow-y-auto p-3 rounded-2xl border ${
-                      isLight
-                        ? "bg-slate-900 text-emerald-400 border-slate-800"
-                        : "bg-black/40 text-emerald-400 border-white/10"
-                    }`}
+                    className={`rounded-3xl border p-4 shadow-2xl flex flex-col flex-grow min-h-[220px] transition-colors duration-200 ${currentUXTheme.panel} ${currentUXTheme.border}`}
                   >
-                    {events.length === 0 ? (
-                      <span className="text-slate-500 italic">Listening for telemetry events...</span>
-                    ) : (
-                      events.map((e, i) => (
-                        <div key={i} className="text-emerald-400/90 font-medium">
-                          {e}
+                    <div className="flex items-center justify-between mb-2.5">
+                      <div className="flex items-center gap-1.5">
+                        <Terminal className="w-4 h-4 text-cyan-400" />
+                        <h2
+                          className={`font-extrabold text-xs uppercase tracking-wider ${
+                            isLight ? "text-slate-900" : "text-white"
+                          }`}
+                        >
+                          Engine UCI Output
+                        </h2>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        {/* Stream vs Options toggle */}
+                        <div className="flex bg-black/40 border border-white/10 rounded-lg p-0.5 text-[10px] font-bold">
+                          <button
+                            onClick={() => setUciViewTab("stream")}
+                            className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                              uciViewTab === "stream"
+                                ? "bg-cyan-500 text-slate-950 font-extrabold shadow"
+                                : "text-slate-300 hover:text-white"
+                            }`}
+                          >
+                            Stream
+                          </button>
+                          <button
+                            onClick={() => setUciViewTab("options")}
+                            className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                              uciViewTab === "options"
+                                ? "bg-cyan-500 text-slate-950 font-extrabold shadow"
+                                : "text-slate-300 hover:text-white"
+                            }`}
+                          >
+                            Options
+                          </button>
                         </div>
-                      ))
+
+                        {/* Copy logs */}
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(engineUciLogs.join("\n"));
+                            setUciCopied(true);
+                            setTimeout(() => setUciCopied(false), 2000);
+                          }}
+                          className="p-1 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                          title="Copy raw UCI logs"
+                        >
+                          {uciCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+
+                        {/* Clear logs */}
+                        <button
+                          onClick={() => setEngineUciLogs([])}
+                          className="p-1 rounded-lg text-slate-300 hover:text-rose-400 hover:bg-white/10 transition-colors cursor-pointer"
+                          title="Clear console"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {uciViewTab === "stream" ? (
+                      <div
+                        className={`font-mono text-[11px] space-y-1 flex-grow overflow-y-auto max-h-56 p-3 rounded-2xl border shadow-inner ${
+                          isLight
+                            ? "bg-slate-950 text-slate-100 border-slate-800"
+                            : "bg-black/60 text-slate-100 border-white/10"
+                        }`}
+                      >
+                        {engineUciLogs.length === 0 ? (
+                          <span className="text-slate-400 italic font-semibold">Engine idle. Calculate or step moves to see live UCI protocol output.</span>
+                        ) : (
+                          engineUciLogs.map((line, i) => {
+                            let lineStyle = "text-slate-200";
+                            if (line.startsWith(">> setoption")) lineStyle = "text-purple-300 font-semibold";
+                            else if (line.startsWith(">>")) lineStyle = "text-cyan-300 font-bold";
+                            else if (line.startsWith("<< id")) lineStyle = "text-blue-300 font-bold";
+                            else if (line.startsWith("<< bestmove")) lineStyle = "text-amber-300 font-extrabold";
+                            else if (line.startsWith("<< info")) lineStyle = "text-emerald-300 font-medium";
+                            else if (line.startsWith("[ERROR]")) lineStyle = "text-rose-400 font-bold";
+                            else if (line.startsWith("[STATUS]")) lineStyle = "text-cyan-400 font-semibold";
+
+                            return (
+                              <div key={i} className={`leading-relaxed font-mono ${lineStyle}`}>
+                                {line}
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    ) : (
+                      <div
+                        className={`font-mono text-xs space-y-1.5 flex-grow overflow-y-auto max-h-56 p-3 rounded-2xl border shadow-inner ${
+                          isLight
+                            ? "bg-slate-950 text-slate-100 border-slate-800"
+                            : "bg-black/60 text-slate-100 border-white/10"
+                        }`}
+                      >
+                        <div className="grid grid-cols-2 gap-2 text-[11px]">
+                          {Object.entries(engineUciOptions).map(([key, val]) => (
+                            <div key={key} className="p-2 rounded-xl bg-white/5 border border-white/10 flex flex-col">
+                              <span className="text-[10px] text-cyan-300 font-bold uppercase tracking-wider">{key}</span>
+                              <span className="font-extrabold text-white truncate">{String(val)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
+
+                  {/* Opening Book Explorer Panel */}
+                  <OpeningBookPanel
+                    fen={currentBoardFen}
+                    eco={gameData?.eco}
+                    openingName={gameData?.opening}
+                    uxTheme={currentUXTheme}
+                  />
+
+                  {/* Game Performance & Stats Panel */}
+                  <GameStatsPanel
+                    stats={analysisStats}
+                    gameDetails={
+                      gameData
+                        ? {
+                            white: gameData.white,
+                            black: gameData.black,
+                            white_elo: gameData.white_elo,
+                            black_elo: gameData.black_elo,
+                            result: gameData.result,
+                            event: gameData.event,
+                            date: gameData.date,
+                            eco: gameData.eco,
+                            opening: gameData.opening,
+                          }
+                        : null
+                    }
+                    uxTheme={currentUXTheme}
+                  />
                 </div>
               </div>
-            </div>
           ) : activeView === "Database" ||
             activeView === "Fitness" ||
             activeView === "Dossier" ||
@@ -323,10 +497,11 @@ function MainApp() {
                       ? "consolidator"
                       : "shelf"
                   }
-                  onLoadGame={(id) => {
+                  onLoadGame={(id, dbName) => {
                     setGameId(id);
+                    if (dbName) setActiveGameDb(dbName);
                     setActiveView("Analysis");
-                    logAction("NAV", `Loaded Game #${id} into Analysis Workspace`);
+                    logAction("NAV", `Loaded Game #${id} from ${dbName || activeGameDb} into Analysis Workspace`);
                   }}
                   onOpenBookBuilder={() => {
                     setActiveView("BookBuilder");
@@ -369,60 +544,25 @@ function MainApp() {
                 <AIGrandmasterView uxTheme={currentUXTheme} />
               </div>
             </ErrorBoundary>
-          ) : (
-            /* Settings & Engine Lab Tab */
-            <div
-              className={`flex-grow rounded-3xl border p-6 flex flex-col overflow-y-auto space-y-6 shadow-2xl ${currentUXTheme.panel} ${currentUXTheme.border}`}
+          ) : activeView === "Engines" || activeView === "Settings" ? (
+            /* UCI Engine Management & Customization Studio */
+            <ErrorBoundary
+              fallbackTitle="Engine Lab Error"
+              onError={(err) => logAction("ERROR", "Engine Lab View Error", err.message)}
             >
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-cyan-500/10 text-cyan-500 rounded-2xl border border-cyan-500/20">
-                  <Cpu className="w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="text-base font-bold">Engine Lab & Customization Settings</h2>
-                  <p className="text-xs opacity-70">
-                    Configure UX themes, chessboard colors, and engine instances
-                  </p>
-                </div>
+              <div className="flex-grow overflow-y-auto min-h-0">
+                <EnginesView
+                  uxTheme={currentUXTheme}
+                  onLaunchSparring={(engineId) => {
+                    setActiveView("Spar");
+                    logAction("NAV", `Launched Sparring with Engine: ${engineId}`);
+                  }}
+                />
               </div>
-
-              <div className="space-y-4 max-w-xl">
-                <div
-                  className={`p-4 rounded-2xl border flex items-center justify-between ${
-                    isLight ? "bg-slate-50 border-slate-200" : "bg-black/30 border-white/10"
-                  }`}
-                >
-                  <div>
-                    <span className="text-xs font-bold block">Change Application UX Theme</span>
-                    <span className="text-[11px] opacity-70">Dark & Light modern interface palettes</span>
-                  </div>
-                  <button
-                    onClick={() => handleOpenTheme("ux")}
-                    className="px-3.5 py-2 bg-emerald-500 text-slate-950 text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md hover:bg-emerald-400 transition-colors"
-                  >
-                    <Sun className="w-3.5 h-3.5" />
-                    Change UX Theme
-                  </button>
-                </div>
-
-                <div
-                  className={`p-4 rounded-2xl border flex items-center justify-between ${
-                    isLight ? "bg-slate-50 border-slate-200" : "bg-black/30 border-white/10"
-                  }`}
-                >
-                  <div>
-                    <span className="text-xs font-bold block">Change Chessboard Theme</span>
-                    <span className="text-[11px] opacity-70">Wood, tournament green, and custom square colors</span>
-                  </div>
-                  <button
-                    onClick={() => handleOpenTheme("board")}
-                    className="px-3.5 py-2 bg-blue-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md hover:bg-blue-400 transition-colors"
-                  >
-                    <Grid className="w-3.5 h-3.5" />
-                    Change Board Theme
-                  </button>
-                </div>
-              </div>
+            </ErrorBoundary>
+          ) : (
+            <div className="flex-grow overflow-y-auto min-h-0">
+              <EnginesView uxTheme={currentUXTheme} />
             </div>
           )}
 

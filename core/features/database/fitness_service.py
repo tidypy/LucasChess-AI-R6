@@ -1,7 +1,10 @@
 import os
 import re
+import io
 import sqlite3
 import hashlib
+import chess
+import chess.pgn
 from typing import Dict, Any, List, Optional, Tuple
 from core.features.dossier.chess_math import Glicko2Calculator, ChessPerformanceCalculator
 
@@ -49,6 +52,25 @@ class AdjudicationCascade:
         tokens = [t for t in no_comments.split() if not t.endswith(".") and not t.isdigit() and not t.startswith("$")]
         if tokens and tokens[-1].endswith("#"):
             return "1-0" if len(tokens) % 2 != 0 else "0-1"
+        return None
+
+    @staticmethod
+    def resolve_from_board(pgn_or_moves: str) -> Optional[str]:
+        """
+        Simulates game moves with python-chess to detect checkmate, stalemate, repetition, or insufficient material.
+        """
+        try:
+            game = chess.pgn.read_game(io.StringIO(pgn_or_moves))
+            if game:
+                board = game.board()
+                for move in game.mainline_moves():
+                    board.push(move)
+                if board.is_checkmate():
+                    return "0-1" if board.turn == chess.WHITE else "1-0"
+                if board.is_stalemate() or board.is_insufficient_material() or board.is_repetition(3) or board.is_fifty_moves():
+                    return "1/2-1/2"
+        except Exception:
+            pass
         return None
 
     @staticmethod
@@ -107,6 +129,11 @@ class DataFitnessService:
         if not raw_name or raw_name.strip() in ("?", "??", "", "Unknown", "None"):
             return "Unknown Player"
         name = raw_name.strip().strip('"').strip("'")
+
+        if "Player" in name or "Human" in name:
+            return "Player (Human)"
+        if any(eng.lower() in name.lower() for eng in ["stockfish", "maia", "patricia", "ct800", "berserk", "dragon", "komodo", "lc0", "sparring"]):
+            return name.strip()
         
         # If 'Last, First'
         if "," in name:
@@ -328,9 +355,13 @@ class DataFitnessService:
 
                 # 2. Result Adjudication Cascade
                 new_res = res
-                if auto_repair_results and (res == "*" or res == "" or res not in ("1-0", "0-1", "1/2-1/2")):
-                    # Check termination, then move text
-                    new_res = AdjudicationCascade.resolve_from_moves(data) or AdjudicationCascade.resolve_from_termination(data) or "1/2-1/2"
+                if auto_repair_results and (res == "*" or res == "" or res not in ("1-0", "0-1", "1/2-1/2", "0.5-0.5")):
+                    new_res = (
+                        AdjudicationCascade.resolve_from_moves(data)
+                        or AdjudicationCascade.resolve_from_termination(data)
+                        or AdjudicationCascade.resolve_from_board(data)
+                        or "1/2-1/2"
+                    )
                     if new_res != res:
                         repaired_results += 1
 
@@ -346,7 +377,30 @@ class DataFitnessService:
                     if new_white != white or new_black != black or new_date != date_val:
                         normalized_records += 1
 
-                updates.append((new_white, new_black, new_res, new_date, rowid))
+                # 4. Infer player/engine for sparring games if unknown
+                if (new_white in ("Unknown Player", "?", "Unknown") or new_black in ("Unknown Player", "?", "Unknown")) and ("Sparring" in data or "DeepScout" in data or "Stockfish" in data or "Maia" in data):
+                    if new_white in ("Unknown Player", "?", "Unknown"):
+                        new_white = "Player (Human)"
+                    if new_black in ("Unknown Player", "?", "Unknown"):
+                        new_black = "Sparring Engine"
+
+                # 5. Synchronize PGN text in _DATA_
+                new_data = data
+                if new_res and new_res != "*":
+                    if re.search(r'\[Result\s+"[^"]*"\]', new_data):
+                        new_data = re.sub(r'\[Result\s+"[^"]*"\]', f'[Result "{new_res}"]', new_data)
+                    new_data = re.sub(r'\s+\*\s*$', f' {new_res}', new_data)
+                if new_white and new_white != "Unknown Player":
+                    if re.search(r'\[White\s+"[^"]*"\]', new_data):
+                        new_data = re.sub(r'\[White\s+"[^"]*"\]', f'[White "{new_white}"]', new_data)
+                if new_black and new_black != "Unknown Player":
+                    if re.search(r'\[Black\s+"[^"]*"\]', new_data):
+                        new_data = re.sub(r'\[Black\s+"[^"]*"\]', f'[Black "{new_black}"]', new_data)
+                if new_date and new_date != "????.??.??":
+                    if re.search(r'\[Date\s+"[^"]*"\]', new_data):
+                        new_data = re.sub(r'\[Date\s+"[^"]*"\]', f'[Date "{new_date}"]', new_data)
+
+                updates.append((new_white, new_black, new_res, new_date, new_data, rowid))
 
             # Apply batch deletions
             if delete_rowids:
@@ -355,7 +409,7 @@ class DataFitnessService:
             # Apply batch updates
             if updates:
                 cur.executemany(
-                    "UPDATE Games SET WHITE = ?, BLACK = ?, RESULT = ?, DATE = ? WHERE ROWID = ?",
+                    "UPDATE Games SET WHITE = ?, BLACK = ?, RESULT = ?, DATE = ?, _DATA_ = ? WHERE ROWID = ?",
                     updates,
                 )
 
@@ -395,15 +449,20 @@ class DataFitnessService:
                 current_opening = (r.get("OPENING") or "").strip()
                 data = str(r.get("_DATA_") or "")
 
-                if not current_eco or current_eco == "A00" or not current_opening:
+                if not current_eco or current_eco == "A00" or current_eco == "" or not current_opening:
                     inferred_eco, inferred_opening = self.classify_opening(data[:200], current_eco)
                     if inferred_eco != current_eco or inferred_opening != current_opening:
-                        eco_updates.append((inferred_eco, inferred_opening, rowid))
+                        new_data = data
+                        if re.search(r'\[ECO\s+"[^"]*"\]', new_data):
+                            new_data = re.sub(r'\[ECO\s+"[^"]*"\]', f'[ECO "{inferred_eco}"]', new_data)
+                        if re.search(r'\[Opening\s+"[^"]*"\]', new_data):
+                            new_data = re.sub(r'\[Opening\s+"[^"]*"\]', f'[Opening "{inferred_opening}"]', new_data)
+                        eco_updates.append((inferred_eco, inferred_opening, new_data, rowid))
                         ecos_assigned += 1
 
             if eco_updates:
                 cur.executemany(
-                    "UPDATE Games SET ECO = ?, OPENING = ? WHERE ROWID = ?",
+                    "UPDATE Games SET ECO = ?, OPENING = ?, _DATA_ = ? WHERE ROWID = ?",
                     eco_updates,
                 )
                 conn.commit()

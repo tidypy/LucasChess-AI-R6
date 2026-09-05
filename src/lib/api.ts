@@ -1,3 +1,5 @@
+import { VariationLine } from "./types/companion";
+
 export const API_BASE = "http://127.0.0.1:8000/api/v1";
 
 export interface GameSummary {
@@ -27,6 +29,10 @@ export interface DatabaseInfo {
   path: string;
   size_mb: number;
   is_active: boolean;
+  tier?: string;
+  tier_level?: number;
+  grade?: string;
+  badge_color?: "gold" | "silver" | "cyan" | "amber" | "slate" | string;
 }
 
 export interface DatabaseStats {
@@ -492,6 +498,31 @@ export interface EnginePlayRequest {
   elo?: number;
   time_limit_ms?: number;
   depth?: number;
+  book_name?: string;
+  use_book?: boolean;
+}
+
+export interface EngineTelemetry {
+  source: "opening_book" | "uci_engine" | "random_fallback";
+  engine_name?: string;
+  engine_author?: string;
+  engine_id?: string;
+  book_name?: string;
+  is_book_move: boolean;
+  weight?: number;
+  candidates?: OpeningBookCandidate[];
+  active_options?: Record<string, any>;
+  nps?: number | string;
+  nodes?: number;
+  depth?: number;
+  seldepth?: number;
+  time_ms?: number;
+  hashfull?: number;
+  tbhits?: number;
+  score?: string;
+  pv_san?: string[];
+  pv_uci?: string[];
+  uci_log: string[];
 }
 
 export interface EnginePlayResponse {
@@ -506,9 +537,60 @@ export interface EnginePlayResponse {
   depth: number;
   pv_san: string[];
   pv_uci: string[];
+  is_book_move?: boolean;
+  book_name?: string;
+  book_weight?: number;
+  book_candidates?: OpeningBookCandidate[];
   is_fallback?: boolean;
+  telemetry?: EngineTelemetry;
   error?: string;
 }
+
+export interface OpeningBookCandidate {
+  san: string;
+  uci: string;
+  weight: number;
+  weight_pct: number;
+  learn?: number;
+}
+
+export interface OpeningBookProbeResult {
+  in_book: boolean;
+  book_name?: string;
+  best_move_san?: string;
+  best_move_uci?: string;
+  from_square?: string;
+  to_square?: string;
+  weight?: number;
+  candidates: OpeningBookCandidate[];
+}
+
+export interface OpeningBookInfo {
+  name: string;
+  filename: string;
+  path: string;
+  size_kb: number;
+  category: string;
+  is_user_imported: boolean;
+  is_active: boolean;
+}
+
+export const fetchOpeningBooksList = async (): Promise<OpeningBookInfo[]> => {
+  const res = await fetch(`${API_BASE}/openings/books/list`);
+  if (!res.ok) throw new Error("Failed to fetch opening books list");
+  return res.json();
+};
+
+export const probeOpeningBook = async (fen: string, bookName?: string): Promise<OpeningBookProbeResult> => {
+  const url = new URL(`${API_BASE}/openings/books/probe`);
+  url.searchParams.set("fen", fen);
+  if (bookName && bookName !== "none") {
+    url.searchParams.set("book_name", bookName);
+  }
+  const res = await fetch(url.toString());
+  if (!res.ok) throw new Error("Failed to probe opening book");
+  return res.json();
+};
 
 export const fetchEnginePlay = async (payload: EnginePlayRequest): Promise<EnginePlayResponse> => {
   const res = await fetch(`${API_BASE}/engine/play`, {
@@ -522,6 +604,7 @@ export const fetchEnginePlay = async (payload: EnginePlayRequest): Promise<Engin
 
 export const fetchEngineEvaluate = async (payload: {
   fen: string;
+  engine_id?: string;
   depth?: number;
   time_limit_ms?: number;
 }): Promise<{
@@ -542,6 +625,30 @@ export const fetchEngineEvaluate = async (payload: {
   return res.json();
 };
 
+export interface UciOptionInfo {
+  name: string;
+  type: "spin" | "check" | "combo" | "button" | "string";
+  default: any;
+  min?: number | null;
+  max?: number | null;
+  var?: string[];
+  current?: any;
+}
+
+export interface TestUciResult {
+  success: boolean;
+  name: string;
+  author: string;
+  path: string;
+  supports_elo: boolean;
+  supports_threads: boolean;
+  supports_hash: boolean;
+  supports_syzygy: boolean;
+  supports_multipv: boolean;
+  supports_nnue: boolean;
+  options: Record<string, UciOptionInfo>;
+}
+
 export interface EngineInfo {
   id: string;
   name: string;
@@ -552,6 +659,13 @@ export interface EngineInfo {
   path?: string;
   author?: string;
   supports_elo?: boolean;
+  min_elo?: number;
+  max_elo?: number;
+  supports_threads?: boolean;
+  supports_hash?: boolean;
+  supports_syzygy?: boolean;
+  options?: Record<string, any>;
+  all_options?: Record<string, UciOptionInfo>;
 }
 
 export const fetchEngineList = async (): Promise<EngineInfo[]> => {
@@ -560,14 +674,22 @@ export const fetchEngineList = async (): Promise<EngineInfo[]> => {
   return res.json();
 };
 
-export const testUciEngine = async (path: string): Promise<{
-  success: boolean;
-  name: string;
-  author: string;
-  path: string;
-  supports_elo: boolean;
-  options: string[];
-}> => {
+export const fetchEngineOptions = async (engineId: string): Promise<Record<string, UciOptionInfo>> => {
+  const res = await fetch(`${API_BASE}/engine/options/${engineId}`);
+  if (!res.ok) throw new Error("Failed to fetch engine options");
+  return res.json();
+};
+
+export const browseEngineFile = async (): Promise<{ success: boolean; path?: string; cancelled?: boolean }> => {
+  const res = await fetch(`${API_BASE}/engine/browse`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) throw new Error("Failed to open file browser");
+  return res.json();
+};
+
+export const testUciEngine = async (path: string): Promise<TestUciResult> => {
   const res = await fetch(`${API_BASE}/engine/test-uci`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -586,6 +708,7 @@ export const registerCustomEngine = async (payload: {
   elo?: string;
   style?: string;
   icon?: string;
+  options?: Record<string, any>;
 }): Promise<EngineInfo> => {
   const res = await fetch(`${API_BASE}/engine/custom`, {
     method: "POST",
@@ -607,5 +730,130 @@ export const removeCustomEngine = async (engineId: string): Promise<{ success: b
   return res.json();
 };
 
+export const updateCustomEngine = async (
+  engineId: string,
+  payload: {
+    name?: string;
+    elo?: string;
+    style?: string;
+    icon?: string;
+    options?: Record<string, any>;
+  }
+): Promise<EngineInfo> => {
+  const res = await fetch(`${API_BASE}/engine/custom/${engineId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Update Failed" }));
+    throw new Error(err.detail || "Failed to update custom UCI engine");
+  }
+  return res.json();
+};
 
+export const cloneEngine = async (payload: {
+  source_id: string;
+  new_name: string;
+  options_override?: Record<string, any>;
+}): Promise<EngineInfo> => {
+  const res = await fetch(`${API_BASE}/engine/clone`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Clone Failed" }));
+    throw new Error(err.detail || "Failed to clone engine profile");
+  }
+  return res.json();
+};
 
+// -----------------------------------------------------------------------------
+// Companion Engine Subsystem (Kibitzer / Tutor / Sparring)
+// -----------------------------------------------------------------------------
+export * from "./types/companion";
+
+export const createSparringGame = async (payload: {
+  opponent_engine: string;
+  game_id?: string;
+  user_time_control?: string;
+  tutor_interrupt_mode?: "freeze_on_flag" | "passive_log";
+}) => {
+  const res = await fetch(`${API_BASE}/companion/sparring/create`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("Failed to create sparring game session");
+  return res.json();
+};
+
+export const logKibitzerVariation = async (payload: {
+  game_id: string;
+  ply: number;
+  fen: string;
+  engine: string;
+  pgn_fragment: string;
+  eval_data?: any;
+  trigger_source?: string;
+  logged_by?: string;
+  was_played?: boolean | null;
+}) => {
+  const res = await fetch(`${API_BASE}/companion/kibitzer/variation`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("Failed to log Kibitzer variation");
+  return res.json();
+};
+
+export const logTutorFlag = async (payload: {
+  game_id: string;
+  ply: number;
+  fen: string;
+  flag_type: string;
+  engine: string;
+  centipawn_data?: any;
+  suggested_variations?: any;
+  tutor_outcome?: string;
+  trigger_source?: string;
+}) => {
+  const res = await fetch(`${API_BASE}/companion/tutor/flag`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("Failed to log Tutor flag");
+  return res.json();
+};
+
+export const fetchGameDossier = async (gameId: string) => {
+  const res = await fetch(`${API_BASE}/companion/game/${gameId}/dossier`);
+  if (!res.ok) throw new Error(`Failed to fetch game dossier for ${gameId}`);
+  return res.json();
+};
+
+export const fetchEngineVariations = async (payload: {
+  fen: string;
+  engine_id?: string;
+  depth?: number;
+  multipv?: number;
+  time_limit_ms?: number | null;
+  threads?: number;
+  hash_mb?: number;
+}): Promise<{
+  success: boolean;
+  variations: VariationLine[];
+  uci_log?: string[];
+  uci_options?: Record<string, any>;
+}> => {
+  const res = await fetch(`${API_BASE}/engine/variations`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("Failed to fetch engine variations");
+  return res.json();
+};

@@ -41,7 +41,7 @@ export function ClickLoggerProvider({ children }: { children: ReactNode }) {
     },
   ]);
   const [filter, setFilter] = useState<string>("ALL");
-  const [isLogConsoleOpen, setIsLogConsoleOpen] = useState<boolean>(true);
+  const [isLogConsoleOpen, setIsLogConsoleOpen] = useState<boolean>(false);
 
   const logAction = (
     category: LogEntry["category"],

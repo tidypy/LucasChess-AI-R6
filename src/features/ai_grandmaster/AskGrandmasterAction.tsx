@@ -142,12 +142,12 @@ export function AskGrandmasterAction({
           </button>
         </Tooltip>
       ) : variant === "banner" ? (
-        <div className={`p-3 rounded-2xl bg-fuchsia-950/20 border border-fuchsia-500/30 flex items-center justify-between gap-3 ${className}`}>
+        <div className={`p-3 rounded-2xl bg-fuchsia-500/10 dark:bg-fuchsia-950/30 border border-fuchsia-500/30 flex items-center justify-between gap-3 ${className}`}>
           <div className="flex items-center gap-2.5">
             <span className="text-xl">{activePersona.avatar}</span>
             <div>
-              <span className="text-xs font-bold text-white block">Ask {activePersona.name}</span>
-              <span className="text-[10px] text-fuchsia-300/70 font-mono">Stockfish-to-GM natural language commentary</span>
+              <span className="text-xs font-black text-slate-900 dark:text-white block">Ask {activePersona.name}</span>
+              <span className="text-[10px] text-fuchsia-900 dark:text-fuchsia-300 font-mono font-semibold">Stockfish-to-GM natural language commentary</span>
             </div>
           </div>
           <button
