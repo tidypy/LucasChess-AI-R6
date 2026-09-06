@@ -89,7 +89,7 @@ def _obfuscate_key(key: str) -> str:
         return ""
     import base64
     # Simple reversible XOR cipher with host-specific signature
-    salt = os.environ.get("USERNAME", "LucasChessUser") + "_DSC_SALT_2026"
+    salt = os.environ.get("USERNAME", "DeepScoutUser") + "_DSC_SALT_2026"
     encoded_chars = []
     for i, c in enumerate(key):
         key_c = salt[i % len(salt)]
@@ -102,7 +102,7 @@ def _deobfuscate_key(stored: str) -> str:
     if not stored.startswith("ENC:"):
         return stored  # Legacy plain text backward compatibility
     import base64
-    salt = os.environ.get("USERNAME", "LucasChessUser") + "_DSC_SALT_2026"
+    salt = os.environ.get("USERNAME", "DeepScoutUser") + "_DSC_SALT_2026"
     try:
         raw_b64 = stored[4:]
         decoded_str = base64.b64decode(raw_b64.encode("ascii")).decode("latin1")

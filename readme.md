@@ -1,6 +1,6 @@
-# LucasChess AI R6
+# DeepScout Chess
 
-> Refactored, AI-Enhanced Edition of Lucas Chess featuring Dual-Engine DuckDB Vectorized Analytics, a Sigmoid & Glicko-2 Rating Matrix Engine, an AI Grandmaster Coach (LM Studio / BYOK), and a 4-Tier Data Quality & Provenance Pipeline.
+> An independent, AI-enhanced desktop chess training platform featuring a dual-engine UCI sparring arena, real-time Tutor and Kibitzer companions, a Glicko-2 rating engine, an AI Grandmaster Coach (LM Studio / BYOK), and a multi-database analytics pipeline. Built with Tauri v2, React 19, and FastAPI.
 
 ---
 
@@ -49,9 +49,11 @@ Key packages: `PySide6`, `duckdb>=1.0.0`, `numpy>=1.26.0`, `python-chess`, `requ
 
 ---
 
-## 📜 Legal & Attribution
-
-This project is a refactored, modernized fork based on the original **Lucas Chess** created by **Lucas Monge**.
-
-* **Original Author:** Lucas Monge ([Website](https://lucaschess.pythonanywhere.com/) | [Blog](https://lucaschess.blogspot.com.es/))
+## Third-Party Attributions
+DeepScout Chess incorporates the following open-source and public-domain assets:
+- **UCI Chess Engines:** Stockfish (GPLv3), Patricia, CT800, Rodent II, Komodo/Dragon, Maia (lc0), and others — each under their respective open-source licenses.
+- **Polyglot Opening Books:** Public-domain opening book files.
+- **Chess Piece Sets:** Ben Citak and Marc Graziani piece artwork, used under open license.
+- **XPV Move Encoding Format:** Compact ASCII move encoding format originating from the Lucas Chess open-source project by Lucas Monge.
 * **License:** GNU General Public License v2.0 or later (GPL-2.0-or-later). See [LICENSE](LICENSE) for details.
+

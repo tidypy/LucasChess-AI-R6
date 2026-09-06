@@ -8,12 +8,7 @@ import io
 from typing import Optional, List, Dict, Any
 
 def decode_xpv(xpv_str: str) -> str:
-    """
-    Decodes LucasChess compact ASCII encoded move sequence (XPV) into standard SAN moves.
-    Each move is encoded as a 2-character ASCII pair:
-      from_sq = ord(c1) - 58
-      to_sq = ord(c2) - 58
-    """
+    """Decodes the XPV compact ASCII move encoding (a 2-byte-per-move format originating from the Lucas Chess open-source project) into standard SAN notation."""
     if not xpv_str or not isinstance(xpv_str, str):
         return ""
     if xpv_str.startswith("|"):

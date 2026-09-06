@@ -1,6 +1,6 @@
-# LucasChess R6 — Issues & Resolution Log
+# DeepScout Chess — Issues & Resolution Log
 
-This document tracks all identified bugs, root cause diagnoses, resolution details, and verification statuses across the LucasChess codebase.
+This document tracks all identified bugs, root cause diagnoses, resolution details, and verification statuses across the DeepScout Chess codebase.
 
 ---
 

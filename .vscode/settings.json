@@ -1,0 +1,12 @@
+{
+  "search.exclude": {
+    "**/examples/lucas_legacy_reference/**": true,
+    "**/build/**": true,
+    "**/.venv/**": true,
+    "**/target/**": true
+  },
+  "files.watcherExclude": {
+    "**/examples/lucas_legacy_reference/**": true,
+    "**/target/**": true
+  }
+}
